@@ -1,5 +1,26 @@
 # Vue 3 + Vite
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+ℹ️ [`<script setup>` 공식 문서](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup)
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+<br>
+  
+## 📎 참고 문서
+
+- [Vue 3 공식 문서](https://vuejs.org/)
+- [Vite 공식 문서](https://vitejs.dev/)
+<br>
+  
+## 📦 설치 및 실행
+
+```bash
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
+npm run dev
+
+# 프로덕션 빌드
+npm run build
+
+# 빌드 결과 확인 (로컬 서버 실행)
+npm run preview
