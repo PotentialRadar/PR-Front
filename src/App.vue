@@ -1,9 +1,12 @@
 <script setup>
-import HomePage from './components/HomePage.vue'
+import AppHeader from '@/components/layout/AppHeader.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 </script>
 
 <template>
-  <HomePage />
+  <AppHeader />
+   <router-view />
+  <AppFooter />
 </template>
 
 <style scoped>
