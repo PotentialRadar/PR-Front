@@ -62,6 +62,21 @@
   --www-freemoa-net-dove-gray: var(--color-grey-40, #666);
   --color-blue-48: #263DD1;
 
+  /* Project detail page specific variables */
+  --color-orange-57: #FE7C25;
+  --color-azure-29: #424953;
+  --color-azure-45: #3165B2;
+  --color-grey-83: #D4D4D4;
+  --color-grey-90: #E5E5E5;
+  --color-grey-92: #D6F6FD;
+  --color-grey-94: #EFEFEF;
+  --color-grey-97: #F7F7F8;
+  --color-grey-98: #FAFAFA;
+  --stroke-weight-1_5: 1.5px;
+  --stroke-weight-3: 3px;
+  --font-family-Font-1: Lato;
+  --font-family-Font-2: Inter;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
