@@ -1,0 +1,47 @@
+# 로그 파일
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 의존성 디렉토리 및 빌드 결과물
+node_modules
+dist
+dist-ssr
+*.local
+
+# 에디터 관련 파일 및 설정
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 운영 체제 및 임시 파일
+Thumbs.db
+ehthumbs.db
+*.bak
+*.tmp
+
+# 환경변수 파일
+.env.local
+.env.*.local
+
+# 캐시 및 테스트 커버리지
+.cache/
+coverage/
+
+# 패키지 매니저 Lock 파일 (팀 정책에 따라 커밋 여부 결정)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# TypeScript 빌드 정보
+*.tsbuildinfo

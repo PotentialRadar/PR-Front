@@ -1,0 +1,105 @@
+@font-face {
+  font-family: 'Freesentation';
+  src: url('/fonts/Freesentation-4Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  /* Color variables from the design */
+  --color-white-solid: #FFF;
+  --color-white-0: rgba(255, 255, 255, 0.00);
+  --color-grey-96: #EDFAFD;
+  --item-spacing-130: 130px;
+  --www-freemoa-net-mine-shaft: var(--color-grey-15, #262626);
+  --font-family-freesentation: 'Freesentation';
+  --font-weight-300: 300;
+  --line-height-60: 60px;
+  --stroke-weight-2: 2px;
+  --color-black-solid: #000;
+  /* --font-family-Font-1: Lato; */
+  --font-weight-400: 400;
+  --line-height-57: 57px;
+  --item-spacing-20: 20px;
+  --font-weight-700: 700;
+  --line-height-24: 24px;
+  --font-size-16: 16px;
+  --item-spacing-25: 25px;
+  --stroke-weight-1: 1px;
+  --www-freemoa-net-pumpkin: #FF7D12;
+  --www-freemoa-net-silver-chalice: var(--color-grey-67, #AAA);
+  --color-grey-89: #E3E3E3;
+  --www-freemoa-net-emperor: var(--color-grey-33, #555);
+  --line-height-41: 41px;
+  --item-spacing-5: 5px;
+  --item-spacing-10: 10px;
+  --color-spring-green-55: #41D89E;
+  --font-weight-600: 600;
+  --line-height-31_5: 31.5px;
+  --line-height-30: 30px;
+  --color-orange-61: #FFC53A;
+  --color-grey-15: #262626;
+  --line-height-27: 27px;
+  --line-height-45: 45px;
+  --item-spacing-0: 0px;
+  --item-spacing-90_8: 90.8px;
+  --color-grey-91: #E8E8E8;
+  --color-grey-98: #F9F9F9;
+  --item-spacing-64_3: 64.3px;
+  --item-spacing-88_16: 88.16px;
+  --color-grey-67: #AAA;
+  --line-height-22_5: 22.5px;
+  --item-spacing-97_08: 97.08px;
+  --line-height-29: 29px;
+  --color-grey-95: #F2F2F2;
+  --line-height-28_5: 28.5px;
+  --line-height-25_5: 25.5px;
+  --color-grey-33: #555;
+  --id-wanted-jobs-white: var(--color-white-solid, #FFF);
+  --line-height-37_5: 37.5px;
+  --opacity-100: 1;
+  --www-freemoa-net-mako: var(--color-azure-29, #424953);
+  --www-freemoa-net-dove-gray: var(--color-grey-40, #666);
+  --color-blue-48: #263DD1;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: 'Freesentation', Lato, -apple-system, Roboto, Helvetica, sans-serif;
+  background-color: #fff;
+  color: #262626;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #FF7D12;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+#app {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
