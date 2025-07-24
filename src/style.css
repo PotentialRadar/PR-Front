@@ -3,7 +3,14 @@
 /* Pretendard 폰트 CDN 임포트 */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
-/* 기존 @font-face { font-family: 'Freesentation'; ... } 와 관련된 내용은 제거합니다. */
+/* Freesentation 폰트 추가 */
+@font-face {
+  font-family: 'Freesentation';
+  src: url('/fonts/Freesentation-4Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   /* Color variables from the design */
@@ -12,8 +19,39 @@
   --color-grey-96: #EDFAFD;
   --item-spacing-130: 130px;
   --www-freemoa-net-mine-shaft: var(--color-grey-15, #262626);
-  /* --font-family-freesentation: 'Freesentation'; -> Pretendard로 변경되므로 제거 또는 주석 처리 */
+  --font-family-freesentation: 'Freesentation';
   --font-weight-300: 300;
+
+  /* Project listing specific variables */
+  --width-1080: 1080px;
+  --stroke-weight-1: 1px;
+  --color-grey-93: #ECECEC;
+  --font-family-Font-4: 'Freesentation';
+  --font-size-28: 28px;
+  --line-height-28: 28px;
+  --item-spacing-0: 0;
+  --stroke-weight-2: 2px;
+  --color-cyan-57: #31D0F4;
+  --font-size-19: 19px;
+  --item-spacing-21: 21px;
+  --item-spacing-10: 10px;
+  --color-grey-92: #D6F6FD;
+  --font-size-16: 16px;
+  --line-height-16: 16px;
+  --color-grey-90: #E5E5E5;
+  --color-grey-97: #F7F7F8;
+  --item-spacing--0_01: -0.01px;
+  --font-size-15: 15px;
+  --line-height-15: 15px;
+  --item-spacing-0_01: 0.01px;
+  --font-size-26: 26px;
+  --www-freemoa-net-pumpkin: #FF7D12;
+  --font-size-17: 17px;
+  --item-spacing-9_41: 9.41px;
+  --item-spacing-9_4: 9.4px;
+  --www-freemoa-net-dove-gray: var(--color-grey-40, #666);
+  --font-size-13: 13px;
+  --line-height-35: 35px;
   --line-height-60: 60px;
   --stroke-weight-2: 2px;
   --color-black-solid: #000;

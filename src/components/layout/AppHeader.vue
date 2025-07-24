@@ -23,7 +23,7 @@
           </router-link>
         </div>
         <nav class="nav-menu">
-          <router-link to="/" class="nav-item">프로젝트</router-link>
+          <router-link to="/projects" class="nav-item">프로젝트</router-link>
           <a href="#" class="nav-item">파트너스</a>
           <a href="#" class="nav-item portfolio-search">포트폴리오 검색</a>
           <a href="#" class="nav-item">이용후기</a>
