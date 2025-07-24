@@ -2,11 +2,10 @@
   <div class="project-header">
     <div class="project-tags">
       <div class="tag-container">
-        <span class="tag employment-type">도급</span>
         <span class="tag status-tag">모집중</span>
       </div>
       <div class="registration-date">
-        <span>등록일 : 2025.07.10</span>
+        <span>2025.07.10</span>
       </div>
     </div>
     
@@ -16,7 +15,7 @@
     
     <div class="project-metadata">
       <div class="metadata-item">
-        <div class="metadata-label">예상기간</div>
+        <div class="metadata-label">기간</div>
         <div class="metadata-value">
           <span class="number">60</span>
           <span class="unit">일</span>
@@ -31,9 +30,9 @@
       </div>
       
       <div class="metadata-item">
-        <div class="metadata-label">마감일정</div>
+        <div class="metadata-label">마감일</div>
         <div class="metadata-value">
-          <span class="deadline">D-15일</span>
+          <span class="deadline">D-15</span>
         </div>
       </div>
     </div>
@@ -59,7 +58,7 @@
 .project-header {
   width: 100%;
   background: #FFF;
-  padding: 40px 0;
+  padding: 120px 0 0;
 }
 
 .project-tags {

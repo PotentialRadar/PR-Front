@@ -2,10 +2,7 @@
   <div class="project-freetalk">
     <div class="freetalk-section">
       <div class="section-header">
-        <h3>프리톡</h3>
-        <div class="section-description">
-          <span>문의 내용을 작성해 주세요. 프로젝트 지원은 우측 상단 지원하기를 이용해주세요.</span>
-        </div>
+        <h3>댓글</h3>
       </div>
       
       <div class="comment-form-section">
@@ -13,7 +10,7 @@
           <div class="form-container">
             <textarea 
               v-model="newComment"
-              placeholder="문의 내용을 작성해 주세요."
+              placeholder="내용을 작성해 주세요."
               class="comment-textarea"
             ></textarea>
             
@@ -29,9 +26,6 @@
             </div>
           </div>
           
-          <div class="form-notice">
-            <p>* 작성 내용은 수정 및 삭제가 불가합니다. 이메일, 전화번호등 직접 연락처를 공유하여 직거래를 유도할 경우 서비스 이용에 제재를 받을 수 있습니다.</p>
-          </div>
         </div>
       </div>
       
@@ -51,7 +45,7 @@
 import CommentItem from './CommentItem.vue'
 
 export default {
-  name: 'ProjectFreeTalk',
+  name: 'ProjectComment',
   components: {
     CommentItem
   },
@@ -62,7 +56,7 @@ export default {
         {
           id: 1,
           username: 'd*****t',
-          text: '안녕하세요, AI 필터, 리터치 기능은 제공을 해주시는 걸까요? 아니면 개발사가 알아서 구현해야하�� 건가요?',
+          text: '안녕하세요, AI 필터, 리터치 기능은 제공을 해주시는 걸까요? 아니면 개발사가 알아서 구현해야하는 건가요?',
           date: '2025-07-15 01:14:59',
           avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
           isReply: false

@@ -1,28 +1,12 @@
 <template>
-  <div class="comment-item" :class="{ 'is-reply': isReply }">
-    <div class="comment-container">
-      <div class="comment-avatar">
-        <img :src="comment.avatar" :alt="comment.username" />
-      </div>
-      
-      <div class="comment-content">
-        <div class="comment-header">
-          <div class="comment-username">{{ comment.username }}</div>
-        </div>
-        
-        <div class="comment-text">
-          <p>{{ comment.text }}</p>
-        </div>
-        
-        <div class="comment-footer">
-          <span class="comment-date">{{ comment.date }}</span>
-          <button class="reply-button">댓글쓰기</button>
-        </div>
-      </div>
+  <div class="comment-item" :class="{ 'is-reply': comment.isReply }">
+    <div class="comment-header">
+      <img :src="comment.avatar" alt="User Avatar" class="user-avatar" />
+      <span class="username">{{ comment.username }}</span>
+      <span class="comment-date">{{ comment.date }}</span>
     </div>
-    
-    <div v-if="isReply" class="reply-indicator">
-      <div class="reply-line"></div>
+    <div class="comment-body">
+      <p>{{ comment.text }}</p>
     </div>
   </div>
 </template>
@@ -45,26 +29,28 @@ export default {
 
 <style scoped>
 .comment-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #E8E8E8;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee; /* 각 댓글 아이템 구분선 */
+}
+
+.comment-item:last-child {
+  border-bottom: none; /* 마지막 아이템에는 구분선 없음 */
 }
 
 .comment-item.is-reply {
-  background: #FAFAFA;
-  padding: 20px 0 19.8px 0;
+  margin-left: 30px;
+  padding-left: 20px; /* 원하는 만큼 오른쪽으로 들여쓰기 */
+  /* 필요에 따라 패딩도 조정할 수 있습니다. */
+  /* padding-left: 20px; */
+  background-color: #f3f3f3;
 }
 
 .comment-container {
   display: flex;
   align-items: flex-start;
   gap: 15px;
-}
-
-.comment-avatar {
-  width: 55px;
-  height: 55px;
-  flex-shrink: 0;
 }
 
 .comment-avatar img {
@@ -82,8 +68,11 @@ export default {
 }
 
 .comment-header {
-  display: flex;
+  display: flex; /* 이미 flex로 설정되어 있음 */
   align-items: center;
+  margin-bottom: 8px;
+  /* 여기에 gap 속성을 추가하여 요소들 사이에 간격을 줍니다. */
+  gap: 10px; /* 원하는 간격 값으로 조정 (예: 10px) */
 }
 
 .comment-username {
@@ -92,6 +81,14 @@ export default {
   font-size: 16px;
   font-weight: 600;
   line-height: 17px;
+  padding: 0 10px;
+}
+
+.username { /* 기존에 없는 셀렉터이므로 추가함. 실제 코드에 맞게 수정 필요 */
+  font-weight: bold;
+  /* margin-right: 10px; // gap을 사용하면 이 속성은 필요 없습니다. */
+  color: #262626;
+  font-size: 14px;
 }
 
 .comment-text p {
