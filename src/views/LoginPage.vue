@@ -15,7 +15,7 @@
                 <form>
 
                     <div class="button-container">
-                      <button class="kakao-button" @click="handleKakaoLogin">
+                      <button type="button" class="kakao-button" @click="handleKakaoLogin">
                         <span class="icon-wrap">
                           <svg class="kakao-icon" width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M9.00035 3.03467C5.28277 3.03467 2.26562 5.37834 2.26562 8.26079C2.26562 10.0589 3.43073 11.6281 5.20868 12.5844L4.46114 15.3255C4.44704 15.38 4.44993 15.4375 4.46946 15.4903C4.48898 15.5432 4.52419 15.5888 4.57035 15.621C4.61653 15.6533 4.67145 15.6707 4.72777 15.6707C4.78408 15.6709 4.83909 15.6539 4.88542 15.6218L8.15848 13.4465C8.43461 13.4465 8.71749 13.4937 9.00035 13.4937C12.7179 13.4937 15.735 11.15 15.735 8.26079C15.735 5.37161 12.7179 3.03467 9.00035 3.03467Z" fill="#181600"/>
@@ -24,7 +24,7 @@
                         <p class="button-text">카카오 계정으로 계속하기</p>
                       </button>
                       
-                      <button class="google-button" @click="handleGoogleLogin">
+                      <button type="button" class="google-button" @click="handleGoogleLogin">
                         <span class="icon-wrap">
                           <svg class="google-icon" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M13.98 7.50624C13.98 7.02774 13.9373 6.56723 13.857 6.12549H7.5V8.73623H11.133C10.9763 9.58002 10.5007 10.2955 9.78603 10.774V12.4675H11.967C13.2435 11.2922 13.98 9.562 13.98 7.50624Z" fill="#3D82F0"/>
@@ -36,7 +36,7 @@
                         <p class="button-text">구글 계정으로 계속하기</p>
                       </button>
                       
-                      <button class="email-button" @click="handleEmailLogin">
+                      <button type="button" class="email-button" @click="handleEmailLogin">
                         <span class="email-button-text">이메일로 계속하기</span>
                       </button>
                     </div>
