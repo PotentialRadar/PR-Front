@@ -255,6 +255,12 @@ form {
   color: var(--color-black-solid);
 }
 
+.auth-link > p {
+  color: rgba(55, 56, 60, 0.61);
+  text-align: center;
+  font-size: 14px;
+}
+
 .link-divider {
   display: flex;
   align-items: center;
