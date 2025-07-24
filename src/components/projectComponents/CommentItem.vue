@@ -77,7 +77,6 @@ export default {
 
 .comment-username {
   color: #262626;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 600;
   line-height: 17px;
@@ -93,7 +92,6 @@ export default {
 
 .comment-text p {
   color: #555;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 13px;
   font-weight: 400;
   line-height: 20.8px;
@@ -108,7 +106,6 @@ export default {
 
 .comment-date {
   color: #AAA;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 15px;
@@ -116,7 +113,6 @@ export default {
 
 .reply-button {
   color: #3165B2;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: 15px;

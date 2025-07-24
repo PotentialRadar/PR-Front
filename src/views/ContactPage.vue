@@ -265,7 +265,6 @@ const toggleFaq = (index) => {
 
 .page-title {
   color: #262626;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 32px;
   font-weight: 700;
   line-height: 40px;
@@ -274,7 +273,6 @@ const toggleFaq = (index) => {
 
 .page-subtitle {
   color: #555;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
@@ -294,7 +292,6 @@ const toggleFaq = (index) => {
 
 .section-title {
   color: #262626;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 30px;
@@ -314,7 +311,6 @@ const toggleFaq = (index) => {
 .form-label {
   display: block;
   color: #262626;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 15px;
   font-weight: 600;
   line-height: 18px;
@@ -328,7 +324,6 @@ const toggleFaq = (index) => {
   padding: 16px;
   border: 1px solid #E8E8E8;
   border-radius: 3px;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
@@ -363,7 +358,6 @@ const toggleFaq = (index) => {
 
 .notice-text {
   color: #AAA;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: 18px;
@@ -378,7 +372,6 @@ const toggleFaq = (index) => {
   padding: 16px 40px;
   background: #FF7D12;
   color: #FFF;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 600;
   line-height: 20px;
@@ -433,7 +426,6 @@ const toggleFaq = (index) => {
 
 .info-title {
   color: #262626;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 700;
   line-height: 20px;
@@ -442,7 +434,6 @@ const toggleFaq = (index) => {
 
 .info-detail {
   color: #262626;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 15px;
   font-weight: 600;
   line-height: 18px;
@@ -451,7 +442,6 @@ const toggleFaq = (index) => {
 
 .info-desc {
   color: #AAA;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 13px;
   font-weight: 400;
   line-height: 16px;
@@ -483,7 +473,6 @@ const toggleFaq = (index) => {
 
 .question-text {
   color: inherit;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
@@ -506,7 +495,6 @@ const toggleFaq = (index) => {
 
 .answer-text {
   color: #555;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 22px;

@@ -1,13 +1,13 @@
 <template>
   <div class="tab-navigation">
-    <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="setActiveTab('summary')">
+    <!-- <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="setActiveTab('summary')">
       <span>요약</span>
-    </div>
+    </div> -->
     <div class="tab-item" :class="{ active: activeTab === 'content' }" @click="setActiveTab('content')">
-      <span>업무내용</span>
+      <span>프로젝트 내용</span>
     </div>
-    <div class="tab-item" :class="{ active: activeTab === 'freetalk' }" @click="setActiveTab('freetalk')">
-      <span>프리톡</span>
+    <div class="tab-item" :class="{ active: activeTab === 'comment' }" @click="setActiveTab('comment')">
+      <span>댓글</span>
     </div>
   </div>
 </template>
@@ -18,7 +18,7 @@ export default {
   props: {
     activeTab: {
       type: String,
-      default: 'freetalk'
+      default: 'comment'
     }
   },
   emits: ['tab-change'],
@@ -55,7 +55,6 @@ export default {
 .tab-item span {
   color: #AAA;
   text-align: center;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 17px;
@@ -64,7 +63,6 @@ export default {
 
 .tab-item.active span {
   color: #000;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-weight: 700;
 }
 

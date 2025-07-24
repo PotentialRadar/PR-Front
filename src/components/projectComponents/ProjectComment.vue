@@ -98,7 +98,6 @@ export default {
 
 .section-header h3 {
   color: #262626;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 17px;
   font-weight: 700;
   line-height: 20px;
@@ -108,7 +107,6 @@ export default {
 
 .section-description span {
   color: #AAA;
-  font-family: Inter, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 300;
   line-height: 17px;
@@ -147,7 +145,6 @@ export default {
   resize: none;
   background: #FFF;
   color: #AAA;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: 15px;
@@ -185,7 +182,6 @@ export default {
   background: #FF7D12;
   color: #FFF;
   text-align: center;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: 15px;
@@ -205,7 +201,6 @@ export default {
 
 .form-notice p {
   color: #AAA;
-  font-family: Lato, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 11px;
   font-weight: 400;
   line-height: 14px;

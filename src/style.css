@@ -1,9 +1,9 @@
-@font-face {
-  font-family: 'Freesentation';
-  src: url('/fonts/Freesentation-4Regular.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
+/* src/assets/styles/main.css */
+
+/* Pretendard 폰트 CDN 임포트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+/* 기존 @font-face { font-family: 'Freesentation'; ... } 와 관련된 내용은 제거합니다. */
 
 :root {
   /* Color variables from the design */
@@ -12,12 +12,12 @@
   --color-grey-96: #EDFAFD;
   --item-spacing-130: 130px;
   --www-freemoa-net-mine-shaft: var(--color-grey-15, #262626);
-  --font-family-freesentation: 'Freesentation';
+  /* --font-family-freesentation: 'Freesentation'; -> Pretendard로 변경되므로 제거 또는 주석 처리 */
   --font-weight-300: 300;
   --line-height-60: 60px;
   --stroke-weight-2: 2px;
   --color-black-solid: #000;
-  /* --font-family-Font-1: Lato; */
+  /* --font-family-Font-1: Lato; -> Pretendard가 기본이므로 이 변수의 사용은 줄어들 수 있음 */
   --font-weight-400: 400;
   --line-height-57: 57px;
   --item-spacing-20: 20px;
@@ -74,8 +74,8 @@
   --color-grey-98: #FAFAFA;
   --stroke-weight-1_5: 1.5px;
   --stroke-weight-3: 3px;
-  --font-family-Font-1: Lato;
-  --font-family-Font-2: Inter;
+  /* --font-family-Font-1: Lato; -> Pretendard가 기본이므로 주석 처리 */
+  /* --font-family-Font-2: Inter; -> Pretendard가 기본이므로 주석 처리 */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -92,7 +92,8 @@ body {
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  font-family: 'Freesentation', Lato, -apple-system, Roboto, Helvetica, sans-serif;
+  /* Pretendard 폰트 적용 */
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
   background-color: #fff;
   color: #262626;
 }
@@ -107,10 +108,15 @@ a:hover {
 }
 
 button {
-  font-family: inherit;
+  font-family: inherit; /* body에서 상속받도록 유지 */
   border: none;
   background: none;
   cursor: pointer;
+}
+
+/* input, textarea, select 요소들도 body와 동일한 폰트 스택을 사용하도록 명시적으로 지정 */
+input, textarea, select {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
 }
 
 #app {

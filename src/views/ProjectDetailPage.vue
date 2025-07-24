@@ -11,7 +11,6 @@
       </div>
       
       <div class="tab-content">
-        <ProjectSummary id="summary-section" />
         <ProjectWorkContent id="content-section" />
         <ProjectComment id="comment-section" />
       </div>
@@ -22,7 +21,6 @@
 <script>
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
-import ProjectSummary from '@/components/projectComponents/ProjectSummary.vue'
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue'
 
@@ -31,13 +29,12 @@ export default {
   components: {
     TabNavigation,
     ProjectHeader,
-    ProjectSummary,
     ProjectWorkContent,
     ProjectComment
   },
   data() {
     return {
-      activeTab: 'summary'
+      activeTab: 'content'
     }
   },
   methods: {
@@ -45,9 +42,7 @@ export default {
       this.activeTab = tab; // 현재 활성 탭 상태 업데이트 (시각적 표시용)
       
       let targetId = '';
-      if (tab === 'summary') {
-        targetId = 'summary-section';
-      } else if (tab === 'content') {
+      if (tab === 'content') {
         targetId = 'content-section';
       } else if (tab === 'comment') {
         targetId = 'comment-section';
