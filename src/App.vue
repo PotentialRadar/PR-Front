@@ -5,7 +5,7 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 
 <template>
   <AppHeader />
-   <router-view />
+    <router-view />
   <AppFooter />
 </template>
 
