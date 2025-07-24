@@ -43,11 +43,11 @@
                     
                     <div class="auth-links">
 
-                          <button class="auth-link" @click="handleFindAccount">
+                          <button type="button" class="auth-link" @click="handleFindAccount" aria-label="기존 계정 찾기">
                             <p>기존 계정 찾기</p>
                           </button>
                           <span class="link-divider">|</span>
-                          <button class="auth-link" @click="handleSignUp">
+                          <button type="button" class="auth-link" @click="handleSignUp" aria-label="회원가입">
                             <p>회원가입</p>
                           </button>
 
