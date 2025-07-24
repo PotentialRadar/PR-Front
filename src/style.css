@@ -16,11 +16,25 @@
   /* Color variables from the design */
   --color-white-solid: #FFF;
   --color-white-0: rgba(255, 255, 255, 0.00);
-  --color-grey-96: #EDFAFD;
+  --color-grey-96: #F6F6F6;
   --item-spacing-130: 130px;
   --www-freemoa-net-mine-shaft: var(--color-grey-15, #262626);
   --font-family-freesentation: 'Freesentation';
   --font-weight-300: 300;
+
+  /* ProjectInquiry specific variables */
+  --item-spacing-25: 25px;
+  --item-spacing-30: 30px;
+  --item-spacing-20: 20px;
+  --stroke-weight-1: 1px;
+  --color-grey-85: #D9D9D9;
+  --font-family-Font-1: Lato;
+  --item-spacing-10: 10px;
+  --color-grey-86: #DCDCDC;
+  --item-spacing-9_44: 9.445px;
+  --radius-5: 5px;
+  --color-orange-57: #FE7C25;
+  --stroke-weight-0_63: 0.625px;
 
   /* Project listing specific variables */
   --width-1080: 1080px;
