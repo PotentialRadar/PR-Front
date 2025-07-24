@@ -8,7 +8,20 @@
     <div class="comment-body">
       <p>{{ comment.text }}</p>
     </div>
-  </div>
+
+    <div class="comment-actions">
+      <button 
+        v-if="!comment.isReply" 
+        class="action-button reply-button" 
+        @click="emitReplyEvent(comment.id)"
+      >
+        답글 남기기
+      </button>
+      <button class="action-button edit-button" @click="editComment">수정</button>
+      <button class="action-button delete-button" @click="deleteComment">삭제</button>
+    </div>
+
+    </div>
 </template>
 
 <script>
@@ -19,9 +32,26 @@ export default {
       type: Object,
       required: true
     },
-    isReply: {
+    isReply: { // 이 prop은 대댓글 스타일링에 계속 사용됩니다.
       type: Boolean,
       default: false
+    }
+  },
+  methods: {
+    // 부모 컴포넌트에 답글 이벤트를 발생시킵니다.
+    emitReplyEvent(commentId) {
+      this.$emit('reply-to', commentId);
+    },
+    editComment() {
+      console.log(`댓글 ID ${this.comment.id} 수정`);
+      // 실제 수정 로직 (예: 모달 띄우기, 인라인 수정 폼 전환 등)
+      this.$emit('edit-comment', this.comment.id); // 부모로 이벤트 발생
+    },
+    deleteComment() {
+      if (confirm('이 댓글을 삭제하시겠습니까?')) {
+        console.log(`댓글 ID ${this.comment.id} 삭제`);
+        this.$emit('delete-comment', this.comment.id); // 부모로 이벤트 발생
+      }
     }
   }
 }
@@ -31,77 +61,40 @@ export default {
 .comment-item {
   display: flex;
   flex-direction: column;
-  padding: 15px 0;
+  padding: 15px;
+  border-top: 1px solid #eee;
   border-bottom: 1px solid #eee; /* 각 댓글 아이템 구분선 */
 }
 
-.comment-item:last-child {
-  border-bottom: none; /* 마지막 아이템에는 구분선 없음 */
+.comment-item:first-child {
+  border-top: none;
 }
 
 .comment-item.is-reply {
   margin-left: 30px;
-  padding-left: 20px; /* 원하는 만큼 오른쪽으로 들여쓰기 */
-  /* 필요에 따라 패딩도 조정할 수 있습니다. */
-  /* padding-left: 20px; */
+  padding-left: 20px;
   background-color: #f3f3f3;
 }
 
-.comment-container {
+.comment-header {
   display: flex;
-  align-items: flex-start;
-  gap: 15px;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
 }
 
-.comment-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 100px;
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   object-fit: cover;
 }
 
-.comment-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.comment-header {
-  display: flex; /* 이미 flex로 설정되어 있음 */
-  align-items: center;
-  margin-bottom: 8px;
-  /* 여기에 gap 속성을 추가하여 요소들 사이에 간격을 줍니다. */
-  gap: 10px; /* 원하는 간격 값으로 조정 (예: 10px) */
-}
-
-.comment-username {
+.username {
   color: #262626;
   font-size: 16px;
   font-weight: 600;
   line-height: 17px;
-  padding: 0 10px;
-}
-
-.username { /* 기존에 없는 셀렉터이므로 추가함. 실제 코드에 맞게 수정 필요 */
-  font-weight: bold;
-  /* margin-right: 10px; // gap을 사용하면 이 속성은 필요 없습니다. */
-  color: #262626;
-  font-size: 14px;
-}
-
-.comment-text p {
-  color: #555;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20.8px;
-  margin: 0;
-}
-
-.comment-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .comment-date {
@@ -111,36 +104,40 @@ export default {
   line-height: 15px;
 }
 
-.reply-button {
-  color: #3165B2;
-  font-size: 12px;
+.comment-body p {
+  color: #555;
+  font-size: 13px;
   font-weight: 400;
-  line-height: 15px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
+  line-height: 20.8px;
+  margin: 0;
+  padding: 0 10px;
 }
 
-.reply-button:hover {
+.comment-actions {
+  display: flex;
+  justify-content: flex-end; /* 오른쪽 끝으로 정렬 */
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  color: #3165B2; /* 파란색 계열 */
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 5px 0;
+}
+
+.action-button:hover {
   text-decoration: underline;
 }
 
-.reply-indicator {
-  position: absolute;
-  left: 0;
-  top: 20px;
-  width: 70px;
-  height: 55px;
+.delete-button {
+  color: #D32F2F; /* 삭제 버튼은 경고색 (빨간색) */
 }
 
-.reply-line {
-  width: 28px;
-  height: 28px;
-  border-bottom: 1px solid #707070;
-  border-left: 1px solid #707070;
-  position: absolute;
-  left: 27px;
-  top: 1px;
-}
+/* 이제 CommentItem 내부에 답글 폼이 없으므로 관련 스타일은 모두 제거됩니다. */
+/* .reply-form-container, .reply-textarea, .reply-form-actions 등 */
 </style>
