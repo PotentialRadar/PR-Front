@@ -178,7 +178,7 @@ import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue'
 import { useFormValidation } from '@/composables/useFormValidation.js'
 
 export default {
-  name: 'ProjectInquiryPage',
+  name: 'ProjectCreatePage',
   components: {
     // DateRangeInput, // 제거
     PersonnelCounter,
