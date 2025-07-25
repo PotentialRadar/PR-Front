@@ -9,10 +9,7 @@
         </div>
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
-          <a href="#" class="nav-item">파트너스</a>
           <a href="#" class="nav-item portfolio-search">포트폴리오 검색</a>
-          <a href="#" class="nav-item">이용후기</a>
-          <router-link to="/contact" class="nav-item">문의하기</router-link>
           <div class="nav-dropdown">
             <span class="dropdown-trigger">더보기</span>
             <img src="https://api.builder.io/api/v1/image/assets/TEMP/8730bce826a38c42e3781f01f73b07caeccbd593?width=28" alt="더보기" class="dropdown-icon" />

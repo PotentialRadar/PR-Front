@@ -34,7 +34,7 @@
           <button class="create-project-button" @click="goToCreateProject">
             프로젝트 생성하기
           </button>
-          <SortDropdown />
+          <SortOptions />
         </div>
         
         <div class="projects-section">
@@ -56,7 +56,7 @@
 
 <script>
 import SearchSection from '@/components/projectComponents/SearchSection.vue'
-import SortDropdown from '@/components/projectComponents/SortDropdown.vue'
+import SortOptions from '@/components/projectComponents/SortOptions.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
 
@@ -64,7 +64,7 @@ export default {
   name: 'ProjectListPage',
   components: {
     SearchSection,
-    SortDropdown,
+    SortOptions,
     ProjectCard,
     PaginationComponent
   },
