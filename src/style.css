@@ -129,6 +129,20 @@
   /* --font-family-Font-1: Lato; -> Pretendard가 기본이므로 주석 처리 */
   /* --font-family-Font-2: Inter; -> Pretendard가 기본이므로 주석 처리 */
 
+  /* Portfolio page specific variables */
+  --color-blue-55: #4F59CA;
+  --color-blue-5520: rgba(79, 89, 202, 0.20);
+  --color-grey-22: #38383A;
+  --color-grey-44: #6F6F72;
+  --color-grey-68: #ACACAE;
+  --color-grey-82: #D0D1D4;
+  --color-grey-91: #DCDEF4;
+  --color-grey-92: #E9EAED;
+  --color-azure-57: #2577FE;
+  --color-azure-49: #687794;
+  --color-cyan-34: #0AA592;
+  --font-family-nanum: NanumGothic;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
