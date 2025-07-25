@@ -1,4 +1,4 @@
-<template>
+0<template>
   <section class="partner-section">
     <div class="container">
       <div class="section-header">

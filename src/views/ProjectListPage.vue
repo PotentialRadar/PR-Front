@@ -77,6 +77,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import SearchSection from '@/components/projectComponents/SearchSection.vue'
 import SortOptions from '@/components/projectComponents/SortOptions.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
@@ -92,46 +93,42 @@ export default {
   },
   data() {
     return {
-      projects: [
-        {
-          id: 1,
-          title: 'JAVA Spring, Vue 기반 프로젝트',
-          description: '스터디 하면서 프로젝트 진행할 분들 구합니다',
-          tags: ['JAVA', 'Spring', 'Vue', '웹개발'],
-          status: '모집중',
-          duration: '3개월',
-          teamSize: '3명',
-          applicants: '0명',
-          deadline: 'D-16',
-        },
-        {
-          id: 2,
-          title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
-          description: '',
-          tags: ['Android', '모바일', '어플'],
-          status: '모집중',
-          duration: '3개월',
-          teamSize: '6명',
-          applicants: '2명',
-          deadline: 'D-13',
-        },
-        {
-          id: 3,
-          title: 'Web 프레임워크 및 UI 시스템 고도화',
-          description: '',
-          tags: ['React', 'TypeScript', 'vite', 'StoryBook', 'CSS-in-JS'],
-          status: '모집중',
-          duration: '6개월',
-          teamSize: '3명',
-          applicants: '0명',
-          deadline: 'D-16',
-        }
-      ]
+      projects: []   // 백에서 받아올거라 빈 배열로 초기화
     }
   },
+  created() {
+    this.fetchProjects();
+  },
   methods: {
+    // 프로젝트 리스트 API 호출
+    async fetchProjects() {
+      try {
+        const response = await axios.get('http://localhost:8080/api/projects'); // 실제 API 주소로 수정!
+        // API 응답을 projects에 저장
+        this.projects = response.data.map(project => ({
+          id: project.projectId,
+          title: project.title,
+          description: project.description,
+          tags: project.techStacks,   // (tags 대신 techStacks 필드 사용)
+          status: project.status === 'RECRUITING' ? '모집중' : project.status,
+          teamSize: project.recruitCount + '명',     // 인원 표시
+          applicants: project.appliedCount + '명',   // 지원자 수
+          deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '', // 디데이 계산
+        }))
+      } catch (error) {
+        alert('프로젝트 목록을 불러오는데 실패했습니다.');
+        console.error(error);
+      }
+    },
+    calcDeadline(recruitDeadline) {
+      // D-day 계산 (오늘 기준 마감일까지 며칠 남았는지)
+      const today = new Date();
+      const deadline = new Date(recruitDeadline);
+      const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+      return diff > 0 ? `D-${diff}` : '마감';
+    },
     goToCreateProject() {
-      this.$router.push({ name: 'CreateProject' }); 
+      this.$router.push({ name: 'ProjectCreate' }); // 라우터 이름 정확히 맞춰서!
     }
   }
 }
