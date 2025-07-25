@@ -180,7 +180,7 @@ const copyLink = async () => {
   position: absolute;
   left: 0;
   top: 0;
-  background: linear-gradient(135deg, #fa7f2d 0%, #ff9b4f 100%);
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
   border-radius: 0;
 }
 
@@ -191,7 +191,7 @@ const copyLink = async () => {
   position: absolute;
   left: 0;
   top: 0;
-  background: linear-gradient(135deg, #f57927 0%, #fe9e54 100%);
+  background: linear-gradient(135deg, #66BB6A 0%, #388E3C 100%);
 }
 
 .job-category-label {
@@ -313,7 +313,7 @@ const copyLink = async () => {
 
 .chat-button {
   background: #FFF;
-  color: #f5b387;
+  color: #4CAF50;
   border: 2px solid #FFF;
   padding: 10px 16px;
   border-radius: 8px;
@@ -328,7 +328,7 @@ const copyLink = async () => {
 }
 
 .chat-button:hover {
-  background: #f5b387;
+  background: #4CAF50;
   color: #FFF;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
@@ -362,7 +362,7 @@ const copyLink = async () => {
 
 .like-button.liked {
   background: #FFF;
-  color: #f5b387;
+  color: #4CAF50;
   border-color: #FFF;
   animation: likeAnimation 0.3s ease;
 }
@@ -407,7 +407,7 @@ const copyLink = async () => {
 
 .share-button:active {
   background: #FFF;
-  color: #f5b387;
+  color: #4CAF50;
   border-color: #FFF;
   transform: scale(0.95);
 }

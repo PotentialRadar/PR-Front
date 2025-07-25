@@ -62,7 +62,7 @@ const reviewItems = ref([
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  border-top: 4px solid #f5b387;
+  border-top: 4px solid #4CAF50;
   position: relative;
   width: 100%;
 }
@@ -120,21 +120,21 @@ const reviewItems = ref([
   flex-shrink: 0;
   height: auto;
   border-radius: 12px;
-  border: 2px solid rgba(245, 179, 135, 0.2);
+  border: 2px solid rgba(76, 175, 80, 0.2);
   background: #FFF;
   position: relative;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.1);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
   transition: all 0.3s ease;
 }
 
 .review-item:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(245, 179, 135, 0.2);
-  border-color: rgba(245, 179, 135, 0.4);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.4);
 }
 
 .review-icon {
@@ -145,7 +145,7 @@ const reviewItems = ref([
   justify-content: center;
   align-items: center;
   border-radius: 50%;
-  background: rgba(245, 179, 135, 0.1);
+  background: rgba(76, 175, 80, 0.1);
   padding: 8px;
   box-sizing: border-box;
 }
@@ -198,7 +198,7 @@ const reviewItems = ref([
   font-weight: 400;
   line-height: 16px;
   padding: 4px 8px;
-  background: rgba(245, 179, 135, 0.1);
+  background: rgba(76, 175, 80, 0.1);
   border-radius: 8px;
 }
 
