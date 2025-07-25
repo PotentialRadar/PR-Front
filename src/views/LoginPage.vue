@@ -3,93 +3,85 @@
     <div class="login-section">
       <div class="section-container">
         <div class="main-container">
+        
+          <div class="heading-primary">
+            <h1 class="main-title">
+              쉽게 가입하고간편하게 로그인하세요.
+            </h1>
+            <h2 class="sub-title">
+              일하는 사람들의 모든 가능성
+            </h2>
+            
+            <form>
+              <div class="button-container">
+                <button class="kakao-button" @click="handleKakaoLogin">
+                  <!-- [API 연결 지점] 카카오 로그인 연동 -->
+                  <span class="icon-wrap">
+                    <svg class="kakao-icon" width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M9.00035 3.03467C5.28277 3.03467 2.26562 5.37834 2.26562 8.26079C2.26562 10.0589 3.43073 11.6281 5.20868 12.5844L4.46114 15.3255C4.44704 15.38 4.44993 15.4375 4.46946 15.4903C4.48898 15.5432 4.52419 15.5888 4.57035 15.621C4.61653 15.6533 4.67145 15.6707 4.72777 15.6707C4.78408 15.6709 4.83909 15.6539 4.88542 15.6218L8.15848 13.4465C8.43461 13.4465 8.71749 13.4937 9.00035 13.4937C12.7179 13.4937 15.735 11.15 15.735 8.26079C15.735 5.37161 12.7179 3.03467 9.00035 3.03467Z" fill="#181600"/>
+                    </svg>
+                  </span>
+                  <p class="button-text">카카오 계정으로 계속하기</p>
+                </button>
+                
+                <button class="google-button" @click="handleGoogleLogin">
+                  <!-- [API 연결 지점] 구글 로그인 연동 -->
+                  <span class="icon-wrap">
+                    <svg class="google-icon" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M13.98 7.50624C13.98 7.02774 13.9373 6.56723 13.857 6.12549H7.5V8.73623H11.133C10.9763 9.58002 10.5007 10.2955 9.78603 10.774V12.4675H11.967C13.2435 11.2922 13.98 9.562 13.98 7.50624Z" fill="#3D82F0"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7.50002 14.1027C9.32256 14.1027 10.8503 13.4983 11.967 12.4678L9.78605 10.7735C9.18153 11.1785 8.40827 11.4178 7.50002 11.4178C5.74203 11.4178 4.25403 10.2305 3.72302 8.63525H1.46777V10.3842C2.57852 12.59 4.86152 14.1027 7.50002 14.1027Z" fill="#31A752"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M3.723 8.63529C3.588 8.23029 3.5115 7.79754 3.5115 7.3528C3.5115 6.90804 3.588 6.47529 3.723 6.07029V4.32129H1.46775C1.011 5.23254 0.75 6.26379 0.75 7.3528C0.75 8.4418 1.011 9.47308 1.46775 10.3843L3.723 8.63529Z" fill="#F9BA00"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7.50002 3.28754C8.49078 3.28754 9.38101 3.62804 10.08 4.29704L12.0165 2.36128C10.8472 1.27154 9.3195 0.602539 7.50002 0.602539C4.86152 0.602539 2.57852 2.11529 1.46777 4.32179L3.72302 6.07004C4.25403 4.47479 5.74203 3.28754 7.50002 3.28754Z" fill="#E64234"/>
+                    </svg>
+                  </span>
+                  <p class="button-text">구글 계정으로 계속하기</p>
+                </button>
+                
+                <button class="email-button" @click="handleEmailLogin">
+                  <!-- [API 연결 지점] 이메일 로그인 연동 (추후 구현) -->
+                  <span class="email-button-text">이메일로 계속하기</span>
+                </button>
+              </div>
+                
+              <div class="auth-links">
+                    <!-- 비밀번호 재설정 -->
+                    <button class="auth-link" @click="handleFindAccount">
+                      <p>비밀번호 재설정</p>
+                    </button>
+                    <span class="link-divider">|</span>
+                    <router-link to="/signUp" class="auth-link">회원가입</router-link>
+              </div>
 
-              <div class="heading-primary">
-                <h1 class="main-title">
-                  쉽게 가입하고간편하게 로그인하세요.
-                </h1>
-                <h2 class="sub-title">
-                  일하는 사람들의 모든 가능성
-                </h2>
-              
-                <form>
-
-                    <div class="button-container">
-                      <button type="button" class="kakao-button" @click="handleKakaoLogin">
-                        <span class="icon-wrap">
-                          <svg class="kakao-icon" width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.00035 3.03467C5.28277 3.03467 2.26562 5.37834 2.26562 8.26079C2.26562 10.0589 3.43073 11.6281 5.20868 12.5844L4.46114 15.3255C4.44704 15.38 4.44993 15.4375 4.46946 15.4903C4.48898 15.5432 4.52419 15.5888 4.57035 15.621C4.61653 15.6533 4.67145 15.6707 4.72777 15.6707C4.78408 15.6709 4.83909 15.6539 4.88542 15.6218L8.15848 13.4465C8.43461 13.4465 8.71749 13.4937 9.00035 13.4937C12.7179 13.4937 15.735 11.15 15.735 8.26079C15.735 5.37161 12.7179 3.03467 9.00035 3.03467Z" fill="#181600"/>
-                          </svg>
-                        </span>
-                        <p class="button-text">카카오 계정으로 계속하기</p>
-                      </button>
-                      
-                      <button type="button" class="google-button" @click="handleGoogleLogin">
-                        <span class="icon-wrap">
-                          <svg class="google-icon" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M13.98 7.50624C13.98 7.02774 13.9373 6.56723 13.857 6.12549H7.5V8.73623H11.133C10.9763 9.58002 10.5007 10.2955 9.78603 10.774V12.4675H11.967C13.2435 11.2922 13.98 9.562 13.98 7.50624Z" fill="#3D82F0"/>
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M7.50002 14.1027C9.32256 14.1027 10.8503 13.4983 11.967 12.4678L9.78605 10.7735C9.18153 11.1785 8.40827 11.4178 7.50002 11.4178C5.74203 11.4178 4.25403 10.2305 3.72302 8.63525H1.46777V10.3842C2.57852 12.59 4.86152 14.1027 7.50002 14.1027Z" fill="#31A752"/>
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.723 8.63529C3.588 8.23029 3.5115 7.79754 3.5115 7.3528C3.5115 6.90804 3.588 6.47529 3.723 6.07029V4.32129H1.46775C1.011 5.23254 0.75 6.26379 0.75 7.3528C0.75 8.4418 1.011 9.47308 1.46775 10.3843L3.723 8.63529Z" fill="#F9BA00"/>
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M7.50002 3.28754C8.49078 3.28754 9.38101 3.62804 10.08 4.29704L12.0165 2.36128C10.8472 1.27154 9.3195 0.602539 7.50002 0.602539C4.86152 0.602539 2.57852 2.11529 1.46777 4.32179L3.72302 6.07004C4.25403 4.47479 5.74203 3.28754 7.50002 3.28754Z" fill="#E64234"/>
-                          </svg>
-                        </span>
-                        <p class="button-text">구글 계정으로 계속하기</p>
-                      </button>
-                      
-                      <button type="button" class="email-button" @click="handleEmailLogin">
-                        <span class="email-button-text">이메일로 계속하기</span>
-                      </button>
-                    </div>
-                    
-                    <div class="auth-links">
-
-                          <button type="button" class="auth-link" @click="handleFindAccount" aria-label="기존 계정 찾기">
-                            <p>기존 계정 찾기</p>
-                          </button>
-                          <span class="link-divider">|</span>
-                          <button type="button" class="auth-link" @click="handleSignUp" aria-label="회원가입">
-                            <p>회원가입</p>
-                          </button>
-
-                    </div>
-
-
-                </form>
-              
-              </div> <!-- 내용전체 컨테이너 -->
-
+            </form>
+          </div> <!-- 내용전체 컨테이너 -->
+          
         </div>
       </div>
     </div>
   </section>
-
 </template>
 
 <script setup>
+// [API 연결 함수] 카카오 로그인 처리
 const handleKakaoLogin = () => {
   console.log('Kakao login clicked')
-  // Implement Kakao login logic here
 }
 
+// [API 연결 함수] 구글 로그인 처리
 const handleGoogleLogin = () => {
   console.log('Google login clicked')
-  // Implement Google login logic here
 }
 
+// [API 연결 함수] 이메일 로그인 처리
 const handleEmailLogin = () => {
   console.log('Email login clicked')
-  // Implement email login logic here
 }
 
+// 비밀번호 재설정
 const handleFindAccount = () => {
   console.log('Find account clicked')
-  // Implement find account logic here
 }
 
-const handleSignUp = () => {
-  console.log('Sign up clicked')
-  // Implement sign up logic here
-}
 </script>
 
 <style scoped>
@@ -99,7 +91,7 @@ const handleSignUp = () => {
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 90vh;
+  height: 80vh;
   margin: auto 0;
 
   flex-shrink: 0;
@@ -157,13 +149,10 @@ form {
   gap: 16px;
 }
 
-
 .kakao-button{
-  position: relative;
   width: 100%;
   display: flex;
-  gap: 8px;
-
+  gap: 12px;
   justify-content: center;
   align-items: center;
   height: 48px;
@@ -181,17 +170,15 @@ form {
 }
 
 .icon-wrap {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .google-button {
-  position: relative;
   width: 100%;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   justify-content: center;
   align-items: center;
   height: 48px;
@@ -239,27 +226,29 @@ form {
 
 .button-text,
 .email-button-text {
-  display: block;
-  width: 100%;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 16px;
-  font-family: 'Inter', sans-serif;
   font-weight: 600;
+  gap: 8px;
 }
 
 .auth-links {
   display: flex;
   justify-content: center;
-  align-items: center;
-  align-self: stretch;
+  padding-right: 20px;
 }
 
 .auth-link {
+  color: rgba(55, 56, 60, 0.61);
+  text-align: center;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  margin-top: 48px;
+  margin-top: 30px;
+  cursor: pointer;
 }
 
 .auth-link:hover {
@@ -277,9 +266,8 @@ form {
   align-items: center;
   justify-content: center;
   color: rgba(55, 56, 60, 0.61);
-  gap: 20px;
-  margin-top: 48px;
-  padding: 0 20px 0 20px;
+  margin-top: 30px;
+  padding: 0 25px 0 20px;
 }
 
 /* Responsive design */

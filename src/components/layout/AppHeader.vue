@@ -17,9 +17,9 @@
         </nav>
       </div>
       <div class="header-right">
-        <router-link to="/login" class="auth-link">로그인</router-link>
-        <span class="separator">|</span>
-        <a href="#" class="auth-link">회원가입</a>
+        <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
+          <!-- <span class="separator">|</span>
+        <router-link to="/signUp" class="auth-link">회원가입</router-link> -->
       </div>
     </div>
   </header>
@@ -31,7 +31,7 @@
 <style scoped>
 .app-header {
   width: 100%;
-  height: 68px;
+  height: 65px;
   display: flex;
   justify-content: center;
   align-items: center;
