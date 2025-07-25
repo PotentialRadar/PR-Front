@@ -258,7 +258,7 @@ export default {
   justify-content: center;
   align-items: center;
   border-radius: 3px;
-  background: #FF7D12;
+  background: #4CAF50;
   color: #FFF;
   text-align: center;
   font-size: 12px;
@@ -269,7 +269,7 @@ export default {
 }
 
 .submit-button:hover {
-  background: #e66a00;
+  background: #3b883d;
 }
 
 .form-notice {

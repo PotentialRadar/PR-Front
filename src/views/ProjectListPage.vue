@@ -181,7 +181,7 @@ export default {
 .title-underline {
   width: 80px;
   height: 4px;
-  background: linear-gradient(90deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
   border-radius: 2px;
   position: relative;
   animation: expandLine 1s ease-out;
@@ -195,7 +195,7 @@ export default {
   transform: translate(-50%, -50%);
   width: 12px;
   height: 12px;
-  background: #f5b387;
+  background: #4CAF50;
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -217,9 +217,9 @@ export default {
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(245, 179, 135, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(245, 179, 135, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 179, 135, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
 }
 
 @keyframes fadeInUp {
@@ -255,7 +255,7 @@ export default {
 
 .category-item:hover {
   transform: translateY(-5px);
-  background: rgba(245, 179, 135, 0.05);
+  background: rgba(76, 175, 80, 0.05);
 }
 
 .category-icon-wrapper {
@@ -265,15 +265,15 @@ export default {
   align-items: center;
   justify-content: center;
   border-radius: 16px;
-  background: rgba(245, 179, 135, 0.1);
+  background: rgba(76, 175, 80, 0.1);
   margin-bottom: 12px;
   transition: all 0.3s ease;
 }
 
 .category-item:hover .category-icon-wrapper {
-  background: rgba(245, 179, 135, 0.2);
+  background: rgba(76, 175, 80, 0.2);
   transform: scale(1.1);
-  box-shadow: 0 8px 20px rgba(245, 179, 135, 0.3);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
 }
 
 .category-icon {
@@ -290,13 +290,13 @@ export default {
 }
 
 .category-item:hover .category-title {
-  color: #f5b387;
+  color: #4CAF50;
 }
 
 .divider {
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent 0%, rgba(245, 179, 135, 0.3) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.3) 50%, transparent 100%);
   margin: 30px 0;
 }
 
@@ -331,7 +331,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #ef8138 0%, #f0a872 100%);
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
   color: #FFF;
   border: none;
   border-radius: 8px;
@@ -340,7 +340,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.3);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -362,7 +362,7 @@ export default {
 
 .create-project-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 179, 135, 0.4);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .create-project-button:active {

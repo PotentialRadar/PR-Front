@@ -10,8 +10,8 @@
         />
         <button class="search-button" @click="handleSearch">
           <svg width="21" height="22" viewBox="0 0 21 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8.79738 15.8852C12.662 15.8852 15.795 12.7522 15.795 8.88759C15.795 5.02294 12.662 1.89001 8.79738 1.89001C4.93273 1.89001 1.7998 5.02294 1.7998 8.88759C1.7998 12.7522 4.93273 15.8852 8.79738 15.8852Z" stroke="#555" stroke-width="2"/>
-            <path d="M14.2949 14.3854L20.2938 20.3842" stroke="#555" stroke-width="2"/>
+            <path d="M8.79738 15.8852C12.662 15.8852 15.795 12.7522 15.795 8.88759C15.795 5.02294 12.662 1.89001 8.79738 1.89001C4.93273 1.89001 1.7998 5.02294 1.7998 8.88759C1.7998 12.7522 4.93273 15.8852 8.79738 15.8852Z" stroke="#4CAF50" stroke-width="2"/>
+            <path d="M14.2949 14.3854L20.2938 20.3842" stroke="#4CAF50" stroke-width="2"/>
           </svg>
         </button>
       </div>
@@ -42,6 +42,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 .search-container {
@@ -53,9 +54,9 @@ export default {
   justify-content: center;
   align-items: center;
   border-radius: 50px; 
-  background-color: #f8edd7; 
-  border: 1px solid #f7cda3; 
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1); 
+  background-color: #E8F5E8; 
+  border: 1px solid #C8E6C9; 
+  box-shadow: 0 2px 4px 0 rgba(76, 175, 80, 0.1); 
   
   position: relative; 
   padding: 0; 
@@ -65,10 +66,9 @@ export default {
 
 .search-container:focus-within {
   background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-color: #dedede;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
 }
-
 
 .search-box {
   width: 100%;
@@ -87,7 +87,7 @@ export default {
   outline: none;
   background: transparent;
   color: #262626;
-  font-family: 'Freesentation', -apple-system, Roboto, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: normal;
@@ -95,22 +95,70 @@ export default {
 }
 
 .search-input::placeholder {
-  color: #888;
+  color: #81C784;
+  font-weight: 400;
 }
 
 .search-button {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0; 
+  padding: 8px; 
   display: flex; 
   align-items: center;
   justify-content: center;
-  width: 30px; 
-  height: 30px; 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.search-button:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+  transform: scale(1.05);
+}
+
+.search-button:active {
+  transform: scale(0.95);
 }
 
 .search-button svg path {
-  stroke: #555;
+  stroke: #4CAF50;
+  transition: stroke 0.2s ease;
+}
+
+.search-button:hover svg path {
+  stroke: #2E7D32;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .search-container {
+    width: 80vw;
+    min-width: 300px;
+    max-width: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
+    width: 90vw;
+    min-width: 280px;
+    height: 45px;
+  }
+
+  .search-input {
+    font-size: 14px;
+  }
+
+  .search-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .search-button svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 </style>

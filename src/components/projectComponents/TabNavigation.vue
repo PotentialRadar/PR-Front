@@ -49,7 +49,7 @@ export default {
 }
 
 .tab-item.active {
-  border-bottom: 3px solid #FF7D12;
+  border-bottom: 3px solid #4CAF50;
 }
 
 .tab-item span {

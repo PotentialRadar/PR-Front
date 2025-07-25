@@ -139,7 +139,7 @@ export default {
 }
 
 .page-button.active {
-  background: #f3ad21;
+  background: #307e0e;
   color: #FFF;
 }
 
