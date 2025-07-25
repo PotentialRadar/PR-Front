@@ -6,6 +6,7 @@ import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
+import PortfolioUpdatePage from '@/views/PortfolioUpdatePage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
 import DashboardMessages from '@/views/DashboardMessages.vue';
@@ -45,6 +46,12 @@ const routes = [
     path: '/portfolio/:userId?',
     name: 'Portfolio',
     component: PortfolioPage,
+    props: true,
+  },
+  {
+    path: '/edit-portfolio',
+    name: 'PortfolioUpdate',
+    component: PortfolioUpdatePage,
     props: true,
   },
   // Dashboard Routes
