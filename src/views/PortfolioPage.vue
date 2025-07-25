@@ -80,11 +80,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import PortfolioHeader from '@/components/portfolio/PortfolioHeader.vue'
-import CareerTimeline from '@/components/portfolio/CareerTimeline.vue'
-import SkillsSection from '@/components/portfolio/SkillsSection.vue'
-import ProjectsSection from '@/components/portfolio/ProjectsSection.vue'
-import ReviewSection from '@/components/portfolio/ReviewSection.vue'
+import PortfolioHeader from '@/components/portfolioComponents/PortfolioHeader.vue'
+import CareerTimeline from '@/components/portfolioComponents/CareerTimeline.vue'
+import SkillsSection from '@/components/portfolioComponents/SkillsSection.vue'
+import ProjectsSection from '@/components/portfolioComponents/ProjectsSection.vue'
+import ReviewSection from '@/components/portfolioComponents/ReviewSection.vue'
 
 const route = useRoute()
 
