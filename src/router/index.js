@@ -2,10 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '@/views/HomePage.vue';
 import LoginPage from '@/views/LoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
-import ContactPage from '@/views/ContactPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
+import PortfolioPage from '@/views/PortfolioPage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
 import DashboardMessages from '@/views/DashboardMessages.vue';
@@ -40,6 +40,12 @@ const routes = [
     path: '/new-project',
     name: 'ProjectCreate',
     component: ProjectCreatePage,
+  },
+  {
+    path: '/portfolio/:userId?',
+    name: 'Portfolio',
+    component: PortfolioPage,
+    props: true,
   },
   // Dashboard Routes
   {
