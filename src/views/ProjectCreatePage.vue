@@ -17,18 +17,27 @@
       </div>
     </div>
 
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <h1 class="page-title">새로운 프로젝트</h1>
+          <div class="title-underline"></div>
+        </div>
+        <p class="page-subtitle">프로젝트 정보를 입력하여 맞춤형 개발자를 찾아보세요</p>
+      </div>
+    </div>
+
     <div class="form-container">
       <div class="form-content">
         <div class="form-section">
-          <div class="section-header">
-            <div class="section-title">새로운 프로젝트</div>
-          </div>
+          <div class="section-title">프로젝트 기본 정보</div>
           <div class="input-group">
             <input
               type="text"
               v-model="formData.projectTitle"
               :class="['project-title-input', { 'error': getError('projectTitle').value }]"
-              placeholder="ex) 서비스 출시하기 까지, 신규 APP 개발 등"
+              placeholder="프로젝트의 제목을 입력해주세요."
               @blur="validateField('projectTitle', formData.projectTitle, validationSchema.projectTitle)"
             />
             <div v-if="getError('projectTitle').value" class="error-message">
@@ -40,7 +49,7 @@
               type="text"
               v-model="formData.projectSubtitle"
               :class="['project-subtitle-input', { 'error': getError('projectSubtitle').value }]"
-              placeholder="프로젝트의 간략한 소제목을 입력해주세요."
+              placeholder="프로젝트의 간략한 소개말을 입력해주세요."
               @blur="validateField('projectSubtitle', formData.projectSubtitle, validationSchema.projectSubtitle)"
             />
             <div v-if="getError('projectSubtitle').value" class="error-message">
@@ -58,7 +67,7 @@
                 v-model.number="formData.projectDurationValue"
                 :class="['duration-value-input', { 'error': getError('projectDurationValue').value }]"
                 min="0"
-                placeholder="숫자"
+                placeholder="기간"
                 @blur="validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)"
               />
               <select
@@ -93,8 +102,8 @@
           </div>
         </div>
         <div class="form-section">
-           <div class="section-title">기술 스택</div>
-
+          <div class="section-title">기술 스택</div>
+          <p class="upload-note">입력된 기술 스택은 프로젝트 추천 서비스에 이용됩니다.</p>
           <TechStackSelector
             v-model="formData.techStack"
             :error="getError('techStack').value"
@@ -113,7 +122,7 @@
               <textarea
                 v-model="formData.projectDescription"
                 :class="['project-description-textarea', { 'error': getError('projectDescription').value }]"
-                placeholder="지금 서비스의 MVP 매뉴 개발하려 하니다.&#10;직업 이식의 개발팀을 전화한니다.&#10;상세 기술사량 업최년의 마로 문양 전축하고 싶습니다."
+                placeholder="프로젝트에 대한 정보를 입력해주세요."
                 rows="6"
                 @blur="validateField('projectDescription', formData.projectDescription, validationSchema.projectDescription)"
               ></textarea>
@@ -126,9 +135,7 @@
 
         <div class="form-section">
           <div class="upload-section">
-            <p class="upload-label">참고 파일</p>
-            <p class="upload-note">* 향후의 파일은 전면 상담 메시지용 직접 첨부할 수 있으며, 프로젝트 공급 결과 파일 섭니다.</p>
-
+            <div class="section-title">참고 파일</div>
             <FileUploadArea
               v-model="formData.files"
               :error="getError('files').value"
@@ -165,8 +172,6 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
-// DateRangeInput 컴포넌트는 더 이상 사용되지 않으므로 주석 처리하거나 삭제합니다.
-// import DateRangeInput from '@/components/projectComponents/DateRangeInput.vue'
 import PersonnelCounter from '@/components/projectComponents/PersonnelCounter.vue'
 import TechStackSelector from '@/components/projectComponents/TechStackSelector.vue'
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue'
@@ -196,29 +201,23 @@ export default {
     const showSuccess = ref(false)
 
     const formData = reactive({
-      projectTitle: '', // 프로젝트 제목 추가
-      projectSubtitle: '', // 소제목 추가
-      projectDurationValue: null, // 진행 기간 숫자 값
-      projectDurationUnit: '',    // 진행 기간 단위
-      // dateRange: { // 프로젝트 일정 제거에 따라 dateRange 속성도 제거
-      //   startDate: '',
-      //   endDate: ''
-      // },
-      personnel: 6,
+      projectTitle: '', 
+      projectSubtitle: '', 
+      projectDurationValue: null, 
+      projectDurationUnit: '',    
+      personnel: 1, 
       techStack: [],
       projectDescription: '',
       files: []
     })
 
-    // Validation schema
     const validationSchema = {
-      projectTitle: [ // 프로젝트 제목 유효성 검사 추가
+      projectTitle: [ 
         'required',
         { minLength: 5, message: '프로젝트 제목은 최소 5자 이상이어야 합니다.' },
         { maxLength: 100, message: '프로젝트 제목은 최대 100자까지 가능합니다.' }
       ],
-      projectSubtitle: [ // 소제목 유효성 검사 추가 (선택 사항이라면 'required' 제거)
-        // 'required', // 소제목이 필수라면 이 주석을 해제하세요.
+      projectSubtitle: [ 
         { maxLength: 200, message: '소제목은 최대 200자까지 가능합니다.' }
       ],
       projectDurationValue: [ // 진행 기간 숫자 값 유효성 검사 추가
@@ -228,21 +227,13 @@ export default {
           return true
         }
       ],
-      projectDurationUnit: [ // 진행 기간 단위 유효성 검사 추가
+      projectDurationUnit: [
         'required',
         (value) => {
           if (!value) return '진행 기간 단위를 선택해주세요.'
           return true
         }
       ],
-      // dateRange: [ // 프로젝트 일정 제거에 따라 dateRange 유효성 검사도 제거
-      //   'required',
-      //   (value) => {
-      //     if (!value.startDate || !value.endDate) return '시작일과 종료일을 모두 입력해주세요.'
-      //     if (new Date(value.endDate) <= new Date(value.startDate)) return '종료일은 시작일보다 늦어야 합니다.'
-      //     return true
-      //   }
-      // ],
       personnel: [
         'required',
         'personnel'
@@ -258,14 +249,12 @@ export default {
       files: [
         (files) => {
           if (!files || files.length === 0) return true
-          // File size validation (5MB max per file)
           const maxSize = 5 * 1024 * 1024
           for (const file of files) {
             if (file.size > maxSize) {
               return `파일 크기는 5MB 이하여야 합니다: ${file.name}`
             }
           }
-          // File type validation
           const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
           for (const file of files) {
             const extension = '.' + file.name.split('.').pop().toLowerCase()
@@ -279,7 +268,6 @@ export default {
     }
 
     const submitForm = async () => {
-      // 진행 기간 유효성 검사를 위해 추가합니다.
       validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue);
       validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit);
 
@@ -291,10 +279,8 @@ export default {
       isSubmitting.value = true
 
       try {
-        // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 2000))
 
-        // Success
         showSuccess.value = true
         clearErrors()
 
@@ -309,14 +295,12 @@ export default {
     }
 
     const resetForm = () => {
-      // Reset form data
       Object.assign(formData, {
         projectTitle: '',
         projectSubtitle: '',
         projectDurationValue: null,
         projectDurationUnit: '',
-        // dateRange: { startDate: '', endDate: '' }, // 프로젝트 일정 제거에 따라 제거
-        personnel: 6,
+        personnel: 1,
         techStack: [],
         projectDescription: '',
         files: []
@@ -326,13 +310,11 @@ export default {
       showSuccess.value = false
     }
 
-    // Auto-validate on data changes after submit attempt
     const watchedFields = computed(() => [
       formData.projectTitle,
       formData.projectSubtitle,
       formData.projectDurationValue,
       formData.projectDurationUnit,
-      // formData.dateRange, // 프로젝트 일정 제거에 따라 제거
       formData.personnel,
       formData.techStack,
       formData.projectDescription,
@@ -362,12 +344,102 @@ export default {
   display: flex;
   width: 100%;
   min-height: 100vh;
-  padding: 168px 20px 100px 20px;
+  padding: 100px 20px 100px 20px;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
   position: relative;
   background: var(--color-white-solid, #FFF);
+}
+
+/* 페이지 헤더 */
+.page-header {
+  width: 100%;
+  max-width: 1110px;
+  margin-bottom: 60px;
+  text-align: center;
+  position: relative;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  padding: 50px 20px 40px 20px;
+}
+
+.title-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--color-grey-15, #262626);
+  margin: 0;
+  letter-spacing: -1px;
+  position: relative;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title-underline {
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--www-freemoa-net-pumpkin, #FF7D12) 0%, var(--color-orange-57, #FE7C25) 100%);
+  border-radius: 2px;
+  position: relative;
+  animation: expandLine 1s ease-out;
+}
+
+.title-underline::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.page-subtitle {
+  font-size: 18px;
+  color: var(--color-grey-50, #808080);
+  margin: 0;
+  font-weight: 400;
+  max-width: 600px;
+  line-height: 1.6;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 0.3s forwards;
+}
+
+@keyframes expandLine {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 80px;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 125, 18, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 125, 18, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 125, 18, 0);
+  }
 }
 
 .form-container {
@@ -399,20 +471,26 @@ export default {
   gap: 20px;
   align-self: stretch;
   position: relative;
-  margin-bottom: 30px;
+  margin-bottom: 80px;
   animation: fadeInUp 0.6s ease-out;
 }
 
+.section-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+
 .duration-personnel-group {
-  display: flex; /* 자식 요소들을 가로로 배열 */
-  gap: 20px; /* 자식 요소들 사이의 간격 */
-  align-self: stretch; /* 부모 너비에 맞춤 */
-  margin-bottom: 30px; /* 다른 섹션과 동일한 하단 여백 */
+  display: flex; 
+  gap: 20px; 
+  align-self: stretch; 
+  margin-bottom: 30px; 
 }
 
 .duration-personnel-group .form-section {
-  flex: 1; /* 각 섹션이 사용 가능한 공간을 균등하게 분할 */
-  margin-bottom: 0; /* 부모에 마진을 주었으므로 자식에서는 제거 */
+  flex: 1;
+  margin-bottom: 80px; 
+
 }
 
 /* 진행인원 섹션 오른쪽 정렬 */
@@ -464,7 +542,6 @@ export default {
   border: 2px solid var(--color-grey-85, #D9D9D9);
   background: var(--color-white-solid, #FFF);
   position: relative;
-  font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 15px;
   color: var(--color-grey-15, #262626);
   transition: all 0.3s ease;
@@ -562,18 +639,8 @@ export default {
   position: relative;
 }
 
-.upload-label {
-  color: var(--color-grey-15, #262626);
-  font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.4;
-  margin: 0;
-}
-
 .upload-note {
   color: var(--color-orange-57, #FE7C25);
-  font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.4;
@@ -739,6 +806,37 @@ export default {
 
 .success-button:hover {
   background: var(--www-freemoa-net-dark-pumpkin, #E66C00);
+}
+
+/* 반응형 헤더 */
+@media (max-width: 768px) {
+  .page-header {
+    margin-bottom: 40px;
+  }
+  
+  .header-content {
+    padding: 40px 15px 30px 15px;
+    gap: 16px;
+  }
+  
+  .page-title {
+    font-size: 32px;
+    letter-spacing: -0.5px;
+  }
+  
+  .title-underline {
+    width: 60px;
+    height: 3px;
+  }
+  
+  .title-underline::after {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .page-subtitle {
+    font-size: 16px;
+  }
 }
 
 @keyframes spin {

@@ -143,7 +143,7 @@ export default {
 
     const filteredTechnologies = computed(() => {
       if (!searchQuery.value.trim()) {
-        return availableTechnologies.value.slice(0, 10) // 기본적으로 10개만 표시
+        return [] // 검색어가 없으면 아무것도 표시하지 않음
       }
       
       return availableTechnologies.value.filter(tech =>
