@@ -3,7 +3,7 @@
     <div class="login-section">
       <div class="section-container">
         <div class="main-container">
-
+        
           <div class="heading-primary">
             <h1 class="main-title">
               쉽게 가입하고간편하게 로그인하세요.
@@ -54,6 +54,7 @@
 
             </form>
           </div> <!-- 내용전체 컨테이너 -->
+          
         </div>
       </div>
     </div>

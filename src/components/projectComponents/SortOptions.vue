@@ -1,5 +1,5 @@
 <template>
-  <div class="sort-dropdown">
+  <div class="sort-options">
     <div 
       class="sort-option" 
       :class="{ selected: selectedSort === 'latest' }" 
@@ -26,7 +26,7 @@
 
 <script>
 export default {
-  name: 'SortDropdown',
+  name: 'SortOptions',
   data() {
     return {
       selectedSort: 'recommended' 
@@ -47,7 +47,7 @@ export default {
 </script>
 
 <style scoped>
-.sort-dropdown {
+.sort-options {
   display: flex;
   border-radius: 20px;
   background: #F0F0F0;

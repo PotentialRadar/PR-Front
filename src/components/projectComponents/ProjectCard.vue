@@ -12,10 +12,9 @@
         </div>
       </div>
       <div class="header-right">
-        <button class="favorite-button">
-          <svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9.99781 18.0011C9.71284 18.001 9.43786 17.8964 9.22486 17.7071C8.41686 16.9921 7.63794 16.3211 6.95094 15.7281C5.17182 14.2925 3.51135 12.7157 1.98585 11.013C0.751241 9.66337 0.0466618 7.91269 0.00196339 6.08408C-0.0259603 4.49739 0.539591 2.95735 1.5879 1.76596C2.09303 1.20724 2.71037 0.761493 3.39967 0.457856C4.08897 0.154219 4.8347 -0.000428548 5.5879 0.00399869C6.73022 0.000525574 7.83929 0.388872 8.72999 1.1041C9.21582 1.48816 9.64387 1.94017 10.001 2.44614C10.3582 1.94021 10.7862 1.48821 11.272 1.1041C12.1627 0.388872 13.2715 0.000525574 14.4138 0.00399869C15.167 -0.000428548 15.9128 0.154219 16.6021 0.457856C17.2914 0.761493 17.9087 1.20724 18.4138 1.76596C19.4621 2.95735 20.0279 4.49739 20 6.08408C19.9552 7.91268 19.2504 9.66332 18.0159 11.013C16.4903 12.7156 14.8298 14.2924 13.0508 15.7281C12.3618 16.3211 11.582 16.9941 10.772 17.7101C10.5581 17.8983 10.2827 18.0018 9.99781 18.0011ZM5.58497 1.18613C4.99395 1.18227 4.40877 1.30306 3.86769 1.54086C3.3266 1.77867 2.84166 2.128 2.44483 2.56601C1.59659 3.53788 1.14169 4.79146 1.16896 6.08115C1.21266 7.63454 1.82204 9.11835 2.88282 10.254C4.36667 11.9026 5.97943 13.4305 7.70582 14.8231C8.39482 15.4171 9.17798 16.0921 9.99098 16.8121C10.81 16.0911 11.5909 15.4122 12.2849 14.8192C14.0112 13.4269 15.624 11.8993 17.1079 10.2511C18.1687 9.11542 18.7783 7.63137 18.822 6.07797C18.8492 4.7883 18.3941 3.535 17.5459 2.56308C17.1491 2.12507 16.6644 1.77574 16.1233 1.53793C15.5822 1.30013 14.997 1.17909 14.406 1.18295C13.5239 1.18038 12.6676 1.4805 11.98 2.03305C11.4364 2.47369 10.9781 3.01023 10.6279 3.61606C10.5634 3.72724 10.4708 3.81957 10.3594 3.88364C10.2479 3.9477 10.1215 3.98124 9.99293 3.98105C9.86435 3.98134 9.73795 3.94771 9.62648 3.88364C9.515 3.81956 9.42238 3.72731 9.35792 3.61606C9.00769 3.01027 8.54941 2.47374 8.00587 2.03305C7.3192 1.48266 6.46499 1.18385 5.58497 1.18613Z" fill="#AAAAAA"/>
-          </svg>
+        <button class="favorite-button" @click="toggleFavorite" :class="{ 'favorited': isFavorited }">
+          <i class="bi bi-heart-fill" v-if="isFavorited"></i>
+          <i class="bi bi-heart" v-else></i>
         </button>
       </div>
     </div>
@@ -34,27 +33,54 @@
 
     <div class="project-info">
       <div class="info-item">
-        <div class="info-label">진행 기간</div>
-        <div class="info-value">{{ project.duration }}</div>
+        <div class="info-icon">
+          <i class="bi bi-clock"></i>
+        </div>
+        <div class="info-content">
+          <div class="info-label">진행 기간</div>
+          <div class="info-value">{{ project.duration }}</div>
+        </div>
       </div>
-      <div class="info-divider"></div>
+      
       <div class="info-item">
-        <div class="info-label">모집 인원</div>
-        <div class="info-value">{{ project.teamSize }}</div>
+        <div class="info-icon">
+          <i class="bi bi-people"></i>
+        </div>
+        <div class="info-content">
+          <div class="info-label">모집 인원</div>
+          <div class="info-value">{{ project.teamSize }}</div>
+        </div>
       </div>
-      <div class="info-divider"></div>
+      
       <div class="info-item">
-        <div class="info-label">지원자</div>
-        <div class="info-value">{{ project.applicants }}</div>
+        <div class="info-icon">
+          <i class="bi bi-person-plus"></i>
+        </div>
+        <div class="info-content">
+          <div class="info-label">지원자</div>
+          <div class="info-value">{{ project.applicants }}</div>
+        </div>
       </div>
-      <div class="info-divider"></div>
+      
       <div class="info-item">
-        <div class="info-label">마감일정</div>
-        <div class="info-value">{{ project.deadline }}</div>
+        <div class="info-icon">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+        <div class="info-content">
+          <div class="info-label">마감일정</div>
+          <div class="info-value" :class="{ 'urgent': isUrgent(project.deadline) }">{{ project.deadline }}</div>
+        </div>
       </div>
     </div>
 
     <div class="bottom-section">
+      <button class="apply-button">
+        <i class="bi bi-send"></i>
+        지원하기
+      </button>
+      <button class="detail-button">
+        상세보기
+      </button>
     </div>
   </div>
 </template>
@@ -67,6 +93,23 @@ export default {
       type: Object,
       required: true
     }
+  },
+  data() {
+    return {
+      isFavorited: false
+    }
+  },
+  methods: {
+    toggleFavorite() {
+      this.isFavorited = !this.isFavorited
+    },
+    isUrgent(deadline) {
+      if (deadline.includes('D-')) {
+        const days = parseInt(deadline.replace('D-', ''))
+        return days <= 7
+      }
+      return false
+    }
   }
 }
 </script>
@@ -74,22 +117,41 @@ export default {
 <style scoped>
 .project-card {
   display: flex;
-  padding: 26px;
+  padding: 24px;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  border-radius: 5px;
-  border: 1px solid #ECECEC;
+  border-radius: 12px;
+  border: 2px solid rgba(245, 179, 135, 0.1);
   background: #FFF;
-  box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.10);
+  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #f8c08b;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(243, 152, 33, 0.3);
+  box-shadow: 0 8px 25px rgba(243, 156, 33, 0.15);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .header-left {
@@ -100,196 +162,306 @@ export default {
 
 .status-title-container {
   display: flex;
-  height: 32px;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   flex: 1;
 }
 
 .status-badge {
-  display: flex;
-  padding: 8px 10px;
-  flex-direction: column;
-  align-items: flex-start;
-  border-radius: 100px;
-  background: #D6F6FD;
-  margin-right: 10px;
+  display: inline-flex;
+  padding: 6px 12px;
+  align-items: center;
+  border-radius: 20px;
+  background: #E8F5E8;
+  border: 1px solid #4CAF50;
 }
 
 .status-badge span {
-  color: #262626;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 16px;
+  color: #2E7D32;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .title-container {
   display: flex;
-  height: 28px;
-  padding: 0 5px;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  width: 100%;
 }
 
 .project-title {
   margin: 0;
-  color: #000;
-  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 28px;
+  color: #262626;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  padding-left: 10px;
+  padding-left: 16px;
+  flex-shrink: 0;
 }
 
 .favorite-button {
   display: flex;
-  padding-bottom: 2px;
-  flex-direction: column;
-  align-items: flex-start;
-  background: none;
-  border: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #FFF;
+  border: 2px solid #E0E0E0;
+  border-radius: 50%;
   cursor: pointer;
+  transition: all 0.3s ease;
+  color: #757575;
+  font-size: 16px;
+}
+
+.favorite-button:hover {
+  background: #F5F5F5;
+  border-color: #BDBDBD;
+  color: #424242;
+  transform: scale(1.1);
+}
+
+.favorite-button.favorited {
+  background: #FF5722;
+  border-color: #FF5722;
+  color: #FFF;
+}
+
+.favorite-button.favorited:hover {
+  background: #E64A19;
 }
 
 .description-section {
-  display: flex;
-  height: 32px;
-  padding: 5px;
-  align-items: flex-start;
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .project-description {
   margin: 0;
-  width: 384px;
-  height: 27px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  color: #000;
-  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  color: #424242;
   font-size: 15px;
   font-weight: 400;
-  line-height: 28px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .category-tags-section {
   display: flex;
-  padding-bottom: 15px;
-  align-items: center;
-  align-content: center;
   width: 100%;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.category {
-  display: flex;
-  padding-right: 5px;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.category span {
-  color: #FF7D12;
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 17px;
+  margin-bottom: 20px;
 }
 
 .project-tags {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .self-tag {
-  display: flex;
-  height: 30px;
+  display: inline-flex;
   padding: 6px 12px;
-  flex-direction: column;
-  align-items: flex-start;
-  border-radius: 15px;
-  border: 1px solid #E5E5E5;
-  font-size: 13px;
+  align-items: center;
+  border-radius: 16px;
+  background: #F3F4F6;
+  border: 1px solid #D1D5DB;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
+.self-tag:hover {
+  background: #E5E7EB;
+  border-color: #9CA3AF;
+  color: #1F2937;
+}
 
 .project-info {
-  display: flex;
-  padding: 16px 0;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   width: 100%;
-  border-radius: 3px;
-  background: #F7F7F8;
-  margin-bottom: 22px;
+  padding: 20px;
+  border-radius: 8px;
+  background: #FAFAFA;
+  border: 1px solid #E5E5E5;
+  margin-bottom: 20px;
 }
 
 .info-item {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-icon {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
-  flex: 1;
-  gap: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #E3F2FD;
+  color: #1976D2;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .info-label {
-  color: #262626;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 15px;
+  color: #6F6F72;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .info-value {
   color: #262626;
   font-size: 15px;
-  font-weight: 400;
-  line-height: 15px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.info-divider {
-  width: 1px;
-  height: 100%;
-  background: #262626;
-  margin: 0 1px;
+.info-value.urgent {
+  color: #dc3545;
+  font-weight: 700;
 }
 
 .bottom-section {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
+  gap: 12px;
 }
 
-.description-panel {
+.apply-button {
   display: flex;
-  height: 100px;
-  padding-right: 20px;
-  flex-direction: column;
-  align-items: flex-start;
-  flex: 1;
-}
-
-.description-text {
-  display: flex;
-  padding: 9.5px 15px 0 15px;
-  justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100px;
-  border-right: 1px solid #E8E8E8;
-  background: #FFF;
-  color: #262626;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 28px;
-  white-space: pre-line;
-  overflow: hidden;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  padding: 12px 20px;
+  background: #ed9d3a;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
+.apply-button:hover {
+  background: #1976D2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.detail-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 12px 20px;
+  background: #FFF;
+  color: #424242;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.detail-button:hover {
+  background: #F5F5F5;
+  border-color: #BDBDBD;
+  color: #212121;
+  transform: translateY(-2px);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .project-card {
+    padding: 20px;
+  }
+
+  .project-title {
+    font-size: 18px;
+  }
+
+  .project-info {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .bottom-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .apply-button,
+  .detail-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-card {
+    padding: 16px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-right {
+    padding-left: 0;
+    align-self: flex-end;
+  }
+
+  .project-title {
+    font-size: 16px;
+  }
+
+  .project-tags {
+    gap: 6px;
+  }
+
+  .self-tag {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .favorite-button {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
 </style>

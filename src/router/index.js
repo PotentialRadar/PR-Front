@@ -2,9 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '@/views/HomePage.vue';
 import LoginPage from '@/views/LoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
-import ContactPage from '@/views/ContactPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
+import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
+import PortfolioPage from '@/views/PortfolioPage.vue';
+import PortfolioUpdatePage from '@/views/PortfolioUpdatePage.vue';
+import FavoritesPage from '@/views/FavoritesPage.vue';
+import DashboardOverview from '@/views/DashboardOverview.vue';
+import DashboardProjects from '@/views/DashboardProjects.vue';
+import DashboardMessages from '@/views/DashboardMessages.vue';
 
 const routes = [
   {
@@ -28,14 +34,83 @@ const routes = [
     component: ProjectListPage,
   },
   {
-    path: '/contact',
-    name: 'Contact',
-    component: ContactPage,
-  },
-  {
     path: '/project/:id',
     name: 'ProjectDetail',
     component: ProjectDetailPage,
+  },
+  {
+    path: '/new-project',
+    name: 'ProjectCreate',
+    component: ProjectCreatePage,
+  },
+  {
+    path: '/portfolio/:userId?',
+    name: 'Portfolio',
+    component: PortfolioPage,
+    props: true,
+  },
+  {
+    path: '/edit-portfolio',
+    name: 'PortfolioUpdate',
+    component: PortfolioUpdatePage,
+    props: true,
+  },
+  {
+    path: '/favorites',
+    name: 'FavoritesPage',
+    component: FavoritesPage,
+  },
+
+  // Dashboard Routes
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardOverview,
+  },
+  {
+    path: '/dashboard/projects',
+    name: 'DashboardProjects',
+    component: DashboardProjects,
+  },
+  {
+    path: '/dashboard/messages',
+    name: 'DashboardMessages',
+    component: DashboardMessages,
+  },
+  {
+    path: '/dashboard/analytics',
+    name: 'DashboardAnalytics',
+    component: () => import('@/views/DashboardOverview.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/inquiries',
+    name: 'DashboardInquiries',
+    component: () => import('@/views/DashboardProjects.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/proposals',
+    name: 'DashboardProposals',
+    component: () => import('@/views/DashboardProjects.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/reviews',
+    name: 'DashboardReviews',
+    component: () => import('@/views/DashboardOverview.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/profile',
+    name: 'DashboardProfile',
+    component: () => import('@/views/DashboardOverview.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/portfolio',
+    name: 'DashboardPortfolio',
+    component: () => import('@/views/DashboardOverview.vue'), // Placeholder
+  },
+  {
+    path: '/dashboard/settings',
+    name: 'DashboardSettings',
+    component: () => import('@/views/DashboardOverview.vue'), // Placeholder
   },
 ];
 
