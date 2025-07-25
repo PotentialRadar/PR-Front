@@ -7,6 +7,7 @@ import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
 import PortfolioUpdatePage from '@/views/PortfolioUpdatePage.vue';
+import FavoritesPage from '@/views/FavoritesPage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
 import DashboardMessages from '@/views/DashboardMessages.vue';
@@ -54,6 +55,12 @@ const routes = [
     component: PortfolioUpdatePage,
     props: true,
   },
+  {
+    path: '/favorites',
+    name: 'FavoritesPage',
+    component: FavoritesPage,
+  },
+
   // Dashboard Routes
   {
     path: '/dashboard',
