@@ -7,6 +7,7 @@ import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
 import PortfolioUpdatePage from '@/views/PortfolioUpdatePage.vue';
+import PortfolioListPage from '@/views/PortfolioListPage.vue';
 import FavoritesPage from '@/views/FavoritesPage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
@@ -29,39 +30,51 @@ const routes = [
     component: SignUpPage,
   },
   {
+    // 프로젝트 리스트
     path: '/projects',
     name: 'ProjectList',
     component: ProjectListPage,
   },
   {
+    // 프로젝트 상세
     path: '/project/:id',
     name: 'ProjectDetail',
     component: ProjectDetailPage,
   },
   {
+    // 프로젝트 생성
     path: '/new-project',
     name: 'ProjectCreate',
     component: ProjectCreatePage,
   },
   {
+    // 유저 포트폴리오 
     path: '/portfolio/:userId?',
     name: 'Portfolio',
     component: PortfolioPage,
     props: true,
   },
   {
+    // 포트폴리오 수정
     path: '/edit-portfolio',
     name: 'PortfolioUpdate',
     component: PortfolioUpdatePage,
     props: true,
   },
   {
+    // 포트폴리오 리스트
+    path: '/portfolios',
+    name: 'PortfolioList',
+    component: PortfolioListPage,
+  },
+  {
+    // 좋아요 목록
     path: '/favorites',
     name: 'FavoritesPage',
     component: FavoritesPage,
   },
 
-  // Dashboard Routes
+  // Dashboard Routes(나중에 사용)
   {
     path: '/dashboard',
     name: 'Dashboard',

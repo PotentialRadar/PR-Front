@@ -286,8 +286,8 @@ export default {
 }
 
 .search-input:focus {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .search-input.error {
@@ -331,12 +331,12 @@ export default {
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 125, 18, 0.05);
+  background: rgba(76, 175, 80, 0.05);
 }
 
 .dropdown-item.selected {
-  background: rgba(255, 125, 18, 0.1);
-  border-left: 3px solid var(--www-freemoa-net-pumpkin, #FF7D12);
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 3px solid #4CAF50;
 }
 
 .tech-category {
@@ -356,7 +356,7 @@ export default {
 }
 
 .tech-check-dropdown {
-  color: var(--www-freemoa-net-pumpkin, #FF7D12);
+  color: #4CAF50;
   font-size: 16px;
 }
 
@@ -400,8 +400,8 @@ export default {
 }
 
 .clear-all-btn:hover {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  color: var(--www-freemoa-net-pumpkin, #FF7D12);
+  border-color: #4CAF50;
+  color: #4CAF50;
 }
 
 .selected-tags {
@@ -410,9 +410,9 @@ export default {
   gap: 8px;
   flex-wrap: wrap;
   padding: 12px;
-  background: rgba(255, 125, 18, 0.05);
+  background: rgba(76, 175, 80, 0.05);
   border-radius: 8px;
-  border: 1px solid rgba(255, 125, 18, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
 .tech-tag {
@@ -421,8 +421,8 @@ export default {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 20px;
-  border: 2px solid var(--www-freemoa-net-pumpkin, #FF7D12);
-  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  border: 2px solid #4CAF50;
+  background: #4CAF50;
   color: var(--color-white-solid, #FFF);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -431,9 +431,9 @@ export default {
 }
 
 .tech-tag:hover {
-  background: var(--color-orange-57, #FE7C25);
+  background: #66BB6A;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 125, 18, 0.3);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .tech-label {
