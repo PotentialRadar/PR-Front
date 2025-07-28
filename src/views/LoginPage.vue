@@ -3,7 +3,7 @@
     <div class="login-section">
       <div class="section-container">
         <div class="main-container">
-        
+
           <div class="heading-primary">
             <h1 class="main-title">
               쉽게 가입하고간편하게 로그인하세요.
@@ -253,12 +253,6 @@ form {
 
 .auth-link:hover {
   color: var(--color-black-solid);
-}
-
-.auth-link > p {
-  color: rgba(55, 56, 60, 0.61);
-  text-align: center;
-  font-size: 14px;
 }
 
 .link-divider {

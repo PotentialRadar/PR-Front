@@ -28,7 +28,7 @@
         <div class="project-card" v-for="project in filteredProjects" :key="project.id">
           <div class="project-category">개발>앱</div>
           <div class="project-favorite" @click="toggleFavorite(project)">
-            <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']" style="font-size: 20px; color: #FF7D12;"></i>
+            <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']" style="font-size: 20px; color: #4CAF50;"></i>
           </div>
           <a href="#" class="project-link">
             <h3 class="project-title">{{ project.title }}</h3>
@@ -198,12 +198,12 @@ const toggleFavorite = (project) => {
 }
 
 .tab.active {
-  color: #FF7D12;
-  border-bottom: 5px solid #FF7D12;
+  color: #4CAF50;
+  border-bottom: 5px solid #4CAF50;
 }
 
 .tab:hover {
-  color: #FF7D12;
+  color: #4CAF50;
 }
 
 .projects-grid {
@@ -227,11 +227,11 @@ const toggleFavorite = (project) => {
   padding: 9px 13px 8px 13px;
   align-items: flex-start;
   border-radius: 100px;
-  border: 1px solid #FF7D12;
+  border: 1px solid #4CAF50;
   position: absolute;
   left: 17px;
   top: 21px;
-  color: #FF7D12;
+  color: #4CAF50;
   font-size: 13px;
   font-weight: 400;
   line-height: 22.5px;

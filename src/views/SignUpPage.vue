@@ -470,8 +470,8 @@ const verifyCode = async () => {
 
 .form-input:focus {
   outline: none;
-  border-color: var(--color-blue-48);
-  box-shadow: 0 0 0 3px rgba(38, 61, 209, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); /* 초록색 그림자 */
 }
 
 .form-input::placeholder {
@@ -516,7 +516,8 @@ const verifyCode = async () => {
 }
 
 .verification-button:hover:not(:disabled) {
-  background: var(--color-grey-91);
+  background: #e8f5e8; /* 연한 초록색 배경 */
+  color: #4CAF50; /* 초록색 텍스트 */
 }
 
 .verification-button:disabled {
@@ -538,43 +539,10 @@ const verifyCode = async () => {
   margin: 12px 0 12px 0;
 }
 
-.checkbox-group {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: var(--font-weight-600);
-  color: var(--color-grey-15);
-}
-
-.checkbox-input {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-grey-89);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.checkbox-input:checked {
-  background: var(--color-blue-48);
-  border-color: var(--color-blue-48);
-}
-
-.checkbox-text {
-  font-size: 16px;
-  font-weight: var(--font-weight-600);
-}
-
 .submit-button {
   margin-top: 15px;
   padding: 18px 24px;
-  background: var(--color-blue-48);
+  background: #4CAF50;
   color: white;
   border: none;
   border-radius: 12px;
@@ -585,7 +553,7 @@ const verifyCode = async () => {
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #1e32b8;
+  background: #45a049;
   transform: translateY(-1px);
 }
 

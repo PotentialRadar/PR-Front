@@ -33,8 +33,8 @@
               <span>프로젝트 보러가기</span>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path opacity="0.01" d="M19.3604 0.689941H0.360352V19.6899H19.3604V0.689941Z" fill="white"/>
-                <path d="M10.3604 6.68799L14.3604 10.688L10.3604 14.688" stroke="#FFC53A" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M14.3604 10.668H5.36035" stroke="#FFC53A" stroke-linecap="round"/>
+                <path d="M10.3604 6.68799L14.3604 10.688L10.3604 14.688" stroke="#4CAF50" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.3604 10.668H5.36035" stroke="#4CAF50" stroke-linecap="round"/>
               </svg>
             </a>
           </div>
@@ -80,12 +80,12 @@
 
 .portfolio-card {
   width: 649px;
-  background-color: #E6F7F1;
+  background-color: #E0F3E8;
 }
 
 .project-card {
   width: 649px;
-  background-color: #FFF7E1;
+  background-color: #F0FAF5;
 }
 
 .card-content {
@@ -110,11 +110,11 @@
 }
 
 .portfolio-indicator {
-  background: #41D89E;
+  background: #4CAF50;
 }
 
 .project-indicator {
-  background: #FFC53A;
+  background: #81C784;
 }
 
 .card-title {
@@ -181,16 +181,16 @@
   justify-content: space-between;
   align-items: center;
   border-radius: 100px;
-  border: 1px solid #FFC53A;
+  border: 1px solid #4CAF50;
   text-decoration: none;
-  color: #262626;
+  color: #4CAF50;
   font-size: 15px;
   font-weight: 400;
   line-height: 27px;
 }
 
 .action-button:hover {
-  background: #FFC53A;
+  background: #4CAF50;
   color: #fff;
 }
 </style>

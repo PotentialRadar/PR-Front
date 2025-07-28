@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '@/views/HomePage.vue';
 import LoginPage from '@/views/LoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
-<<<<<<< HEAD
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
@@ -13,11 +12,6 @@ import FavoritesPage from '@/views/FavoritesPage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
 import DashboardMessages from '@/views/DashboardMessages.vue';
-=======
-import ContactPage from '@/views/ContactPage.vue';
-import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
-import ProjectListPage from '@/views/ProjectListPage.vue';
->>>>>>> 3237463 (feat: 회원가입 페이지 UI/UX 개선 및 유효성 검증 로직 정비)
 
 const routes = [
   {
@@ -47,7 +41,6 @@ const routes = [
     name: 'ProjectDetail',
     component: ProjectDetailPage,
   },
-<<<<<<< HEAD
   {
     // 프로젝트 생성
     path: '/new-project',
@@ -132,8 +125,6 @@ const routes = [
     name: 'DashboardSettings',
     component: () => import('@/views/DashboardOverview.vue'), // Placeholder
   },
-=======
->>>>>>> 3237463 (feat: 회원가입 페이지 UI/UX 개선 및 유효성 검증 로직 정비)
 ];
 
 const router = createRouter({
