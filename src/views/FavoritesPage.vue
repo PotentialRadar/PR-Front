@@ -288,7 +288,7 @@ const goToPortfolios = () => {
 .title-underline {
   width: 80px;
   height: 4px;
-  background: linear-gradient(90deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
   border-radius: 2px;
   position: relative;
   animation: expandLine 1s ease-out;
@@ -302,7 +302,7 @@ const goToPortfolios = () => {
   transform: translate(-50%, -50%);
   width: 12px;
   height: 12px;
-  background: #f5b387;
+  background: #4CAF50;
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -324,9 +324,9 @@ const goToPortfolios = () => {
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(245, 179, 135, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(245, 179, 135, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 179, 135, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
 }
 
 @keyframes fadeInUp {
@@ -388,7 +388,7 @@ const goToPortfolios = () => {
 
 .tab-button.active {
   background: #FFF;
-  color: #f5b387;
+  color: #4CAF50;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -410,7 +410,7 @@ const goToPortfolios = () => {
 
 .favorite-item {
   background: #FFF;
-  border: 2px solid rgba(245, 179, 135, 0.1);
+  border: 2px solid rgba(76, 175, 80, 0.1);
   border-radius: 12px;
   padding: 24px;
   transition: all 0.3s ease;
@@ -424,14 +424,14 @@ const goToPortfolios = () => {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
   border-radius: 12px 12px 0 0;
 }
 
 .favorite-item:hover {
   transform: translateY(-4px);
-  border-color: rgba(245, 179, 135, 0.3);
-  box-shadow: 0 8px 25px rgba(245, 179, 135, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
 }
 
 .item-header {
@@ -509,7 +509,7 @@ const goToPortfolios = () => {
 }
 
 .meta-item i {
-  color: #f5b387;
+  color: #4CAF50;
   font-size: 14px;
 }
 
@@ -545,13 +545,13 @@ const goToPortfolios = () => {
 }
 
 .apply-button, .contact-button {
-  background: linear-gradient(135deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
   border: none;
   color: #FFF;
 }
 
 .apply-button:hover, .contact-button:hover {
-  background: linear-gradient(135deg, #f0a872 0%, #e89960 100%);
+  background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
 }
 
 /* 포트폴리오 전용 스타일 */
@@ -602,10 +602,10 @@ const goToPortfolios = () => {
 
 .skill-tag {
   padding: 4px 8px;
-  background: rgba(245, 179, 135, 0.1);
-  border: 1px solid rgba(245, 179, 135, 0.2);
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
   border-radius: 12px;
-  color: #f5b387;
+  color: #4CAF50;
   font-size: 11px;
   font-weight: 500;
 }
@@ -638,7 +638,7 @@ const goToPortfolios = () => {
 .empty-icon {
   width: 80px;
   height: 80px;
-  background: rgba(245, 179, 135, 0.1);
+  background: rgba(76, 175, 80, 0.1);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -648,7 +648,7 @@ const goToPortfolios = () => {
 
 .empty-icon i {
   font-size: 36px;
-  color: #f5b387;
+  color: #4CAF50;
 }
 
 .empty-title {
@@ -671,7 +671,7 @@ const goToPortfolios = () => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
   color: #FFF;
   border: none;
   border-radius: 8px;
@@ -679,13 +679,13 @@ const goToPortfolios = () => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.3);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .browse-button:hover {
-  background: linear-gradient(135deg, #f0a872 0%, #e89960 100%);
+  background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 179, 135, 0.4);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
 }
 
 /* 반응형 디자인 */
