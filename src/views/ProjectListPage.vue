@@ -15,33 +15,33 @@
 
     <!-- 카테고리 섹션 -->
     <section class="category-icons-section">
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('backend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/backend.png" alt="백엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🔧</div>
         </div>
         <div class="category-title">백엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('frontend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/frontend.png" alt="프론트엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🎨</div>
         </div>
         <div class="category-title">프론트엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('app')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/app_development.png" alt="앱개발 아이콘" class="category-icon" />
+          <div class="category-icon">📱</div>
         </div>
         <div class="category-title">앱개발</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('design')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/design.png" alt="디자인 아이콘" class="category-icon" />
+          <div class="category-icon">🎭</div>
         </div>
         <div class="category-title">디자인</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('infra')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/infra.png" alt="인프라 아이콘" class="category-icon" />
+          <div class="category-icon">☁️</div>
         </div>
         <div class="category-title">인프라</div>
       </div>
@@ -63,9 +63,10 @@
           <div class="projects-container">
             <div class="project-list">
               <ProjectCard
-                v-for="project in projects"
+                v-for="project in filteredProjects"
                 :key="project.id"
                 :project="project"
+                @application-submitted="handleApplicationSubmitted"
               />
             </div>
           </div>
@@ -92,6 +93,7 @@ export default {
   },
   data() {
     return {
+      selectedCategory: null,
       projects: [
         {
           id: 1,
@@ -103,35 +105,88 @@ export default {
           teamSize: '3명',
           applicants: '0명',
           deadline: 'D-16',
+          category: 'backend'
         },
         {
           id: 2,
           title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
-          description: '',
+          description: '안드로이드 앱 개발 및 Google Play 스토어 등록 프로젝트입니다',
           tags: ['Android', '모바일', '어플'],
           status: '모집중',
           duration: '3개월',
           teamSize: '6명',
           applicants: '2명',
           deadline: 'D-13',
+          category: 'app'
         },
         {
           id: 3,
           title: 'Web 프레임워크 및 UI 시스템 고도화',
-          description: '',
+          description: '현대적인 웹 프론트엔드 시스템을 구축하는 프로젝트입니다',
           tags: ['React', 'TypeScript', 'vite', 'StoryBook', 'CSS-in-JS'],
           status: '모집중',
           duration: '6개월',
           teamSize: '3명',
           applicants: '0명',
           deadline: 'D-16',
+          category: 'frontend'
+        },
+        {
+          id: 4,
+          title: 'E-commerce 플랫폼 디자인 시스템',
+          description: '사용자 친화적인 온라인 쇼핑몰 UI/UX 디자인 프로젝트',
+          tags: ['UI/UX', 'Figma', '디자인시스템', 'Prototyping'],
+          status: '모집중',
+          duration: '4개월',
+          teamSize: '4명',
+          applicants: '1명',
+          deadline: 'D-8',
+          category: 'design'
+        },
+        {
+          id: 5,
+          title: 'MSA 기반 클라우드 인프라 구축',
+          description: '마이크로서비스 아키텍처와 컨테이너 기반 인프라 구축',
+          tags: ['Docker', 'Kubernetes', 'AWS', 'MSA'],
+          status: '모집중',
+          duration: '5개월',
+          teamSize: '5명',
+          applicants: '3명',
+          deadline: 'D-20',
+          category: 'infra'
         }
       ]
     }
   },
+  computed: {
+    filteredProjects() {
+      if (!this.selectedCategory) {
+        return this.projects
+      }
+      return this.projects.filter(project => project.category === this.selectedCategory)
+    }
+  },
   methods: {
     goToCreateProject() {
-      this.$router.push({ name: 'CreateProject' }); 
+      this.$router.push({ name: 'CreateProject' })
+    },
+    
+    filterByCategory(category) {
+      this.selectedCategory = this.selectedCategory === category ? null : category
+    },
+    
+    handleApplicationSubmitted(data) {
+      console.log('지원 완료:', data)
+      
+      // 프로젝트의 지원자 수 업데이트
+      const project = this.projects.find(p => p.id === data.projectId)
+      if (project) {
+        const currentApplicants = parseInt(project.applicants.replace('명', ''))
+        project.applicants = `${currentApplicants + 1}명`
+      }
+      
+      // 서버에 지원 정보 전송 (실제 구현 시)
+      // this.submitApplicationToServer(data)
     }
   }
 }
@@ -258,6 +313,10 @@ export default {
   background: rgba(76, 175, 80, 0.05);
 }
 
+.category-item.active {
+  background: rgba(76, 175, 80, 0.1);
+}
+
 .category-icon-wrapper {
   width: 70px;
   height: 70px;
@@ -277,8 +336,7 @@ export default {
 }
 
 .category-icon {
-  width: 40px;
-  height: 40px;
+  font-size: 32px;
   transition: all 0.3s ease;
 }
 
@@ -442,8 +500,7 @@ export default {
   }
 
   .category-icon {
-    width: 35px;
-    height: 35px;
+    font-size: 28px;
   }
 
   .category-title {
@@ -493,8 +550,7 @@ export default {
   }
 
   .category-icon {
-    width: 30px;
-    height: 30px;
+    font-size: 24px;
   }
 
   .category-title {
