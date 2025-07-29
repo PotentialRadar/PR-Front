@@ -1,21 +1,28 @@
 <template>
-  <div class="work-content">
-    <div class="content-section">
-      <div class="section-header">
-        <h3>프로젝트 내용</h3>
-      </div>
-      
-      <div class="content-text">
-        <div class="content-block">
-          <div class="block-title">※프로젝트의 진행 방식</div>
-          <div class="block-content">
-            <div class="content-line">- 최초 온/오프라인 미팅(협의 가능)</div>
-          </div>
-        </div>
-      </div>
+  <div class="project-content">
+    <div class="project-description">
+      {{ description }}
+    </div>
+    <div v-if="fileUrl" class="project-file">
+      <img v-if="isImage(fileUrl)" :src="fileUrl" alt="첨부이미지" />
+      <a v-else :href="fileUrl" target="_blank" download>첨부파일 다운로드</a>
     </div>
   </div>
 </template>
+
+<script>
+export default {
+  props: {
+    description: String,
+    fileUrl: String,
+  },
+  methods: {
+    isImage(url) {
+      return /\.(jpg|jpeg|png|gif)$/i.test(url)
+    }
+  }
+}
+</script>
 
 <style scoped>
 .work-content {

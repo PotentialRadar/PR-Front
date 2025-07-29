@@ -2,22 +2,23 @@
   <div class="project-header">
     <div class="project-tags">
       <div class="tag-container">
-        <span class="tag status-tag">모집중</span>
-        <span class="tag self-tag">#백엔드</span>
-        <span class="tag self-tag">#프론트엔드</span>
-        <span class="tag self-tag">#디자인</span>
-        <span class="tag self-tag">#풀스택프로젝트</span>
+        <span class="tag status-tag">{{ project.status === 'RECRUITING' ? '모집중' : project.status }}</span>
+        <span
+            v-for="(stack, i) in project.techStacks"
+            :key="i"
+            class="tag self-tag"
+        >#{{ stack.techStackName }}</span>
       </div>
       <div class="registration-date">
-        <span>2025.07.10</span>
+        <span>{{ formatDate(project.startDate) }}</span>
       </div>
     </div>
-    
+
     <div class="project-title">
-      <h1>Spring, Vue 기반 프로젝트 멤버 구합니다</h1>
+      <h1>{{ project.title }}</h1>
     </div>
     <div class="project-sub-title">
-      스터디 하면서 프로젝트 진행할 예정입니다
+      {{ project.description }}
     </div>
 
     <hr style="background: #eee; height:1px; border:0; margin: 40px 0">
@@ -25,59 +26,63 @@
     <div class="tag-title">
       이런 기술을 사용할 예정이에요
     </div>
-    <div class="technology-tags">
-      <span class="tech-label">백엔드</span>
-      <div class="tech-tags">
-        <span class="tech-tag">JAVA</span>
-        <span class="tech-tag">Spring</span>
-        <span class="tech-tag">Oracle</span>
-        <span class="tech-tag">AWS S3</span>
-      </div>
+    <div v-if="project.techStacks && project.techStacks.length" class="technology-tags">
+      <span
+          v-for="(ts, i) in project.techStacks"
+          :key="'ts-'+i"
+          class="tech-tag"
+      >{{ ts.techStackName }}</span>
     </div>
 
-    <div class="technology-tags">
-      <span class="tech-label">프론트엔드</span>
-      <div class="tech-tags">
-        <span class="tech-tag">Vue.js</span>
-        <span class="tech-tag">제안 가능</span>
-      </div>
-    </div>
-
-    <div class="technology-tags">
-      <span class="tech-label">디자인</span>
-      <div class="tech-tags">
-        <span class="tech-tag">Figma</span>
-        <span class="tech-tag">제안 가능</span>
-      </div>
-    </div>
-    
     <div class="project-metadata">
       <div class="metadata-item">
         <div class="metadata-label">기간</div>
         <div class="metadata-value">
-          <span class="number">60</span>
+          <span class="number">{{ calcDuration(project.startDate, project.endDate) }}</span>
           <span class="unit">일</span>
         </div>
       </div>
-      
       <div class="metadata-item">
         <div class="metadata-label">지원자수</div>
         <div class="metadata-value">
-          <span class="number">14</span>
+          <span class="number">{{ project.appliedCount || 0 }}</span>
         </div>
       </div>
-      
       <div class="metadata-item">
         <div class="metadata-label">마감일</div>
         <div class="metadata-value">
-          <span class="deadline">D-15</span>
+          <span class="deadline">{{ calcDeadline(project.recruitDeadline) }}</span>
         </div>
       </div>
     </div>
-    
-    
   </div>
 </template>
+
+<script>
+export default {
+  props: {
+    project: { type: Object, required: true }
+  },
+  methods: {
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    },
+    calcDuration(start, end) {
+      if (!start || !end) return '-';
+      const s = new Date(start), e = new Date(end);
+      return Math.max(1, Math.ceil((e-s)/(1000*60*60*24)));
+    },
+    calcDeadline(deadline) {
+      if (!deadline) return '-';
+      const today = new Date(), dday = new Date(deadline);
+      const diff = Math.ceil((dday-today)/(1000*60*60*24));
+      return diff > 0 ? `D-${diff}` : '마감';
+    }
+  }
+}
+</script>
 
 <style scoped>
 .project-header {

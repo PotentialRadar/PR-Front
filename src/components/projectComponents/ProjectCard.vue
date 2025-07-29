@@ -41,7 +41,7 @@
           <div class="info-value">{{ project.duration }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-people"></i>
@@ -51,7 +51,7 @@
           <div class="info-value">{{ project.teamSize }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-person-plus"></i>
@@ -61,7 +61,7 @@
           <div class="info-value">{{ project.applicants }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-calendar-event"></i>
@@ -78,7 +78,7 @@
         <i class="bi bi-send"></i>
         지원하기
       </button>
-      <button class="detail-button">
+      <button class="detail-button" @click="goToDetail">
         상세보기
       </button>
     </div>
@@ -104,11 +104,18 @@ export default {
       this.isFavorited = !this.isFavorited
     },
     isUrgent(deadline) {
-      if (deadline.includes('D-')) {
+      if (deadline && deadline.includes('D-')) {
         const days = parseInt(deadline.replace('D-', ''))
         return days <= 7
       }
       return false
+    },
+    goToDetail() {
+      // 실제로 id or projectId로 맞춰서 써야 함!
+      this.$router.push({
+        name: 'ProjectDetail',
+        params: { id: this.project.projectId || this.project.id }
+      })
     }
   }
 }

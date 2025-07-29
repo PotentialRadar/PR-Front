@@ -1,24 +1,21 @@
 <template>
   <div class="main-content">
     <div class="project-content">
-      <ProjectHeader />
-      
+      <!-- props로 project 내려줌 -->
+      <ProjectHeader :project="project" />
       <div class="tab-section">
-        <TabNavigation 
-          :activeTab="activeTab" 
-          @tab-change="handleTabChange" 
-        />
+        <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
       </div>
-      
       <div class="tab-content">
-        <ProjectWorkContent id="content-section" />
-        <ProjectComment id="comment-section" />
+        <ProjectWorkContent :description="project.description" :file-url="project.fileUrl" />
+        <ProjectComment :projectId="project.projectId" id="comment-section" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
@@ -34,31 +31,30 @@ export default {
   },
   data() {
     return {
+      project: {},
       activeTab: 'content'
+    }
+  },
+  async created() {
+    const id = this.$route.params.id
+    try {
+      const res = await axios.get(`http://localhost:8080/api/projects/${id}`)
+      this.project = res.data
+    } catch (e) {
+      alert('프로젝트 정보를 불러오지 못했습니다.')
+      console.error(e)
     }
   },
   methods: {
     handleTabChange(tab) {
-      this.activeTab = tab; // 현재 활성 탭 상태 업데이트 (시각적 표시용)
-      
-      let targetId = '';
-      if (tab === 'content') {
-        targetId = 'content-section';
-      } else if (tab === 'comment') {
-        targetId = 'comment-section';
-      }
-
+      this.activeTab = tab
+      let targetId = (tab === 'content') ? 'content-section'
+          : (tab === 'comment') ? 'comment-section' : ''
       if (targetId) {
-        // 다음 틱에 DOM이 업데이트된 후 스크롤을 실행하기 위해 nextTick 사용
         this.$nextTick(() => {
-          const element = document.getElementById(targetId);
-          if (element) {
-            element.scrollIntoView({ 
-              behavior: 'smooth', // 부드러운 스크롤 효과
-              block: 'start'     // 요소의 상단이 뷰포트 상단에 오도록
-            });
-          }
-        });
+          const element = document.getElementById(targetId)
+          if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
       }
     }
   }
