@@ -53,7 +53,7 @@
         </div>
         <div class="info-content">
           <div class="info-label">모집 인원</div>
-          <div class="info-value">{{ project.teamSize }}</div>
+          <div class="info-value">{{ project.recruitCount ?? 0 }}</div>
         </div>
       </div>
 
@@ -63,7 +63,7 @@
         </div>
         <div class="info-content">
           <div class="info-label">지원자</div>
-          <div class="info-value">{{ displayDuration  }}</div>
+          <div class="info-value">{{ project.appliedCount ?? 0  }}</div>
         </div>
       </div>
 
@@ -79,7 +79,7 @@
     </div>
 
     <div class="bottom-section">
-      <button class="apply-button">
+      <button class="apply-button" @click="onApplyClick">
         <i class="bi bi-send"></i>
         지원하기
       </button>
@@ -99,6 +99,38 @@ export default {
       required: true
     }
   },
+  mounted() {
+    console.log('project props in card:', this.project)
+  },
+  methods: {
+    toggleFavorite() {
+      this.isFavorited = !this.isFavorited
+    },
+    isUrgent(deadline) {
+      if (!deadline) return false
+      const today = new Date();
+      const end = new Date(deadline);
+      const diff = (end - today) / (1000 * 60 * 60 * 24);
+      return diff <= 7 && diff >= 0;
+    },
+    formatDeadline(deadline) {
+      if (!deadline) return '-';
+      const today = new Date();
+      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
+      if (dday >= 0) return `D-${dday}`;
+      return '마감';
+    },
+    goToDetail() {
+      this.$router.push({
+        name: 'ProjectDetail',
+        params: { id: this.project.projectId || this.project.id }
+      })
+    },
+    onApplyClick() {
+      // 부모에게 프로젝트 정보 emit!
+      this.$emit('apply', this.project)
+    }
+  },
   data() {
     return {
       isFavorited: false
@@ -110,40 +142,10 @@ export default {
       const start = new Date(this.project.startDate);
       const end = new Date(this.project.endDate);
       if (isNaN(start) || isNaN(end)) return '-';
-      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1; // 날짜 포함
+      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
       if (diff < 7) return `${diff}일`;
       if (diff < 30) return `${Math.round(diff / 7)}주`;
       return `${Math.round(diff / 30)}개월`;
-    }
-  },
-  mounted() {
-    console.log('받은 project props', this.project);
-  },
-  methods: {
-    toggleFavorite() {
-      this.isFavorited = !this.isFavorited
-    },
-    isUrgent(deadline) {
-      if (!deadline) return false
-      // 날짜가 오늘 기준 7일 이내면 urgent (날짜 문자열 YYYY-MM-DD 지원)
-      const today = new Date();
-      const end = new Date(deadline);
-      const diff = (end - today) / (1000 * 60 * 60 * 24);
-      return diff <= 7 && diff >= 0;
-    },
-    formatDeadline(deadline) {
-      if (!deadline) return '-';
-      // 오늘 기준 D-? 표시
-      const today = new Date();
-      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
-      if (dday >= 0) return `D-${dday}`;
-      return '마감';
-    },
-    goToDetail() {
-      this.$router.push({
-        name: 'ProjectDetail',
-        params: { id: this.project.projectId || this.project.id }
-      })
     }
   }
 }

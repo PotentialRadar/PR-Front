@@ -66,7 +66,7 @@
                 v-for="project in filteredProjects"
                 :key="project.id"
                 :project="project"
-                @application-submitted="handleApplicationSubmitted"
+                @apply="openApplyModal"
               />
             </div>
           </div>
@@ -74,6 +74,26 @@
         </div>
       </div>
     </div>
+    <ApplyModal
+        v-if="showApplyModal"
+        :visible="showApplyModal"
+        :project-info="selectedProject"
+        :user-portfolio="userPortfolio"
+        @close="closeApplyModal"
+        @submit="handleApplicationSubmitted"
+        @portfolio-settings="goToPortfolioSettings"
+    />
+  </div>
+  <div
+      v-if="showSuccessToast"
+      class="success-toast"
+  >
+    <span class="toast-icon">✅</span>
+    지원이 성공적으로 완료되었습니다!
+  </div>
+  <div v-if="showFailToast" class="fail-toast">
+    <span class="toast-icon">❌</span>
+    지원에 실패했습니다. 다시 시도해주세요.
   </div>
 </template>
 
@@ -83,6 +103,7 @@ import SearchSection from '@/components/projectComponents/SearchSection.vue'
 import SortOptions from '@/components/projectComponents/SortOptions.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
+import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
 
 export default {
   name: 'ProjectListPage',
@@ -90,45 +111,53 @@ export default {
     SearchSection,
     SortOptions,
     ProjectCard,
-    PaginationComponent
+    PaginationComponent,
+    ApplyModal
   },
   data() {
     return {
-      projects: []   // 백에서 받아올거라 빈 배열로 초기화
+      projects: [],
+      selectedCategory: null,
+      showApplyModal: false,
+      showSuccessToast: false,
+      showFailToast: false, // 모달 ON/OFF
+      selectedProject: null,         // 모달에 넘길 프로젝트 데이터
+      userPortfolio: {               // 예시. 실제론 유저 데이터 연동!
+        isPublic: true,
+        lastUpdated: '2024-07-29'
+      }
     }
-  },
-  mounted() {
-    console.log('받은 project:', this.project)
   },
   created() {
     this.fetchProjects();
   },
-  watch: {
-    '$route'(to, from) {
-      if (from.name === 'ProjectDetail') {
-        this.fetchProjects();  //상세 페이지에서 돌아올 때 조회수 포함 새로고침
-      }
+  computed: {
+    filteredProjects() {
+      // 카테고리 필터도 실제 적용시 아래처럼 조건 추가
+      // if (this.selectedCategory) { ... }
+      return this.projects;
     }
   },
   methods: {
     // 프로젝트 리스트 API 호출
     async fetchProjects() {
       try {
-        const response = await axios.get('http://localhost:8080/api/projects'); // 실제 API 주소로 수정!
-        console.log('API 응답', response.data);
-        // API 응답을 projects에 저장
-        this.projects = response.data.map(project => ({
+        const response = await axios.get('http://localhost:8080/api/projects');
+        this.projects = response.data
+            .slice() // 데이터 복제
+            .sort((a, b) => new Date(a.recruitDeadline) - new Date(b.recruitDeadline))
+            .map(project => ({
           id: project.projectId,
           title: project.title,
           description: project.description,
-          tags: project.techStacks,   // (tags 대신 techStacks 필드 사용)
+          tags: project.techStacks,
           status: project.status === 'RECRUITING' ? '모집중' : project.status,
-          teamSize: project.recruitCount + '명',     // 인원 표시
-          applicants: project.appliedCount + '명',   // 지원자 수
+          recruitCount: project.recruitCount,
+          appliedCount: project.appliedCount,
           startDate: project.startDate,
           endDate: project.endDate,
           viewCount: project.viewCount ?? 0,
-          deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '', // 디데이 계산
+          deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '',
         }))
       } catch (error) {
         alert('프로젝트 목록을 불러오는데 실패했습니다.');
@@ -136,38 +165,118 @@ export default {
       }
     },
     calcDeadline(recruitDeadline) {
-      // D-day 계산 (오늘 기준 마감일까지 며칠 남았는지)
       const today = new Date();
       const deadline = new Date(recruitDeadline);
       const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
       return diff > 0 ? `D-${diff}` : '마감';
     },
     goToCreateProject() {
-      this.$router.push({ name: 'CreateProject' })
+      this.$router.push({name: 'ProjectCreate'})
     },
-
     filterByCategory(category) {
       this.selectedCategory = this.selectedCategory === category ? null : category
     },
-
-    handleApplicationSubmitted(data) {
-      console.log('지원 완료:', data)
-
-      // 프로젝트의 지원자 수 업데이트
-      const project = this.projects.find(p => p.id === data.projectId)
-      if (project) {
-        const currentApplicants = parseInt(project.applicants.replace('명', ''))
-        project.applicants = `${currentApplicants + 1}명`
+    openApplyModal(project) {
+      if (!project) return
+      this.selectedProject = {
+        title: project.title,
+        description: project.description,
+        projectId: project.id
       }
+      this.showApplyModal = true
+    },
+    closeApplyModal() {
+      this.showApplyModal = false
+      this.selectedProject = null
+    },
+    goToPortfolioSettings() {
+      this.closeApplyModal()
+      this.$router.push({name: 'PortfolioSettings'})
+    },
+    async handleApplicationSubmitted(data) {
+      if (!data || !data.applicationForm) return
 
-      // 서버에 지원 정보 전송 (실제 구현 시)
-      // this.submitApplicationToServer(data)
+      const message = data.applicationForm.message || ''
+      const part = data.applicationForm.part || ''
+
+      try {
+        await axios.post(
+            `http://localhost:8080/api/projects/${this.selectedProject.projectId}/apply`,
+            {
+              userId: 3,
+              applicationMessage: message,
+              techStack: part
+            }
+        )
+        this.showSuccessToast = true
+        setTimeout(() => {
+          this.showSuccessToast = false
+        }, 3000)
+        this.closeApplyModal()
+      } catch (e) {
+        if (e.response && e.response.status === 409) {
+          this.showFailToast = true
+        } else {
+          this.showFailToast = true
+          console.error(e)
+        }
+        setTimeout(() => {
+          this.showFailToast = false
+        }, 3000)
+        this.closeApplyModal()
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+.success-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  z-index: 1001;
+  animation: slideInRight 0.3s ease;
+}
+.fail-toast {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  background: linear-gradient(135deg, #f44336, #e57373);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  z-index: 1001;
+  animation: slideInRight 0.3s ease;
+}
+.toast-icon {
+  font-size: 18px;
+}
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 .project-list-page {
   min-height: 100vh;
   background: #FFF;

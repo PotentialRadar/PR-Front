@@ -10,7 +10,6 @@
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-            <ProjectHeader />
             <!-- 지원하기 버튼 추가 -->
             <div class="apply-button-container">
               <button
@@ -61,8 +60,8 @@
                 <span class="project-icon">📋</span>
                 <h3 class="project-info-title">지원 프로젝트</h3>
               </div>
-              <div class="project-name">{{ projectInfo.name }}</div>
-              <div class="project-description">{{ projectInfo.description }}</div>
+              <div class="project-name">{{ project.title }}</div>
+              <div class="project-description">{{ project.description }}</div>
             </div>
           </div>
 
@@ -194,7 +193,6 @@ export default {
     return {
       project: {},
       activeTab: 'content',
-      activeTab: 'content',
       showApplyModal: false,
       showSuccessToast: false,
       isSubmitting: false,
@@ -234,20 +232,11 @@ export default {
   methods: {
     handleTabChange(tab) {
       this.activeTab = tab
-      let targetId = (tab === 'content') ? 'content-section'
-          : (tab === 'comment') ? 'comment-section' : ''
-      if (targetId) {
-        this.$nextTick(() => {
-          const element = document.getElementById(targetId)
-          if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        })
-      }
 
       const sectionMap = {
         content: 'content-section',
         comment: 'comment-section'
       }
-
       const targetId = sectionMap[tab]
       if (!targetId) return
 
@@ -284,23 +273,24 @@ export default {
       this.isSubmitting = true
 
       try {
-        // 실제 API 호출 로직을 여기에 구현
-        await new Promise(resolve => setTimeout(resolve, 1500)) // 시뮬레이션
+        // 실제 API 호출 (프로젝트 지원)
+        await axios.post(
+            `http://localhost:8080/api/projects/${this.project.projectId}/apply`,
+            {
+              userId: 5, // 실제 로그인 유저 ID로 바꾸세요
+              applicationMessage: this.applicationForm.message,
+              techStack: this.applicationForm.part
+            }
+        )
 
-        console.log('지원 정보:', {
-          project: this.projectInfo.name,
-          ...this.applicationForm,
-          portfolioPublic: this.userPortfolio.isPublic
-        })
-
-        this.closeApplyModal()
         this.showSuccessToast = true
 
-        // 3초 후 토스트 메시지 숨기기
+        // 3초 후 토스트 메시지 숨김
         setTimeout(() => {
           this.showSuccessToast = false
         }, 3000)
 
+        this.closeApplyModal()
       } catch (error) {
         console.error('지원 실패:', error)
         alert('지원 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -458,23 +448,24 @@ export default {
 
 /* 지원하기 버튼 스타일 */
 .apply-button-container {
-  margin-top: 30px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
+  padding-right: 10px;
 }
 
 .apply-button {
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
   color: white;
   border: none;
-  padding: 16px 32px;
+  padding: 12px 28px;
   border-radius: 50px;
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.3s ease;
   box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
@@ -490,7 +481,7 @@ export default {
 }
 
 .apply-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* 모달 스타일 */
@@ -867,8 +858,9 @@ export default {
 /* 성공 토스트 */
 .success-toast {
   position: fixed;
-  top: 30px;
-  right: 30px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
   color: white;
   padding: 16px 24px;
