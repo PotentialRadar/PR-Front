@@ -12,15 +12,20 @@
         </div>
       </div>
       <div class="header-right">
+        <div class="view-count-display">
+          👀 {{ project.viewCount }}
+        </div>
         <button class="favorite-button" @click="toggleFavorite" :class="{ 'favorited': isFavorited }">
-          <i class="bi bi-heart-fill" v-if="isFavorited"></i>
-          <i class="bi bi-heart" v-else></i>
+          <span v-if="isFavorited">❤️</span>
+          <span v-else>🤍</span>
         </button>
       </div>
     </div>
 
     <div class="description-section" v-if="project.description">
-      <p class="project-description">{{ project.description }}</p>
+      <p class="project-description">
+        {{ project.description }}
+      </p>
     </div>
 
     <div class="category-tags-section">
@@ -38,30 +43,30 @@
         </div>
         <div class="info-content">
           <div class="info-label">진행 기간</div>
-          <div class="info-value">{{ project.duration }}</div>
+          <div class="info-value">{{ displayDuration  }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-people"></i>
         </div>
         <div class="info-content">
           <div class="info-label">모집 인원</div>
-          <div class="info-value">{{ project.teamSize }}</div>
+          <div class="info-value">{{ project.recruitCount ?? 0 }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-person-plus"></i>
         </div>
         <div class="info-content">
           <div class="info-label">지원자</div>
-          <div class="info-value">{{ project.applicants }}</div>
+          <div class="info-value">{{ project.appliedCount ?? 0  }}</div>
         </div>
       </div>
-      
+
       <div class="info-item">
         <div class="info-icon">
           <i class="bi bi-calendar-event"></i>
@@ -74,8 +79,11 @@
     </div>
 
     <div class="bottom-section">
-      <button class="detail-button">
-        <i class="bi bi-eye"></i>
+      <button class="apply-button" @click="onApplyClick">
+        <i class="bi bi-send"></i>
+        지원하기
+      </button>
+      <button class="detail-button" @click="goToDetail">
         상세보기
       </button>
     </div>
@@ -91,21 +99,53 @@ export default {
       required: true
     }
   },
-  data() {
-    return {
-      isFavorited: false
-    }
+  mounted() {
+    console.log('project props in card:', this.project)
   },
   methods: {
     toggleFavorite() {
       this.isFavorited = !this.isFavorited
     },
     isUrgent(deadline) {
-      if (deadline.includes('D-')) {
-        const days = parseInt(deadline.replace('D-', ''))
-        return days <= 7
-      }
-      return false
+      if (!deadline) return false
+      const today = new Date();
+      const end = new Date(deadline);
+      const diff = (end - today) / (1000 * 60 * 60 * 24);
+      return diff <= 7 && diff >= 0;
+    },
+    formatDeadline(deadline) {
+      if (!deadline) return '-';
+      const today = new Date();
+      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
+      if (dday >= 0) return `D-${dday}`;
+      return '마감';
+    },
+    goToDetail() {
+      this.$router.push({
+        name: 'ProjectDetail',
+        params: { id: this.project.projectId || this.project.id }
+      })
+    },
+    onApplyClick() {
+      // 부모에게 프로젝트 정보 emit!
+      this.$emit('apply', this.project)
+    }
+  },
+  data() {
+    return {
+      isFavorited: false
+    }
+  },
+  computed: {
+    displayDuration() {
+      if (!this.project.startDate || !this.project.endDate) return '-';
+      const start = new Date(this.project.startDate);
+      const end = new Date(this.project.endDate);
+      if (isNaN(start) || isNaN(end)) return '-';
+      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      if (diff < 7) return `${diff}일`;
+      if (diff < 30) return `${Math.round(diff / 7)}주`;
+      return `${Math.round(diff / 30)}개월`;
     }
   }
 }
@@ -222,6 +262,15 @@ export default {
   font-size: 16px;
 }
 
+.view-count-display {
+  font-size: 14px;
+  color: #666;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .favorite-button:hover {
   background: rgba(76, 175, 80, 0.1);
   border-color: #4CAF50;
@@ -251,9 +300,13 @@ export default {
   font-weight: 400;
   line-height: 1.6;
   display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .category-tags-section {

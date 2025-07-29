@@ -6,15 +6,13 @@
       <div class="shape shape-2"></div>
       <div class="shape shape-3"></div>
     </div>
-    
     <div class="page-container">
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-            <ProjectHeader />
             <!-- 지원하기 버튼 추가 -->
             <div class="apply-button-container">
-              <button 
+              <button
                 class="apply-button"
                 @click="openApplyModal"
               >
@@ -22,19 +20,15 @@
                 프로젝트 지원하기
               </button>
             </div>
+            <ProjectHeader :project="project" />
           </div>
-          
           <div class="integrated-content-card">
             <div class="tab-section">
-              <TabNavigation 
-                :activeTab="activeTab" 
-                @tab-change="handleTabChange" 
-              />
+              <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
             </div>
-            
             <div class="tab-content">
-              <ProjectWorkContent id="content-section" />
-              <ProjectComment id="comment-section" />
+              <ProjectWorkContent :description="project.description" :file-url="project.fileUrl" />
+              <ProjectComment :projectId="project.projectId" id="comment-section" />
             </div>
           </div>
         </div>
@@ -42,22 +36,22 @@
     </div>
 
     <!-- 지원하기 모달 -->
-    <div 
-      v-if="showApplyModal" 
+    <div
+      v-if="showApplyModal"
       class="modal-overlay"
       @click.self="closeApplyModal"
     >
       <div class="modal-container">
         <div class="modal-header">
           <h2 class="modal-title">프로젝트 지원하기</h2>
-          <button 
+          <button
             class="close-button"
             @click="closeApplyModal"
           >
             ✕
           </button>
         </div>
-        
+
         <div class="modal-body">
           <!-- 프로젝트 정보 섹션 -->
           <div class="project-info-section">
@@ -66,8 +60,8 @@
                 <span class="project-icon">📋</span>
                 <h3 class="project-info-title">지원 프로젝트</h3>
               </div>
-              <div class="project-name">{{ projectInfo.name }}</div>
-              <div class="project-description">{{ projectInfo.description }}</div>
+              <div class="project-name">{{ project.title }}</div>
+              <div class="project-description">{{ project.description }}</div>
             </div>
           </div>
 
@@ -80,8 +74,8 @@
               </div>
               <div class="portfolio-status-content">
                 <div class="status-indicator">
-                  <span 
-                    class="status-badge" 
+                  <span
+                    class="status-badge"
                     :class="{ 'public': userPortfolio.isPublic, 'private': !userPortfolio.isPublic }"
                   >
                     <span class="status-icon">
@@ -115,7 +109,7 @@
           <form @submit.prevent="submitApplication">
             <div class="form-group">
               <label for="part" class="form-label">지원 파트</label>
-              <select 
+              <select
                 id="part"
                 v-model="applicationForm.part"
                 class="form-select"
@@ -148,15 +142,15 @@
             </div>
 
             <div class="form-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="cancel-button"
                 @click="closeApplyModal"
               >
                 취소
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 class="submit-button"
                 :disabled="!isFormValid || isSubmitting"
               >
@@ -170,7 +164,7 @@
     </div>
 
     <!-- 지원 완료 토스트 메시지 -->
-    <div 
+    <div
       v-if="showSuccessToast"
       class="success-toast"
     >
@@ -181,6 +175,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
@@ -196,6 +191,7 @@ export default {
   },
   data() {
     return {
+      project: {},
       activeTab: 'content',
       showApplyModal: false,
       showSuccessToast: false,
@@ -218,9 +214,19 @@ export default {
   },
   computed: {
     isFormValid() {
-      return this.applicationForm.part && 
+      return this.applicationForm.part &&
              this.applicationForm.message.trim().length > 0 &&
              this.applicationForm.message.length <= 500
+    }
+  },
+  async created() {
+    const id = this.$route.params.id
+    try {
+      const res = await axios.get(`http://localhost:8080/api/projects/${id}`)
+      this.project = res.data
+    } catch (e) {
+      alert('프로젝트 정보를 불러오지 못했습니다.')
+      console.error(e)
     }
   },
   methods: {
@@ -231,27 +237,26 @@ export default {
         content: 'content-section',
         comment: 'comment-section'
       }
-
       const targetId = sectionMap[tab]
       if (!targetId) return
 
       this.$nextTick(() => {
         const element = document.getElementById(targetId)
         if (element) {
-          element.scrollIntoView({ 
+          element.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           })
         }
       })
     },
-    
+
     openApplyModal() {
       this.showApplyModal = true
       // 모달 열릴 때 body 스크롤 방지
       document.body.style.overflow = 'hidden'
     },
-    
+
     closeApplyModal() {
       this.showApplyModal = false
       document.body.style.overflow = ''
@@ -261,30 +266,31 @@ export default {
         message: ''
       }
     },
-    
+
     async submitApplication() {
       if (!this.isFormValid) return
-      
+
       this.isSubmitting = true
-      
+
       try {
-        // 실제 API 호출 로직을 여기에 구현
-        await new Promise(resolve => setTimeout(resolve, 1500)) // 시뮬레이션
-        
-        console.log('지원 정보:', {
-          project: this.projectInfo.name,
-          ...this.applicationForm,
-          portfolioPublic: this.userPortfolio.isPublic
-        })
-        
-        this.closeApplyModal()
+        // 실제 API 호출 (프로젝트 지원)
+        await axios.post(
+            `http://localhost:8080/api/projects/${this.project.projectId}/apply`,
+            {
+              userId: 5, // 실제 로그인 유저 ID로 바꾸세요
+              applicationMessage: this.applicationForm.message,
+              techStack: this.applicationForm.part
+            }
+        )
+
         this.showSuccessToast = true
-        
-        // 3초 후 토스트 메시지 숨기기
+
+        // 3초 후 토스트 메시지 숨김
         setTimeout(() => {
           this.showSuccessToast = false
         }, 3000)
-        
+
+        this.closeApplyModal()
       } catch (error) {
         console.error('지원 실패:', error)
         alert('지원 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -308,7 +314,7 @@ export default {
       // 실제로는 this.$router.push('/portfolio/settings') 등을 사용
     }
   },
-  
+
   // ESC 키로 모달 닫기
   mounted() {
     document.addEventListener('keydown', (e) => {
@@ -334,7 +340,7 @@ export default {
   left: 0;
   right: 0;
   height: 100vh;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(76, 175, 80, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 60%, rgba(76, 175, 80, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(76, 175, 80, 0.06) 0%, transparent 50%);
@@ -425,7 +431,7 @@ export default {
   backdrop-filter: blur(20px);
   border-radius: 24px;
   padding: 40px;
-  box-shadow: 
+  box-shadow:
     0 20px 40px rgba(76, 175, 80, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(76, 175, 80, 0.1);
@@ -435,30 +441,31 @@ export default {
 
 .header-section:hover {
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 25px 50px rgba(76, 175, 80, 0.15),
     0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 /* 지원하기 버튼 스타일 */
 .apply-button-container {
-  margin-top: 30px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
+  padding-right: 10px;
 }
 
 .apply-button {
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
   color: white;
   border: none;
-  padding: 16px 32px;
+  padding: 12px 28px;
   border-radius: 50px;
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.3s ease;
   box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
@@ -474,7 +481,7 @@ export default {
 }
 
 .apply-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* 모달 스타일 */
@@ -541,7 +548,7 @@ export default {
   padding: 30px;
   overflow-y: auto;
   flex: 1;
-  
+
   /* 커스텀 스크롤바 스타일링 */
   scrollbar-width: thin;
   scrollbar-color: rgba(76, 175, 80, 0.3) transparent;
@@ -851,8 +858,9 @@ export default {
 /* 성공 토스트 */
 .success-toast {
   position: fixed;
-  top: 30px;
-  right: 30px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
   color: white;
   padding: 16px 24px;
@@ -875,7 +883,7 @@ export default {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  box-shadow: 
+  box-shadow:
     0 20px 40px rgba(76, 175, 80, 0.08),
     0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(76, 175, 80, 0.08);
@@ -962,7 +970,7 @@ export default {
     max-width: 95%;
     padding: 40px 15px 70px;
   }
-  
+
   .main-content {
     max-width: 100%;
   }
@@ -976,11 +984,11 @@ export default {
   .main-content {
     gap: 25px;
   }
-  
+
   .integrated-content-card {
     border-radius: 16px;
   }
-  
+
   .tab-section {
     padding: 15px 20px 0 20px;
     margin-bottom: 20px;
@@ -991,7 +999,7 @@ export default {
     padding: 0 25px 25px 25px;
     gap: 25px;
   }
-  
+
   .shape-1, .shape-2, .shape-3 {
     display: none;
   }
@@ -1041,11 +1049,11 @@ export default {
   .content-wrapper {
     padding: 20px 5px 50px;
   }
-  
+
   .main-content {
     gap: 20px;
   }
-  
+
   .integrated-content-card {
     border-radius: 12px;
   }
@@ -1055,7 +1063,7 @@ export default {
     margin-bottom: 15px;
     border-radius: 12px 12px 0 0;
   }
-  
+
   .tab-content {
     padding: 0 20px 20px 20px;
     gap: 20px;
@@ -1085,7 +1093,7 @@ export default {
 .header-section:focus-within,
 .integrated-content-card:focus-within {
   outline: none;
-  box-shadow: 
+  box-shadow:
     0 0 0 3px rgba(76, 175, 80, 0.2),
     0 20px 40px rgba(76, 175, 80, 0.15);
 }

@@ -37,7 +37,7 @@ const routes = [
   },
   {
     // 프로젝트 상세
-    path: '/project/:id',
+    path: '/projects/:id',
     name: 'ProjectDetail',
     component: ProjectDetailPage,
   },

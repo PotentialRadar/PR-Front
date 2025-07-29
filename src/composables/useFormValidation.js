@@ -24,11 +24,13 @@ export function useFormValidation() {
   // Validation rules
   const rules = {
     required: (value) => {
-      if (Array.isArray(value)) return value.length > 0
+      if (Array.isArray(value)) return value.length > 0 ? true : '필수 입력 항목입니다.'
       if (typeof value === 'object' && value !== null) {
-        return Object.values(value).some(v => v && v.toString().trim() !== '')
+        return Object.values(value).some(v => v && v.toString().trim() !== '') ? true : '필수 입력 항목입니다.'
       }
       return value !== null && value !== undefined && value.toString().trim() !== ''
+          ? true
+          : '필수 입력 항목입니다.'
     },
     
     email: (value) => {
@@ -78,40 +80,41 @@ export function useFormValidation() {
   // Validate single field
   const validateField = (fieldName, value, fieldRules) => {
     const fieldErrors = []
-    
+
     for (const rule of fieldRules) {
       let isValid = true
       let errorMessage = ''
-      
+
       if (typeof rule === 'string') {
-        // Simple rule like 'required'
-        isValid = rules[rule](value)
-        errorMessage = errorMessages[rule]
+        const result = rules[rule](value)
+        isValid = result === true
+        errorMessage = typeof result === 'string' ? result : errorMessages[rule]
       } else if (typeof rule === 'object') {
-        // Rule with parameters like { minLength: 5 }
         const [ruleName, param] = Object.entries(rule)[0]
-        isValid = rules[ruleName](param)(value)
-        errorMessage = typeof errorMessages[ruleName] === 'function' 
-          ? errorMessages[ruleName](param)
-          : errorMessages[ruleName]
+        const result = rules[ruleName](param)(value)
+        isValid = result === true
+        errorMessage = typeof result === 'string'
+            ? result
+            : (typeof errorMessages[ruleName] === 'function'
+                ? errorMessages[ruleName](param)
+                : errorMessages[ruleName])
       } else if (typeof rule === 'function') {
-        // Custom validation function
         const result = rule(value)
         isValid = result === true
         errorMessage = typeof result === 'string' ? result : '입력 값이 올바르지 않습니다.'
       }
-      
+
       if (!isValid) {
         fieldErrors.push(errorMessage)
       }
     }
-    
+
     if (fieldErrors.length > 0) {
-      errors[fieldName] = fieldErrors[0] // Show only first error
+      errors[fieldName] = fieldErrors[0]
     } else {
       delete errors[fieldName]
     }
-    
+
     return fieldErrors.length === 0
   }
 
