@@ -25,6 +25,11 @@ const routes = [
     component: LoginPage,
   },
   {
+    path: '/oauth/success',
+    name: 'OAuthSuccess',
+    component: () => import('@/views/OAuthSuccess.vue'),
+  },
+  {
     path: '/signUp',
     name: 'SignUp',
     component: SignUpPage,
@@ -48,7 +53,7 @@ const routes = [
     component: ProjectCreatePage,
   },
   {
-    // 유저 포트폴리오 
+    // 유저 포트폴리오
     path: '/portfolio/:userId?',
     name: 'Portfolio',
     component: PortfolioPage,
