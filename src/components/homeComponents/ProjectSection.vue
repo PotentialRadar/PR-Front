@@ -3,16 +3,16 @@
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">진행중인 프로젝트</h2>
-        <a href="#" class="more-link">
+        <router-link to="/projects" class="more-link">
           <span>더보기</span>
           <svg width="19" height="20" viewBox="0 0 19 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path opacity="0.01" d="M19 0.189941H0V19.1899H19V0.189941Z" fill="white"/>
-            <path d="M10 6.18799L14 10.188L10 14.188" stroke="#262626" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M14 10.168H5" stroke="#262626" stroke-linecap="round"/>
+            <path opacity="0.01" d="M19 0.189941H0V19.1899H19V0.189941Z" fill="white" />
+            <path d="M10 6.18799L14 10.188L10 14.188" stroke="#262626" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M14 10.168H5" stroke="#262626" stroke-linecap="round" />
           </svg>
-        </a>
+        </router-link>
       </div>
-      
+
       <div class="filter-tabs">
         <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">AI 추천</div>
         <div class="tab" :class="{ active: activeTab === 'app' }" @click="activeTab = 'app'">어플리케이션 개발</div>
@@ -23,36 +23,51 @@
         <div class="tab" :class="{ active: activeTab === 'publishing' }" @click="activeTab = 'publishing'">퍼블리싱</div>
         <div class="tab" :class="{ active: activeTab === 'etc' }" @click="activeTab = 'etc'">기타</div>
       </div>
-      
-      <div class="projects-grid">
-        <div class="project-card" v-for="project in filteredProjects" :key="project.id">
-          <div class="project-category">개발>앱</div>
-          <div class="project-favorite" @click="toggleFavorite(project)">
-            <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']" style="font-size: 20px; color: #4CAF50;"></i>
-          </div>
-          <a href="#" class="project-link">
-            <h3 class="project-title">{{ project.title }}</h3>
-          </a>
-          <div class="project-meta">
-            <p class="project-description">{{ project.description }}</p>
-            <div class="project-status">{{ project.status }}</div>
-          </div>
-          <div class="project-details">
-            <div class="detail-item">
-              <span class="detail-label">진행 기간</span>
-              <span class="detail-value">{{ project.duration }}</span>
+
+      <template v-if="filteredProjects.length > 0">
+        <transition-group name="slide-fade" tag="div" class="projects-grid">
+          <div v-for="project in filteredProjects" :key="project.id" class="project-card">
+
+            <div class="project-category">개발>앱</div>
+            <div class="project-favorite" @click="toggleFavorite(project)">
+              <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']"
+                style="font-size: 20px; color: #4CAF50;"></i>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">모집 인원</span>
-              <span class="detail-value">{{ project.members }}</span>
+            <a href="#" class="project-link">
+              <h3 class="project-title">{{ project.title }}</h3>
+            </a>
+            <div class="project-meta">
+              <p class="project-description">{{ project.description }}</p>
+              <div class="project-status" :class="getStatusClass(project.status)">{{ project.status }}</div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">지원자수</span>
-              <span class="detail-value">{{ project.applicants }}</span>
+
+            <div class="project-details">
+              <div class="detail-item">
+                <span class="detail-label">진행 기간</span>
+                <span class="detail-value">{{ project.duration }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">모집 인원</span>
+                <span class="detail-value">{{ project.members }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">지원자수</span>
+                <span class="detail-value">{{ project.applicants }}</span>
+              </div>
             </div>
+
           </div>
+        </transition-group>
+      </template>
+
+      <template v-else>
+        <div class="projects-grid">
+          <div class="no-projects" key="no-projects">등록된 프로젝트가 없습니다.</div>
         </div>
-      </div>
+      </template>
+
+      
+
     </div>
   </section>
 </template>
@@ -79,7 +94,7 @@ const projects = ref([
     category: 'app',
     title: '간단한 병원 지점별 관리 및 정보제공 앱 개발(Android, IOS)',
     description: '판매자와 구매자 간 직거래를 진행하는 ...',
-    status: '마감 15일전',
+    status: '마감 D-15',
     duration: '3개월',
     members: '8명',
     applicants: '13명',
@@ -106,6 +121,28 @@ const projects = ref([
     members: '5명',
     applicants: '9명',
     isFavorite: false
+  },
+  {
+    id: 5,
+    category: 'web',
+    title: 'Vue + SpringBoot 기반 팀 협업 플랫폼 개발',
+    description: 'Vue와 SpringBoot를 활용하여 실시간 협업 도구 개발...',
+    status: '모집중',
+    duration: '5개월',
+    members: '4명',
+    applicants: '10명',
+    isFavorite: false
+  },
+  {
+    id: 6,
+    category: 'web',
+    title: '기업용 쇼핑몰 백오피스 웹 개발',
+    description: '상품, 주문, 회원 관리 기능 중심의 관리자 웹페이지 개발...',
+    status: '마감 D-3',
+    duration: '2개월',
+    members: '6명',
+    applicants: '17명',
+    isFavorite: true
   }
 ])
 
@@ -123,6 +160,18 @@ const filteredProjects = computed(() => {
 
 const toggleFavorite = (project) => {
   project.isFavorite = !project.isFavorite;
+}
+
+function getStatusClass(status) {
+  if (status.includes('모집')) return 'status-open';
+
+  if (status.includes('마감 D-')) {
+    const days = parseInt(status.replace('마감 D-', ''), 10);
+    if (days <= 7) return 'status-close';        // D-7 이하 빨강
+    else return 'status-open';                  // 그 외는 모집중 스타일
+  }
+
+  return ''; // 예외 케이스 처리
 }
 </script>
 
@@ -206,6 +255,21 @@ const toggleFavorite = (project) => {
   color: #4CAF50;
 }
 
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -224,16 +288,16 @@ const toggleFavorite = (project) => {
 
 .project-category {
   display: inline-flex;
-  padding: 9px 13px 8px 13px;
+  padding: 8px 14px;
   align-items: flex-start;
-  border-radius: 100px;
+  border-radius: 20px;
   border: 1px solid #4CAF50;
   position: absolute;
   left: 17px;
   top: 21px;
   color: #4CAF50;
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 22.5px;
 }
 
@@ -289,12 +353,34 @@ const toggleFavorite = (project) => {
   line-height: 31.5px;
 }
 
+.status-open {
+  color: #388e3c;
+  /* 진한 초록 */
+  background-color: #e8f5e9;
+  /* 연한 초록 배경 */
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-close {
+  color: #d32f2f;
+  /* 진한 빨강 */
+  background-color: #fce8e6;
+  /* 연한 빨강 배경 */
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .project-details {
   display: flex;
   width: 648px;
   padding: 20px 0;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   background: #F9F9F9;
   position: absolute;
   left: 1px;
@@ -304,11 +390,13 @@ const toggleFavorite = (project) => {
 
 .detail-item {
   display: flex;
-  padding: 0 20px;
+  flex-direction: row;
   align-items: center;
-  gap: 64px;
-  flex-shrink: 0;
+  justify-content: center;
+  flex: 1;
+  /* 모든 항목 동일 너비 */
   border-left: 1px solid #AAA;
+  gap: 10px;
 }
 
 .detail-item:first-child {
@@ -319,13 +407,33 @@ const toggleFavorite = (project) => {
   color: #555;
   font-size: 13px;
   font-weight: 400;
-  line-height: 24px;
 }
 
 .detail-value {
   color: #262626;
   font-size: 14px;
   font-weight: 600;
-  line-height: 24px;
+}
+
+/* .no-projects {
+  width: 100%;
+  text-align: center;
+  padding: 60px 0;
+  font-size: 16px;
+  color: #999;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 467px;
+} */
+
+.no-projects {
+  grid-column: 1 / -1;
+  justify-self: center;
+  align-self: center;
+  font-size: 16px;
+  color: #999;
+  padding: 60px 0;
 }
 </style>

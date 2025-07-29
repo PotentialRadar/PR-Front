@@ -29,14 +29,14 @@
             기획, 디자인, 개발을 포함한 IT 프로젝트입니다.
           </div>
           <div class="card-action">
-            <a href="#" class="action-button">
+            <router-link to="/projects" class="action-button">
               <span>프로젝트 보러가기</span>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path opacity="0.01" d="M19.3604 0.689941H0.360352V19.6899H19.3604V0.689941Z" fill="white"/>
                 <path d="M10.3604 6.68799L14.3604 10.688L10.3604 14.688" stroke="#4CAF50" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M14.3604 10.668H5.36035" stroke="#4CAF50" stroke-linecap="round"/>
               </svg>
-            </a>
+            </router-link>
           </div>
         </div>
       </div>

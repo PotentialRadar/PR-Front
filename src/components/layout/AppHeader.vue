@@ -4,7 +4,7 @@
       <div class="header-left">
         <div class="logo-container">
           <router-link to="/" class="logo-link">
-            <img src="/pr-logo.png" alt="로고" class="logo" />
+            <img src="/pr-Photoroom.png" alt="로고" class="logo" />
           </router-link>
         </div>
         <nav class="nav-menu">
@@ -12,14 +12,16 @@
           <router-link to="/portfolio" class="nav-item portfolio-search">포트폴리오</router-link>
           <div class="nav-dropdown">
             <span class="dropdown-trigger">더보기</span>
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/8730bce826a38c42e3781f01f73b07caeccbd593?width=28" alt="더보기" class="dropdown-icon" />
+            <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9"
+              fill="none">
+              <path d="M2 2 L7 7 L12 2" stroke="#48A74C" stroke-width="2" fill="none" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
           </div>
         </nav>
       </div>
       <div class="header-right">
         <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
-          <!-- <span class="separator">|</span>
-        <router-link to="/signUp" class="auth-link">회원가입</router-link> -->
       </div>
     </div>
   </header>
@@ -42,7 +44,7 @@
   left: 0;
   right: 0;
   z-index: 2000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 선택 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .container {
@@ -59,7 +61,7 @@
 
 .logo {
   width: auto;
-  height: 40px; /* 또는 로고 이미지에 맞는 높이로 설정 */
+  height: 40px;
   opacity: 1;
   margin-right: 40px;
 }
@@ -83,28 +85,30 @@
   color: #FF7D12;
 }
 
-.portfolio-search {
-  text-decoration: underline;
+.nav-item.router-link-active {
+  color: #4CAF50;
+  font-weight: 700;
 }
 
 .nav-dropdown {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 22px 5px 25px 20px;
+  padding: 20px 5px;
   cursor: pointer;
 }
 
 .dropdown-trigger {
-  color: #555;
+  /* color: #555; */
+  color: #424953;
   font-size: 15px;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 27px;
 }
 
 .dropdown-icon {
   width: 14px;
-  height: 9px;
+  height: 10px;
 }
 
 .header-right {
@@ -115,7 +119,7 @@
 
 .auth-link {
   color: #666;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 24px;
   text-decoration: none;

@@ -141,7 +141,7 @@ onMounted(() => {
 
     el.scrollLeft += currentStep
 
-    // 💡 무한 슬라이드처럼 보이도록 절반쯤 갔을 때 리셋
+    // 무한 슬라이드처럼 보이도록 절반쯤 갔을 때 리셋
     const resetThreshold = el.scrollWidth / 3  // 복제된 분량에 따라 조정
     if (el.scrollLeft >= resetThreshold) {
       el.scrollLeft = 0
@@ -151,11 +151,9 @@ onMounted(() => {
 
 function handleMouseEnter() {
   isHovered.value = true
-  console.log('mouseenter: hover 시작')
 }
 function handleMouseLeave() {
   isHovered.value = false
-  console.log('mouseleave: hover 종료')
 }
 </script>
 
