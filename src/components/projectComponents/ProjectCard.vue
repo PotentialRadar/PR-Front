@@ -399,56 +399,64 @@ export default {
 .bottom-section {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 12px;
-}
-
-.apply-button {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex: 1;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-  color: #FFF;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-.apply-button:hover {
-  background: linear-gradient(135deg, #388E3C 0%, #1B5E20 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  width: 100%;
+  margin-top: 8px;
 }
 
 .detail-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  padding: 12px 20px;
-  background: #FFF;
-  color: #424242;
-  border: 2px solid #E0E0E0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: #FFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.detail-button:hover::before {
+  left: 100%;
 }
 
 .detail-button:hover {
-  background: rgba(76, 175, 80, 0.05);
-  border-color: #4CAF50;
-  color: #2E7D32;
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, #388E3C 0%, #1B5E20 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+}
+
+.detail-button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.detail-button i {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.detail-button:hover i {
+  transform: scale(1.1);
 }
 
 /* 반응형 디자인 */
@@ -468,13 +476,13 @@ export default {
   }
 
   .bottom-section {
-    flex-direction: column;
-    gap: 10px;
+    margin-top: 10px;
   }
 
-  .apply-button,
   .detail-button {
-    width: 100%;
+    max-width: none;
+    padding: 11px 18px;
+    font-size: 13px;
   }
 }
 

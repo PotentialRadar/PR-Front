@@ -15,33 +15,33 @@
 
     <!-- 카테고리 섹션 -->
     <section class="category-icons-section">
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('backend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/backend.png" alt="백엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🔧</div>
         </div>
         <div class="category-title">백엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('frontend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/frontend.png" alt="프론트엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🎨</div>
         </div>
         <div class="category-title">프론트엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('app')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/app_development.png" alt="앱개발 아이콘" class="category-icon" />
+          <div class="category-icon">📱</div>
         </div>
         <div class="category-title">앱개발</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('design')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/design.png" alt="디자인 아이콘" class="category-icon" />
+          <div class="category-icon">🎭</div>
         </div>
         <div class="category-title">디자인</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('infra')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/infra.png" alt="인프라 아이콘" class="category-icon" />
+          <div class="category-icon">☁️</div>
         </div>
         <div class="category-title">인프라</div>
       </div>
@@ -63,9 +63,10 @@
           <div class="projects-container">
             <div class="project-list">
               <ProjectCard
-                v-for="project in projects"
+                v-for="project in filteredProjects"
                 :key="project.id"
                 :project="project"
+                @application-submitted="handleApplicationSubmitted"
               />
             </div>
           </div>
@@ -142,7 +143,25 @@ export default {
       return diff > 0 ? `D-${diff}` : '마감';
     },
     goToCreateProject() {
-      this.$router.push({ name: 'ProjectCreate' }); // 라우터 이름 정확히 맞춰서!
+      this.$router.push({ name: 'CreateProject' })
+    },
+
+    filterByCategory(category) {
+      this.selectedCategory = this.selectedCategory === category ? null : category
+    },
+
+    handleApplicationSubmitted(data) {
+      console.log('지원 완료:', data)
+
+      // 프로젝트의 지원자 수 업데이트
+      const project = this.projects.find(p => p.id === data.projectId)
+      if (project) {
+        const currentApplicants = parseInt(project.applicants.replace('명', ''))
+        project.applicants = `${currentApplicants + 1}명`
+      }
+
+      // 서버에 지원 정보 전송 (실제 구현 시)
+      // this.submitApplicationToServer(data)
     }
   }
 }
@@ -269,6 +288,10 @@ export default {
   background: rgba(76, 175, 80, 0.05);
 }
 
+.category-item.active {
+  background: rgba(76, 175, 80, 0.1);
+}
+
 .category-icon-wrapper {
   width: 70px;
   height: 70px;
@@ -288,8 +311,7 @@ export default {
 }
 
 .category-icon {
-  width: 40px;
-  height: 40px;
+  font-size: 32px;
   transition: all 0.3s ease;
 }
 
@@ -453,8 +475,7 @@ export default {
   }
 
   .category-icon {
-    width: 35px;
-    height: 35px;
+    font-size: 28px;
   }
 
   .category-title {
@@ -504,8 +525,7 @@ export default {
   }
 
   .category-icon {
-    width: 30px;
-    height: 30px;
+    font-size: 24px;
   }
 
   .category-title {
