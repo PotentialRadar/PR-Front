@@ -88,7 +88,6 @@ export default {
 .project-header {
   width: 100%;
   background: #FFF;
-  padding: 120px 0 0;
 }
 
 .project-tags {

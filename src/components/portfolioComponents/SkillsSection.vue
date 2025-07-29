@@ -68,7 +68,7 @@ const skills = ref([
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  border-top: 4px solid #f5b387;
+  border-top: 4px solid #4CAF50;
   position: relative;
   width: 100%;
 }
@@ -122,18 +122,18 @@ const skills = ref([
   align-items: center;
   gap: 0;
   border-radius: 25px;
-  border: 2px solid rgba(245, 179, 135, 0.3);
+  border: 2px solid rgba(76, 175, 80, 0.3);
   background: #FFF;
   height: 40px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(245, 179, 135, 0.15);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);
   flex-shrink: 0;
 }
 
 .skill-item:hover {
-  border-color: #f5b387;
+  border-color: #4CAF50;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.25);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
 }
 
 .skill-content {
@@ -158,8 +158,8 @@ const skills = ref([
   padding: 0;
   align-items: center;
   justify-content: center;
-  border-left: 2px solid rgba(245, 179, 135, 0.3);
-  background: rgba(245, 179, 135, 0.1);
+  border-left: 2px solid rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.1);
   border-radius: 0 23px 23px 0;
   width: 40px;
   height: 100%;
@@ -167,7 +167,7 @@ const skills = ref([
 }
 
 .level-indicator {
-  color: #f5b387;
+  color: #4CAF50;
   font-size: 16px;
   font-style: normal;
   font-weight: 700;

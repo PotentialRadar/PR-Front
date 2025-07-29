@@ -242,17 +242,17 @@ export default {
 }
 
 .upload-zone:hover {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  background: rgba(255, 125, 18, 0.05);
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.05);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 125, 18, 0.15);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
 }
 
 .upload-zone.dragover {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  background: rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
   transform: scale(1.02);
-  box-shadow: 0 10px 30px rgba(255, 125, 18, 0.2);
+  box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
 }
 
 .upload-zone.error {
@@ -275,14 +275,14 @@ export default {
   justify-content: center;
   align-items: center;
   border-radius: 50%;
-  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  background: #4CAF50;
   color: var(--color-white-solid, #FFF);
   transition: all 0.3s ease;
 }
 
 .upload-zone:hover .upload-icon {
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(255, 125, 18, 0.3);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .upload-icon-svg {
@@ -380,8 +380,8 @@ export default {
 }
 
 .file-item:hover {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 2px 8px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
   transform: translateY(-1px);
 }
 
@@ -394,7 +394,7 @@ export default {
 }
 
 .file-icon {
-  color: var(--www-freemoa-net-pumpkin, #FF7D12);
+  color: #4CAF50;
   font-size: 20px;
   flex-shrink: 0;
 }

@@ -77,7 +77,7 @@ const careerItems = ref([
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  border-top: 4px solid #f5b387;
+  border-top: 4px solid #4CAF50;
   position: relative;
   width: 100%;
 }
@@ -130,7 +130,7 @@ const careerItems = ref([
 .timeline-item {
   height: 94px;
   width: 100%;
-  border-left: 2px solid rgba(245, 179, 135, 0.3);
+  border-left: 2px solid rgba(76, 175, 80, 0.3);
   position: relative;
 }
 
@@ -156,11 +156,11 @@ const careerItems = ref([
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #f5b387;
+  background: #4CAF50;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 4px rgba(245, 179, 135, 0.2);
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
   animation: pulse 2s infinite;
 }
 
@@ -173,13 +173,13 @@ const careerItems = ref([
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 4px rgba(245, 179, 135, 0.2);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(245, 179, 135, 0.1);
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.1);
   }
   100% {
-    box-shadow: 0 0 0 4px rgba(245, 179, 135, 0.2);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
   }
 }
 
@@ -196,7 +196,7 @@ const careerItems = ref([
 .square-marker {
   width: 14px;
   height: 14px;
-  background: #f5b387;
+  background: #4CAF50;
   border-radius: 3px;
   position: relative;
   opacity: 0.8;

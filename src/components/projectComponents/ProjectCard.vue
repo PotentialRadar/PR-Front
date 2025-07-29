@@ -129,9 +129,9 @@ export default {
   align-items: flex-start;
   width: 100%;
   border-radius: 12px;
-  border: 2px solid rgba(245, 179, 135, 0.1);
+  border: 2px solid rgba(76, 175, 80, 0.1);
   background: #FFF;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.08);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.08);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -144,13 +144,14 @@ export default {
   left: 0;
   right: 0;
   height: 4px;
-  background: #f8c08b;
+  background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
+  border-radius: 12px 12px 0 0;
 }
 
 .project-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(243, 152, 33, 0.3);
-  box-shadow: 0 8px 25px rgba(243, 156, 33, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
 }
 
 .card-header {
@@ -232,9 +233,9 @@ export default {
 }
 
 .favorite-button:hover {
-  background: #F5F5F5;
-  border-color: #BDBDBD;
-  color: #424242;
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4CAF50;
+  color: #4CAF50;
   transform: scale(1.1);
 }
 
@@ -283,9 +284,9 @@ export default {
   padding: 6px 12px;
   align-items: center;
   border-radius: 16px;
-  background: #F3F4F6;
-  border: 1px solid #D1D5DB;
-  color: #374151;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  color: #2E7D32;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -293,9 +294,9 @@ export default {
 }
 
 .self-tag:hover {
-  background: #E5E7EB;
-  border-color: #9CA3AF;
-  color: #1F2937;
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
+  color: #1B5E20;
 }
 
 .project-info {
@@ -305,8 +306,8 @@ export default {
   width: 100%;
   padding: 20px;
   border-radius: 8px;
-  background: #FAFAFA;
-  border: 1px solid #E5E5E5;
+  background: rgba(76, 175, 80, 0.05);
+  border: 1px solid rgba(76, 175, 80, 0.1);
   margin-bottom: 20px;
 }
 
@@ -323,8 +324,8 @@ export default {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #E3F2FD;
-  color: #1976D2;
+  background: #4CAF50;
+  color: #FFF;
   font-size: 14px;
   flex-shrink: 0;
 }
@@ -369,7 +370,7 @@ export default {
   gap: 8px;
   flex: 1;
   padding: 12px 20px;
-  background: #ed9d3a;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
   color: #FFF;
   border: none;
   border-radius: 8px;
@@ -377,13 +378,13 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
 .apply-button:hover {
-  background: #1976D2;
+  background: linear-gradient(135deg, #388E3C 0%, #1B5E20 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
 .detail-button {
@@ -403,9 +404,9 @@ export default {
 }
 
 .detail-button:hover {
-  background: #F5F5F5;
-  border-color: #BDBDBD;
-  color: #212121;
+  background: rgba(76, 175, 80, 0.05);
+  border-color: #4CAF50;
+  color: #2E7D32;
   transform: translateY(-2px);
 }
 

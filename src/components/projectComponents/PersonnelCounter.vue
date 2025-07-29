@@ -108,8 +108,8 @@ export default {
 }
 
 .counter-controls:focus-within {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .counter-controls.error {
@@ -136,7 +136,7 @@ export default {
 
 .counter-button:hover:not(:disabled) {
   background: var(--color-grey-96, #F6F6F6);
-  color: var(--www-freemoa-net-pumpkin, #FF7D12);
+  color: #4CAF50;
   transform: scale(1.1);
 }
 

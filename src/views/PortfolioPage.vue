@@ -200,7 +200,7 @@ const formatEducationPeriod = (education) => {
   padding: 4px 0 36px 0;
   flex-direction: column;
   align-items: flex-start;
-  border-top: 4px solid #f5b387;
+  border-top: 4px solid #4CAF50;
   position: relative;
   width: 100%;
 }
@@ -292,9 +292,9 @@ const formatEducationPeriod = (education) => {
 }
 
 .education-item:hover {
-  border-color: #f5b387;
+  border-color: #4CAF50;
   background: #FFF;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.1);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
   transform: translateY(-2px);
 }
 
@@ -347,7 +347,7 @@ const formatEducationPeriod = (education) => {
 .ongoing-badge {
   display: inline-flex;
   padding: 4px 10px;
-  background: linear-gradient(90deg, #f5b387 0%, #f0a872 100%);
+  background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
   color: #FFF;
   font-size: 11px;
   font-weight: 600;

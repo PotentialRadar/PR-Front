@@ -63,8 +63,8 @@ const projects = ref([
     duration: '2022.02.14 - 2022.05.22',
     image: 'https://api.builder.io/api/v1/image/assets/TEMP/d0cdae957cc71d34de8f77ab256b0f73c8852b9e?width=560',
     badges: [
-      { text: '최고동료', color: '#f5b387' },
-      { text: '박수 3번', color: '#d4a574' }
+      { text: '최고동료', color: '#4CAF50' },
+      { text: '박수 3번', color: '#388E3C' }
     ]
   },
   {
@@ -84,8 +84,8 @@ const projects = ref([
     duration: '2021.08.02 - 2021.11.20',
     image: 'https://api.builder.io/api/v1/image/assets/TEMP/650424f37bb5f8660d402c7ae3129d748ca9c220?width=560',
     badges: [
-      { text: '최고동료', color: '#f5b387' },
-      { text: '박수 3번', color: '#d4a574' }
+      { text: '최고동료', color: '#4CAF50' },
+      { text: '박수 3번', color: '#388E3C' }
     ]
   }
 ])
@@ -107,7 +107,7 @@ const projects = ref([
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  border-top: 4px solid #f5b387;
+  border-top: 4px solid #4CAF50;
   position: relative;
   width: 100%;
 }
@@ -149,7 +149,7 @@ const projects = ref([
 }
 
 .highlight {
-  color: #f5b387;
+  color: #4CAF50;
   font-weight: 700;
 }
 
@@ -185,30 +185,6 @@ const projects = ref([
   box-sizing: border-box;
 }
 
-.divider {
-  color: #D0D1D4;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 17px;
-  letter-spacing: 0.6px;
-}
-
-.projects-count {
-  color: #505050;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 17px;
-  letter-spacing: 0.6px;
-  white-space: nowrap;
-}
-
-.highlight {
-  color: #f79a5c;
-  font-weight: 700;
-}
-
 .projects-grid {
   display: flex;
   width: 100%;
@@ -236,8 +212,8 @@ const projects = ref([
   flex-shrink: 0;
   border-radius: 12px;
   background: #FFF;
-  box-shadow: 0 4px 12px rgba(245, 179, 135, 0.15);
-  border: 2px solid rgba(245, 179, 135, 0.1);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+  border: 2px solid rgba(76, 175, 80, 0.1);
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -246,8 +222,8 @@ const projects = ref([
 
 .project-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 24px rgba(245, 179, 135, 0.25);
-  border-color: rgba(245, 179, 135, 0.3);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.25);
+  border-color: rgba(76, 175, 80, 0.3);
 }
 
 .project-image-container {
@@ -316,7 +292,7 @@ const projects = ref([
 }
 
 .project-role {
-  color: #f5b387;
+  color: #4CAF50;
   font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 14px;
   font-style: normal;

@@ -174,7 +174,7 @@
 import { ref, reactive, computed } from 'vue'
 import axios from 'axios'
 import PersonnelCounter from '@/components/projectComponents/PersonnelCounter.vue'
-import TechStackSelector from '@/components/projectComponents/TechStackSelector.vue'
+import TechStackSelector from '@/components/common/TechStackSelector.vue'
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue'
 import { useFormValidation } from '@/composables/useFormValidation.js'
 import {useRouter} from "vue-router";
@@ -443,7 +443,7 @@ export default {
 .title-underline {
   width: 80px;
   height: 4px;
-  background: linear-gradient(90deg, var(--www-freemoa-net-pumpkin, #FF7D12) 0%, var(--color-orange-57, #FE7C25) 100%);
+  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
   border-radius: 2px;
   position: relative;
   animation: expandLine 1s ease-out;
@@ -457,7 +457,7 @@ export default {
   transform: translate(-50%, -50%);
   width: 12px;
   height: 12px;
-  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  background: #4CAF50;
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -484,13 +484,13 @@ export default {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 125, 18, 0.7);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(255, 125, 18, 0);
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 125, 18, 0);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
   }
 }
 
@@ -530,6 +530,7 @@ export default {
 .section-title {
   font-weight: 700;
   font-size: 18px;
+  color: #4CAF50;
 }
 
 .duration-personnel-group {
@@ -603,8 +604,8 @@ export default {
 .project-title-input:focus,
 .project-subtitle-input:focus, 
 .project-description-textarea:focus {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
   transform: translateY(-1px);
 }
 
@@ -650,8 +651,8 @@ export default {
 }
 
 .duration-value-input:focus {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .duration-value-input.error {
@@ -673,8 +674,8 @@ export default {
 }
 
 .duration-unit-select:focus {
-  border-color: var(--www-freemoa-net-pumpkin, #FF7D12);
-  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .duration-unit-select.error {
@@ -692,15 +693,15 @@ export default {
 }
 
 .upload-note {
-  color: var(--color-orange-57, #FE7C25);
+  color: #4CAF50;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.4;
   margin: 0;
   padding: 8px 12px;
-  background: rgba(254, 124, 37, 0.1);
+  background: rgba(76, 175, 80, 0.1);
   border-radius: 4px;
-  border-left: 3px solid var(--color-orange-57, #FE7C25);
+  border-left: 3px solid #4CAF50;
 }
 
 .submit-section {
@@ -724,7 +725,7 @@ export default {
   align-items: center;
   gap: 10px;
   border-radius: 8px;
-  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  background: #4CAF50;
   border: none;
   color: var(--color-white-solid, #FFF);
   font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
@@ -733,13 +734,13 @@ export default {
   line-height: 1.5;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 8px rgba(255, 125, 18, 0.2);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
 }
 
 .submit-button:hover:not(.disabled) {
-  background: var(--www-freemoa-net-dark-pumpkin, #E66C00);
+  background: #66BB6A;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(255, 125, 18, 0.3);
+  box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
 }
 
 .submit-button.disabled {
@@ -818,7 +819,7 @@ export default {
 
 .spinner {
   border: 6px solid #f3f3f3;
-  border-top: 6px solid var(--www-freemoa-net-pumpkin, #FF7D12);
+  border-top: 6px solid #4CAF50;
   border-radius: 50%;
   width: 50px;
   height: 50px;
@@ -846,7 +847,7 @@ export default {
 
 .success-button {
   padding: 12px 25px;
-  background: var(--www-freemoa-net-pumpkin, #FF7D12);
+  background: #4CAF50;
   border: none;
   border-radius: 6px;
   color: #FFF;
@@ -857,7 +858,7 @@ export default {
 }
 
 .success-button:hover {
-  background: var(--www-freemoa-net-dark-pumpkin, #E66C00);
+  background: #66BB6A;
 }
 
 /* 반응형 헤더 */
