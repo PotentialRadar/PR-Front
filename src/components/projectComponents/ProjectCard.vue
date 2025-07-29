@@ -12,15 +12,20 @@
         </div>
       </div>
       <div class="header-right">
+        <div class="view-count-display">
+          👀 {{ project.viewCount }}
+        </div>
         <button class="favorite-button" @click="toggleFavorite" :class="{ 'favorited': isFavorited }">
-          <i class="bi bi-heart-fill" v-if="isFavorited"></i>
-          <i class="bi bi-heart" v-else></i>
+          <span v-if="isFavorited">❤️</span>
+          <span v-else>🤍</span>
         </button>
       </div>
     </div>
 
     <div class="description-section" v-if="project.description">
-      <p class="project-description">{{ project.description }}</p>
+      <p class="project-description">
+        {{ project.description }}
+      </p>
     </div>
 
     <div class="category-tags-section">
@@ -38,7 +43,7 @@
         </div>
         <div class="info-content">
           <div class="info-label">진행 기간</div>
-          <div class="info-value">{{ project.duration }}</div>
+          <div class="info-value">{{ displayDuration  }}</div>
         </div>
       </div>
 
@@ -58,7 +63,7 @@
         </div>
         <div class="info-content">
           <div class="info-label">지원자</div>
-          <div class="info-value">{{ project.applicants }}</div>
+          <div class="info-value">{{ displayDuration  }}</div>
         </div>
       </div>
 
@@ -99,19 +104,42 @@ export default {
       isFavorited: false
     }
   },
+  computed: {
+    displayDuration() {
+      if (!this.project.startDate || !this.project.endDate) return '-';
+      const start = new Date(this.project.startDate);
+      const end = new Date(this.project.endDate);
+      if (isNaN(start) || isNaN(end)) return '-';
+      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1; // 날짜 포함
+      if (diff < 7) return `${diff}일`;
+      if (diff < 30) return `${Math.round(diff / 7)}주`;
+      return `${Math.round(diff / 30)}개월`;
+    }
+  },
+  mounted() {
+    console.log('받은 project props', this.project);
+  },
   methods: {
     toggleFavorite() {
       this.isFavorited = !this.isFavorited
     },
     isUrgent(deadline) {
-      if (deadline && deadline.includes('D-')) {
-        const days = parseInt(deadline.replace('D-', ''))
-        return days <= 7
-      }
-      return false
+      if (!deadline) return false
+      // 날짜가 오늘 기준 7일 이내면 urgent (날짜 문자열 YYYY-MM-DD 지원)
+      const today = new Date();
+      const end = new Date(deadline);
+      const diff = (end - today) / (1000 * 60 * 60 * 24);
+      return diff <= 7 && diff >= 0;
+    },
+    formatDeadline(deadline) {
+      if (!deadline) return '-';
+      // 오늘 기준 D-? 표시
+      const today = new Date();
+      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
+      if (dday >= 0) return `D-${dday}`;
+      return '마감';
     },
     goToDetail() {
-      // 실제로 id or projectId로 맞춰서 써야 함!
       this.$router.push({
         name: 'ProjectDetail',
         params: { id: this.project.projectId || this.project.id }
@@ -232,6 +260,15 @@ export default {
   font-size: 16px;
 }
 
+.view-count-display {
+  font-size: 14px;
+  color: #666;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .favorite-button:hover {
   background: rgba(76, 175, 80, 0.1);
   border-color: #4CAF50;
@@ -261,9 +298,13 @@ export default {
   font-weight: 400;
   line-height: 1.6;
   display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .category-tags-section {

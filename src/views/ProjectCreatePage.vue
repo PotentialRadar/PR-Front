@@ -44,16 +44,23 @@
               {{ getError('projectTitle').value }}
             </div>
           </div>
-          <div class="input-group">
-            <input
-              type="text"
-              v-model="formData.projectSubtitle"
-              :class="['project-subtitle-input', { 'error': getError('projectSubtitle').value }]"
-              placeholder="프로젝트의 간략한 소개말을 입력해주세요."
-              @blur="validateField('projectSubtitle', formData.projectSubtitle, validationSchema.projectSubtitle)"
-            />
-            <div v-if="getError('projectSubtitle').value" class="error-message">
-              {{ getError('projectSubtitle').value }}
+        </div>
+
+        <div class="form-section">
+
+          <div class="section-title">프로젝트 내용</div>
+          <div class="form-inputs">
+            <div class="input-group">
+              <textarea
+                  v-model="formData.projectDescription"
+                  :class="['project-description-textarea', { 'error': getError('projectDescription').value }]"
+                  placeholder="프로젝트에 대한 정보를 입력해주세요."
+                  rows="6"
+                  @blur="validateField('projectDescription', formData.projectDescription, validationSchema.projectDescription)"
+              ></textarea>
+              <div v-if="getError('projectDescription').value" class="error-message">
+                {{ getError('projectDescription').value }}
+              </div>
             </div>
           </div>
         </div>
@@ -101,6 +108,7 @@
             </div>
           </div>
         </div>
+
         <div class="form-section">
           <div class="section-title">기술 스택</div>
           <p class="upload-note">입력된 기술 스택은 프로젝트 추천 서비스에 이용됩니다.</p>
@@ -114,21 +122,17 @@
           </div>
         </div>
 
-        <div class="form-section">
-
-          <div class="section-title">프로젝트 내용</div>
-          <div class="form-inputs">
-            <div class="input-group">
-              <textarea
-                v-model="formData.projectDescription"
-                :class="['project-description-textarea', { 'error': getError('projectDescription').value }]"
-                placeholder="프로젝트에 대한 정보를 입력해주세요."
-                rows="6"
-                @blur="validateField('projectDescription', formData.projectDescription, validationSchema.projectDescription)"
-              ></textarea>
-              <div v-if="getError('projectDescription').value" class="error-message">
-                {{ getError('projectDescription').value }}
-              </div>
+        <div class="form-section deadline-section">
+          <div class="section-title">모집 마감일</div>
+          <div class="input-group">
+            <input
+                type="date"
+                v-model="formData.recruitDeadline"
+                :min="new Date().toISOString().slice(0, 10)"
+                :class="['deadline-input', { 'error': getError('recruitDeadline').value }]"
+            />
+            <div v-if="getError('recruitDeadline').value" class="error-message">
+              {{ getError('recruitDeadline').value }}
             </div>
           </div>
         </div>
@@ -212,7 +216,9 @@ export default {
       personnel: 1,
       techStack: [],
       projectDescription: '',
-      files: []
+      files: [],
+      recruitDeadline: '',
+      viewCount: 0
     })
 
     const validationSchema = {
@@ -235,6 +241,16 @@ export default {
         'required',
         (value) => {
           if (!value) return '진행 기간 단위를 선택해주세요.'
+          return true
+        }
+      ],
+      recruitDeadline: [
+        'required',
+        (value) => {
+          if (!value) return '모집 마감일을 선택해주세요.'
+          // 오늘 날짜보다 이전일 수 없음
+          const today = new Date().toISOString().slice(0, 10)
+          if (value < today) return '오늘 이후의 날짜를 선택하세요.'
           return true
         }
       ],
@@ -321,7 +337,7 @@ export default {
         const body = {
           title: formData.projectTitle,
           description: formData.projectDescription,
-          recruitDeadline: endDate,
+          recruitDeadline: formData.recruitDeadline,
           startDate: startDate,
           endDate: endDate,
           fileUrl: fileUrl,
@@ -563,6 +579,28 @@ export default {
 
 .personnel-error {
   align-self: flex-end; /* 에러 메시지도 오른쪽 정렬 */
+}
+
+.deadline-section {
+  margin-bottom: 80px; /* 다른 섹션과 동일하게 */
+}
+.deadline-input {
+  width: 230px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid var(--color-grey-85, #D9D9D9);
+  background: #FFF;
+  font-size: 15px;
+  color: #262626;
+  transition: all 0.2s;
+}
+.deadline-input:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.08);
+}
+.deadline-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220,53,69,0.1);
 }
 
 .form-inputs {

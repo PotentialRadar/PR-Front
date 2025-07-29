@@ -96,14 +96,25 @@ export default {
       projects: []   // 백에서 받아올거라 빈 배열로 초기화
     }
   },
+  mounted() {
+    console.log('받은 project:', this.project)
+  },
   created() {
     this.fetchProjects();
+  },
+  watch: {
+    '$route'(to, from) {
+      if (from.name === 'ProjectDetail') {
+        this.fetchProjects();  //상세 페이지에서 돌아올 때 조회수 포함 새로고침
+      }
+    }
   },
   methods: {
     // 프로젝트 리스트 API 호출
     async fetchProjects() {
       try {
         const response = await axios.get('http://localhost:8080/api/projects'); // 실제 API 주소로 수정!
+        console.log('API 응답', response.data);
         // API 응답을 projects에 저장
         this.projects = response.data.map(project => ({
           id: project.projectId,
@@ -113,6 +124,9 @@ export default {
           status: project.status === 'RECRUITING' ? '모집중' : project.status,
           teamSize: project.recruitCount + '명',     // 인원 표시
           applicants: project.appliedCount + '명',   // 지원자 수
+          startDate: project.startDate,
+          endDate: project.endDate,
+          viewCount: project.viewCount ?? 0,
           deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '', // 디데이 계산
         }))
       } catch (error) {

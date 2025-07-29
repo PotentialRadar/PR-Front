@@ -6,38 +6,22 @@
       <div class="shape shape-2"></div>
       <div class="shape shape-3"></div>
     </div>
-
     <div class="page-container">
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-            <ProjectHeader />
+            <ProjectHeader :project="project" />
           </div>
-
           <div class="integrated-content-card">
             <div class="tab-section">
-              <TabNavigation
-                :activeTab="activeTab"
-                @tab-change="handleTabChange"
-              />
+              <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
             </div>
-
             <div class="tab-content">
-              <ProjectWorkContent id="content-section" />
-              <ProjectComment id="comment-section" />
+              <ProjectWorkContent :description="project.description" :file-url="project.fileUrl" />
+              <ProjectComment :projectId="project.projectId" id="comment-section" />
             </div>
           </div>
         </div>
-  <div class="main-content">
-    <div class="project-content">
-      <!-- props로 project 내려줌 -->
-      <ProjectHeader :project="project" />
-      <div class="tab-section">
-        <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
-      </div>
-      <div class="tab-content">
-        <ProjectWorkContent :description="project.description" :file-url="project.fileUrl" />
-        <ProjectComment :projectId="project.projectId" id="comment-section" />
       </div>
     </div>
   </div>
