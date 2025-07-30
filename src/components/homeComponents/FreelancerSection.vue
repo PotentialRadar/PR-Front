@@ -68,7 +68,7 @@ const freelancers = ref([
   {
     id: 2,
     name: 's****c',
-    type: '��프리랜서',
+    type: '개인프리랜서',
     skills: 'JSP,JavaScript,Node.js,MyS…',
     rating: '4.6',
     contracts: '11',

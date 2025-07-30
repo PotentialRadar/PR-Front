@@ -24,47 +24,45 @@
         <div class="tab" :class="{ active: activeTab === 'etc' }" @click="activeTab = 'etc'">기타</div>
       </div>
 
-      <template v-if="filteredProjects.length > 0">
-        <transition-group name="slide-fade" tag="div" class="projects-grid">
-          <div v-for="project in filteredProjects" :key="project.id" class="project-card">
-
-            <div class="project-category">개발>앱</div>
-            <div class="project-favorite" @click="toggleFavorite(project)">
-              <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']"
-                style="font-size: 20px; color: #4CAF50;"></i>
-            </div>
-            <a href="#" class="project-link">
-              <h3 class="project-title">{{ project.title }}</h3>
-            </a>
-            <div class="project-meta">
-              <p class="project-description">{{ project.description }}</p>
-              <div class="project-status" :class="getStatusClass(project.status)">{{ project.status }}</div>
-            </div>
-
-            <div class="project-details">
-              <div class="detail-item">
-                <span class="detail-label">진행 기간</span>
-                <span class="detail-value">{{ project.duration }}</span>
+      <transition name="slide-fade" mode="out-in">
+        <div class="projects-grid" :key="activeTab + '-' + filteredProjects.length">
+          <template v-if="filteredProjects.length > 0">
+            <!-- [API 연결 지점] 프로젝트 목록 받아오기 -->
+            <div v-for="project in filteredProjects.slice(0, 4)" :key="project.id" class="project-card">
+              <div class="project-category">개발>앱</div>
+              <div class="project-favorite" @click="toggleFavorite(project)">
+                <i :class="['bi', project.isFavorite ? 'bi-heart-fill' : 'bi-heart']"
+                  style="font-size: 20px; color: #4CAF50;"></i>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">모집 인원</span>
-                <span class="detail-value">{{ project.members }}</span>
+              <a href="#" class="project-link">
+                <h3 class="project-title">{{ project.title }}</h3>
+              </a>
+              <div class="project-meta">
+                <p class="project-description">{{ project.description }}</p>
+                <div class="project-status" :class="getStatusClass(project.status)">{{ project.status }}</div>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">지원자수</span>
-                <span class="detail-value">{{ project.applicants }}</span>
+              <div class="project-details">
+                <div class="detail-item">
+                  <span class="detail-label">진행 기간</span>
+                  <span class="detail-value">{{ project.duration }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">모집 인원</span>
+                  <span class="detail-value">{{ project.members }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">지원자수</span>
+                  <span class="detail-value">{{ project.applicants }}</span>
+                </div>
               </div>
             </div>
-
-          </div>
-        </transition-group>
-      </template>
-
-      <template v-else>
-        <div class="projects-grid">
-          <div class="no-projects" key="no-projects">등록된 프로젝트가 없습니다.</div>
+          </template>
+          
+          <template v-else>
+            <div class="no-projects" key="no-projects">등록된 프로젝트가 없습니다.</div>
+          </template>
         </div>
-      </template>
+      </transition>
 
       
 
@@ -75,8 +73,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+// 백엔드 연동 시 여기를 API 호출로 대체
+// ex) const projects = ref(await fetchProjectsFromAPI());
 const activeTab = ref('app')
 
+// [API 연결 지점] 초기 더미 데이터 → 실제 API 연동 시 제거
 const projects = ref([
   {
     id: 1,
@@ -137,7 +138,7 @@ const projects = ref([
     id: 6,
     category: 'web',
     title: '기업용 쇼핑몰 백오피스 웹 개발',
-    description: '상품, 주문, 회원 관리 기능 중심의 관리자 웹페이지 개발...',
+    description: 'å, 주문, 회원 관리 기능 중심의 관리자 웹페이지 개발...',
     status: '마감 D-3',
     duration: '2개월',
     members: '6명',
@@ -159,16 +160,18 @@ const filteredProjects = computed(() => {
 })
 
 const toggleFavorite = (project) => {
+  // [API 연결 지점] 즐겨찾기 상태 변경
   project.isFavorite = !project.isFavorite;
 }
 
+// 프로젝트 상태(status) 문자열에 따라 스타일을 지정하는 함수
 function getStatusClass(status) {
   if (status.includes('모집')) return 'status-open';
 
   if (status.includes('마감 D-')) {
     const days = parseInt(status.replace('마감 D-', ''), 10);
-    if (days <= 7) return 'status-close';        // D-7 이하 빨강
-    else return 'status-open';                  // 그 외는 모집중 스타일
+    if (days <= 7) return 'status-close'; // D-7 이하 빨강
+    else return 'status-open';            // 그 외는 모집중 스타일
   }
 
   return ''; // 예외 케이스 처리
@@ -355,9 +358,7 @@ function getStatusClass(status) {
 
 .status-open {
   color: #388e3c;
-  /* 진한 초록 */
   background-color: #e8f5e9;
-  /* 연한 초록 배경 */
   padding: 4px 14px;
   border-radius: 20px;
   font-size: 13px;
@@ -366,9 +367,7 @@ function getStatusClass(status) {
 
 .status-close {
   color: #d32f2f;
-  /* 진한 빨강 */
   background-color: #fce8e6;
-  /* 연한 빨강 배경 */
   padding: 4px 14px;
   border-radius: 20px;
   font-size: 13px;
@@ -394,7 +393,6 @@ function getStatusClass(status) {
   align-items: center;
   justify-content: center;
   flex: 1;
-  /* 모든 항목 동일 너비 */
   border-left: 1px solid #AAA;
   gap: 10px;
 }
@@ -414,19 +412,6 @@ function getStatusClass(status) {
   font-size: 14px;
   font-weight: 600;
 }
-
-/* .no-projects {
-  width: 100%;
-  text-align: center;
-  padding: 60px 0;
-  font-size: 16px;
-  color: #999;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 467px;
-} */
 
 .no-projects {
   grid-column: 1 / -1;

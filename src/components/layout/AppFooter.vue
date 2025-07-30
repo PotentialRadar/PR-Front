@@ -3,26 +3,13 @@
     <div class="footer-content">
       <div class="footer-top">
         <div class="footer-nav">
-          <a href="#" class="footer-link">프리모아 스토리</a>
-          <a href="#" class="footer-link">이용약관</a>
-          <a href="#" class="footer-link highlight">개인정보취급방침</a>
-          <a href="#" class="footer-link">자주 찾는 질문</a>
+          <a href="#" class="footer-link">프로젝트 소개</a>
+          <a href="#" class="footer-link">팀원 소개</a>
+          <!-- <a href="https://github.com/PotentialRadar" class="footer-link" target="_blank" rel="noopener">GitHub</a> -->
         </div>
         <div class="social-links">
-          <a href="#" class="social-link">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/06a3b8cdc9a80ef07aae069b6f25084d1ad496f5?width=74" alt="페이스북" />
-          </a>
-          <a href="#" class="social-link">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/dd4bb14738672643bc1e99f30ecf5b4aee8fbff2?width=74" alt="네이버 포스트" />
-          </a>
-          <a href="#" class="social-link">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/e466a5868e9c9182003c01871898036d97cf8fc1?width=74" alt="네이버 블로그" />
-          </a>
-          <a href="#" class="social-link">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/5c85e72d6f37cb6f92b20ceebc82b8aff929ecd7?width=74" alt="카카오톡 채널" />
-          </a>
-          <a href="#" class="social-link">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/6b78267d3e0b023e7ca76056c2f331d689460a06?width=74" alt="유튜브" />
+          <a href="https://github.com/PotentialRadar" class="social-link" target="_blank" rel="noopener">
+            <img src="/src/assets/icons/github-icon.png" alt="팀 GitHub 바로가기" />
           </a>
         </div>
       </div>
@@ -31,27 +18,22 @@
     <div class="footer-bottom">
       <div class="footer-bottom-content">
         <div class="contact-info">
-          <h3 class="contact-title">고객센터 : 02-6497-3300</h3>
+          <h3 class="contact-title">문의: teamkokkiri@gmail.com</h3>
           <div class="contact-details">
-            <div class="detail-item">
-              <span class="time">월-금 10:00 - 17:00</span>
-              <span class="note">* 공휴일 휴무</span>
-            </div>
-            <div class="detail-item">프리모아 협업 제안 : contact@freemoa.net</div>
+            <!-- <div class="detail-item">GitHub: github.com/our-team/pr-project</div> -->
           </div>
         </div>
         
         <div class="company-info">
           <div class="company-details">
-            <span class="company-name">히어로하우�� 주식회사</span>
-            <span class="ceo">대표 : 조재인</span>
-            <span class="business-number">사업자등록번호 : 585-86-03332</span>
-            <span class="address">서울특별시 강남구 선릉로86길 38, 7층 09에이(대치동)</span>
+            <span class="company-name">팀 PR (Potential Radar)</span>
+            <span class="ceo">2025 KOSA 교육과정 팀 프로젝트</span>
+            <span class="address">본 프로젝트는 비상업적 용도로 제작되었습니다.</span>
           </div>
         </div>
         
         <div class="copyright">
-          Copyright 2024 Herohouse Inc., All rights reserved.
+          ⓒ 2025 Potential Radar Team. All rights reserved.
         </div>
       </div>
     </div>

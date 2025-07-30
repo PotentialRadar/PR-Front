@@ -33,7 +33,7 @@
 <style scoped>
 .app-header {
   width: 100%;
-  height: 65px;
+  height: 68px;
   display: flex;
   justify-content: center;
   align-items: center;

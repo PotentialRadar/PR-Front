@@ -1,6 +1,7 @@
 <template>
   <section class="stats-section">
     <div class="container">
+      
       <div class="stats-card portfolio-card">
         <div class="card-content">
           <div class="card-header">
@@ -8,8 +9,21 @@
             <h2 class="card-title">포트폴리오 수</h2>
           </div>
           <div class="card-stats">
-            <div class="main-number">89,297</div>
+            <div class="main-number portfolio-number">{{ portfolioCount.toLocaleString() }}</div>
             <div class="unit">건</div>
+          </div>
+          <div class="card-description">
+            <span class="highlight">실제 프로젝트에 참여한 결과물</span> 위주로 구성되어 있습니다.
+          </div>
+          <div class="card-action">
+            <router-link to="/portfolios" class="action-button">
+              <span>포트폴리오 보러가기</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path opacity="0.01" d="M19.3604 0.689941H0.360352V19.6899H19.3604V0.689941Z" fill="white"/>
+                <path d="M10.3604 6.68799L14.3604 10.688L10.3604 14.688" stroke="#4CAF50" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.3604 10.668H5.36035" stroke="#4CAF50" stroke-linecap="round"/>
+              </svg>
+            </router-link>
           </div>
         </div>
       </div>
@@ -21,7 +35,7 @@
             <h2 class="card-title">진행중 프로젝트 수</h2>
           </div>
           <div class="card-stats">
-            <div class="main-number">110</div>
+            <div class="main-number project-number">{{ projectCount.toLocaleString() }}</div>
             <div class="unit">건</div>
           </div>
           <div class="card-description">
@@ -45,6 +59,42 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+
+const portfolioCount = ref(0)
+const projectCount = ref(0)
+
+onMounted(() => {
+  // [API 연동] 백엔드에서 포트폴리오 및 프로젝트 수를 불러와서 countUp에 전달
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (entry.target.classList.contains('portfolio-number') && portfolioCount.value === 0) {
+          countUp(portfolioCount, 89297) // → 여기에 API에서 받은 숫자 사용
+        }
+        if (entry.target.classList.contains('project-number') && projectCount.value === 0) {
+          countUp(projectCount, 110)     // → 여기에 API에서 받은 숫자 사용
+        }
+      }
+    })
+  }, { threshold: 0.5 })
+
+  document.querySelectorAll('.main-number').forEach(el => observer.observe(el))
+})
+
+function countUp(refVar, target) {
+  let current = 0
+  const step = Math.ceil(target / 40)
+  const interval = setInterval(() => {
+    current += step
+    if (current >= target) {
+      refVar.value = target
+      clearInterval(interval)
+    } else {
+      refVar.value = current
+    }
+  }, 20)
+}
 </script>
 
 <style scoped>
@@ -167,7 +217,8 @@
 
 .card-action {
   display: flex;
-  padding-top: 79px;
+  margin-top: auto;
+  padding-top: 15px;
   flex-direction: column;
   align-items: flex-start;
   align-self: stretch;
