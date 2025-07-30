@@ -47,8 +47,8 @@
               <div class="search-icon">
                 <svg width="40" height="44" viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M18 31.1899C24.6274 31.1899 30 25.8174 30 19.1899C30 12.5625 24.6274 7.18994 18 7.18994C11.3726 7.18994 6 12.5625 6 19.1899C6 25.8174 11.3726 31.1899 18 31.1899Z" fill="white"/>
-                  <path d="M18 30.1899C24.0751 30.1899 29 25.2651 29 19.1899C29 13.1148 24.0751 8.18994 18 8.18994C11.9249 8.18994 7 13.1148 7 19.1899C7 25.2651 11.9249 30.1899 18 30.1899Z" stroke="#FF7D12" stroke-width="2"/>
-                  <path d="M25.7061 27.4448L34.7081 36.4468" stroke="#FF7D12" stroke-width="2"/>
+                  <path d="M18 30.1899C24.0751 30.1899 29 25.2651 29 19.1899C29 13.1148 24.0751 8.18994 18 8.18994C11.9249 8.18994 7 13.1148 7 19.1899C7 25.2651 11.9249 30.1899 18 30.1899Z" stroke="#81C784" stroke-width="2"/>
+                  <path d="M25.7061 27.4448L34.7081 36.4468" stroke="#81C784" stroke-width="2"/>
                 </svg>
               </div>
             </div>
@@ -141,21 +141,19 @@ onMounted(() => {
 
     el.scrollLeft += currentStep
 
-    // 💡 무한 슬라이드처럼 보이도록 절반쯤 갔을 때 리셋
+    // 무한 슬라이드처럼 보이도록 절반쯤 갔을 때 리셋
     const resetThreshold = el.scrollWidth / 3  // 복제된 분량에 따라 조정
     if (el.scrollLeft >= resetThreshold) {
       el.scrollLeft = 0
     }
-  }, 30)
+  }, 35)
 })
 
 function handleMouseEnter() {
   isHovered.value = true
-  console.log('mouseenter: hover 시작')
 }
 function handleMouseLeave() {
   isHovered.value = false
-  console.log('mouseleave: hover 종료')
 }
 </script>
 
@@ -177,8 +175,8 @@ function handleMouseLeave() {
   justify-content: center;
   align-items: flex-start;
   align-self: stretch;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 85%, #FFF 100%), 
-              linear-gradient(90deg, #EDFAFD 0%, #EDFAFD 33%, #EDFAFD 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 85%, #FFF 100%),
+              linear-gradient(90deg, #F1FBF3 0%, #F1FBF3 33%, #F1FBF3 100%);
   position: relative;
 }
 
@@ -239,7 +237,7 @@ function handleMouseLeave() {
 }
 
 .text-highlight {
-  color: #FF7D12;
+  color: #81C784;
   font-size: 47px;
   font-weight: 400;
   line-height: 60px;
@@ -351,7 +349,7 @@ function handleMouseLeave() {
   flex: 1 0 0;
   align-self: stretch;
   border-radius: 5px;
-  border: 1px solid #FF7D12;
+  border: 1px solid #81C784;
   background: #FFF;
   color: #AAA;
   font-size: 22px;
@@ -396,7 +394,7 @@ function handleMouseLeave() {
 }
 
 .tech-tag:hover {
-  border-color: #FF7D12;
-  color: #FF7D12;
+  border-color: #81C784;
+  color: #81C784;
 }
 </style>

@@ -15,16 +15,19 @@ import DashboardMessages from '@/views/DashboardMessages.vue';
 
 const routes = [
   {
+    // 메인
     path: '/',
     name: 'Home',
     component: HomePage,
   },
   {
+    // 로그인
     path: '/login',
     name: 'Login',
     component: LoginPage,
   },
   {
+    // 회원가입
     path: '/signUp',
     name: 'SignUp',
     component: SignUpPage,
@@ -130,6 +133,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 페이지 이동 시 항상 최상단으로 스크롤
+    return { top: 0 };
+  },
 });
 
 export default router;
