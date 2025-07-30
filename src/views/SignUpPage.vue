@@ -11,43 +11,46 @@
           <label for="email" class="form-label">이메일</label>
           <div class="email-input-group">
             <input
-                id="email"
-                v-model="formData.email"
-                type="email"
-                class="form-input email-input"
-                :class="{ 'invalid-input': !isEmailValid && formData.email }"
-                placeholder="이메일을 입력해주세요."
-                required
+              id="email"
+              v-model="formData.email"
+              type="email"
+              class="form-input email-input"
+              :class="{ 'invalid-input': !isEmailValid && formData.email }"
+              placeholder="이메일을 입력해주세요."
+              required
             />
             <button
-                type="button"
-                class="verification-button"
-                @click="requestVerification"
+              type="button"
+              class="verification-button"
+              @click="requestVerification"
             >
               {{ verificationRequested ? '인증번호 재전송' : '인증번호 받기' }}
             </button>
           </div>
 
-          <p v-if="formData.email && emailTouched && !isEmailValid" class="email-error-message">
+          <p
+            v-if="formData.email && emailTouched && !isEmailValid"
+            class="email-error-message"
+          >
             올바른 이메일 형식을 입력해주세요.
           </p>
 
           <!-- 인증번호 입력창 및 인증번호 확인 버튼 -->
           <div class="email-input-group" v-if="verificationRequested">
             <input
-                v-model="formData.verificationCode"
-                type="text"
-                class="form-input confirm-input"
-                :class="{ 'disabled-input': isVerified }"
-                placeholder="인증번호를 입력해주세요."
-                :disabled="isVerified"
-                required
+              v-model="formData.verificationCode"
+              type="text"
+              class="form-input confirm-input"
+              :class="{ 'disabled-input': isVerified }"
+              placeholder="인증번호를 입력해주세요."
+              :disabled="isVerified"
+              required
             />
             <button
-                type="button"
-                class="verification-button confirm-mail"
-                @click="verifyCode"
-                :disabled="isVerified"
+              type="button"
+              class="verification-button confirm-mail"
+              @click="verifyCode"
+              :disabled="isVerified"
             >
               인증번호 확인
             </button>
@@ -58,12 +61,12 @@
         <div class="form-group">
           <label for="name" class="form-label">이름</label>
           <input
-              id="name"
-              v-model="formData.name"
-              type="text"
-              class="form-input"
-              placeholder="이름을 입력해주세요."
-              required
+            id="name"
+            v-model="formData.name"
+            type="text"
+            class="form-input"
+            placeholder="이름을 입력해주세요."
+            required
           />
           <p v-if="nameStatusMessage" :class="nameMessageClass">
             {{ nameStatusMessage }}
@@ -74,12 +77,12 @@
         <div class="form-group">
           <label for="nickName" class="form-label">닉네임</label>
           <input
-              id="nickName"
-              v-model="formData.nickName"
-              type="text"
-              class="form-input"
-              placeholder="닉네임을 입력해주세요."
-              required
+            id="nickName"
+            v-model="formData.nickName"
+            type="text"
+            class="form-input"
+            placeholder="닉네임을 입력해주세요."
+            required
           />
           <p v-if="nickNameStatusMessage" :class="nickNameMessageClass">
             {{ nickNameStatusMessage }}
@@ -90,48 +93,51 @@
         <div class="form-group">
           <label for="password" class="form-label">비밀번호</label>
           <input
-              id="password"
-              v-model="formData.password"
-              type="password"
-              :class="{
+            id="password"
+            v-model="formData.password"
+            type="password"
+            :class="{
               'form-input': true,
               'invalid-input': formData.password && !isPasswordValid,
-              'valid-input': formData.password && isPasswordValid
+              'valid-input': formData.password && isPasswordValid,
             }"
-              placeholder="비밀번호를 입력해주세요."
-              required
+            placeholder="비밀번호를 입력해주세요."
+            required
           />
           <p
-              v-if="formData.password"
-              :class="{
+            v-if="formData.password"
+            :class="{
               'validation-message': true,
-              'error': !isPasswordValid,
-              'success': isPasswordValid
+              error: !isPasswordValid,
+              success: isPasswordValid,
             }"
           >
             {{
               isPasswordValid
-                  ? '사용 가능한 비밀번호입니다.'
-                  : '비밀번호는 8~20자이며 대소문자, 숫자, 특수문자를 포함해야 합니다.'
+                ? '사용 가능한 비밀번호입니다.'
+                : '비밀번호는 8~20자이며 대소문자, 숫자, 특수문자를 포함해야 합니다.'
             }}
           </p>
 
           <input
-              v-model="formData.confirmPassword"
-              type="password"
-              class="form-input confirm-pwd"
-              placeholder="비밀번호를 다시 한번 입력해주세요."
-              required
+            v-model="formData.confirmPassword"
+            type="password"
+            class="form-input confirm-pwd"
+            placeholder="비밀번호를 다시 한번 입력해주세요."
+            required
           />
-          <p v-if="formData.confirmPassword" :class="{
-            'validation-message': true,
-            'error': !isPasswordMatch,
-            'success': isPasswordMatch
-          }">
+          <p
+            v-if="formData.confirmPassword"
+            :class="{
+              'validation-message': true,
+              error: !isPasswordMatch,
+              success: isPasswordMatch,
+            }"
+          >
             {{
               isPasswordMatch
-                  ? '비밀번호가 일치합니다.'
-                  : '비밀번호가 일치하지 않습니다.'
+                ? '비밀번호가 일치합니다.'
+                : '비밀번호가 일치하지 않습니다.'
             }}
           </p>
         </div>
@@ -145,14 +151,19 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useToast } from 'vue-toastification'
-import axios from 'axios'
-import { debounce } from 'lodash'
+import {
+  sendVerificationCode,
+  verifyEmailCode,
+  checkNickname,
+  signUp,
+} from '@/api/user';
+import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
+import { debounce } from 'lodash';
 
-const toast = useToast()
-const router = useRouter()
+const toast = useToast();
+const router = useRouter();
 
 const formData = ref({
   email: '',
@@ -160,24 +171,25 @@ const formData = ref({
   name: '',
   nickName: '',
   password: '',
-  confirmPassword: ''
-})
+  confirmPassword: '',
+});
 
-const verificationRequested = ref(false)
-const isVerified = ref(false)
-const nickNameTouched = ref(false)
-const nameTouched = ref(false)
-const emailTouched = ref(false)
-const isNickNameAvailable = ref(null) // null: 확인 전, true: 사용 가능, false: 중복됨
+const verificationRequested = ref(false);
+const isVerified = ref(false);
+const nickNameTouched = ref(false);
+const nameTouched = ref(false);
+const emailTouched = ref(false);
+const isNickNameAvailable = ref(null); // null: 확인 전, true: 사용 가능, false: 중복됨
 
 const isEmailValid = computed(() => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(formData.value.email)
-})
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(formData.value.email);
+});
 
 const isPasswordValid = computed(() => {
   const password = formData.value.password;
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+  const regex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
   return regex.test(password);
 });
 
@@ -202,7 +214,7 @@ const nameStatusMessage = computed(() => {
   if (!formData.value.name || !nameTouched.value) {
     return '';
   }
-  
+
   return isNameValid.value
     ? '사용 가능한 이름입니다.'
     : '이름은 한글로 1~50자 이내로 입력해주세요.';
@@ -212,7 +224,7 @@ const nameMessageClass = computed(() => {
   if (!formData.value.name || !nameTouched.value) {
     return '';
   }
-  
+
   return isNameValid.value
     ? 'validation-message success'
     : 'validation-message error';
@@ -223,19 +235,19 @@ const nickNameStatusMessage = computed(() => {
   if (!formData.value.nickName || !nickNameTouched.value) {
     return '';
   }
-  
+
   if (!isNickNameValid.value) {
     return '닉네임은 2~20자, 한글/영문/숫자만 가능합니다.';
   }
-  
+
   if (isNickNameAvailable.value === false) {
     return '이미 사용 중인 닉네임입니다.';
   }
-  
+
   if (isNickNameAvailable.value === true) {
     return '사용 가능한 닉네임입니다.';
   }
-  
+
   return '중복 확인 중입니다...';
 });
 
@@ -256,31 +268,33 @@ const nickNameMessageClass = computed(() => {
 });
 
 const isFormValid = computed(() => {
-  return formData.value.email &&
-      formData.value.name &&
-      formData.value.nickName &&
-      formData.value.password &&
-      formData.value.confirmPassword &&
-      isPasswordValid.value &&
-      isPasswordMatch.value &&
-      isNameValid.value &&
-      isNickNameValid.value && 
-      isNickNameAvailable.value === true
-})
+  return (
+    formData.value.email &&
+    formData.value.name &&
+    formData.value.nickName &&
+    formData.value.password &&
+    formData.value.confirmPassword &&
+    isPasswordValid.value &&
+    isPasswordMatch.value &&
+    isNameValid.value &&
+    isNickNameValid.value &&
+    isNickNameAvailable.value === true
+  );
+});
 
 const goBack = () => {
-  router.go(-1)
-}
+  router.go(-1);
+};
 
 const requestVerification = async () => {
-// [Backend Required] 이메일 인증번호 전송 (서버에 이메일 전달)
-// [백엔드 연동] 이메일 인증번호 발송 요청
-// ex) /api/users/send-code
+  // [Backend Required] 이메일 인증번호 전송 (서버에 이메일 전달)
+  // [백엔드 연동] 이메일 인증번호 발송 요청
+  // ex) /api/users/send-code
   if (!isEmailValid.value) {
     toast.error('올바른 이메일 형식을 입력해주세요.', {
       position: 'top-center',
       timeout: 2000,
-      hideProgressBar: true
+      hideProgressBar: true,
     });
     return;
   }
@@ -290,34 +304,32 @@ const requestVerification = async () => {
   formData.value.verificationCode = '';
 
   try {
-    await axios.post('/api/users/send-code', {
-      email: formData.value.email
-    });
+    await sendVerificationCode(formData.value.email);
 
     toast.success('인증메일이 전송됐어요', {
       position: 'top-center',
       timeout: 2000,
       toastClassName: 'signup-toast',
       bodyClassName: 'signup-toast-body',
-      hideProgressBar: true
+      hideProgressBar: true,
     });
   } catch (e) {
     toast.error('인증 메일 전송에 실패했습니다.', {
       position: 'top-center',
       timeout: 2000,
-      hideProgressBar: true
+      hideProgressBar: true,
     });
   }
 };
 
 const handleSubmit = async () => {
-// [Backend Required] 회원가입 요청 처리
-// [백엔드 연동] 회원가입 제출 처리
-// 성공/실패 토스트 메시지 및 리다이렉트 로직 포함
+  // [Backend Required] 회원가입 요청 처리
+  // [백엔드 연동] 회원가입 제출 처리
+  // 성공/실패 토스트 메시지 및 리다이렉트 로직 포함
   if (!isFormValid.value) return;
 
   try {
-    const response = await axios.post('/api/users/signup', {
+    const response = await signUp({
       email: formData.value.email,
       name: formData.value.name,
       nickname: formData.value.nickName,
@@ -339,80 +351,90 @@ const handleSubmit = async () => {
       hideProgressBar: true,
     });
   }
-}
+};
 
 // 이름 입력 감시
-watch(() => formData.value.name, () => {
-  nameTouched.value = true;
-});
+watch(
+  () => formData.value.name,
+  () => {
+    nameTouched.value = true;
+  }
+);
 
 // 닉네임 입력 감시
-watch(() => formData.value.nickName, () => {
-  nickNameTouched.value = true;
-  isNickNameAvailable.value = null;
-  if (isNickNameValid.value) {
-    debouncedCheckNickName();
+watch(
+  () => formData.value.nickName,
+  () => {
+    nickNameTouched.value = true;
+    isNickNameAvailable.value = null;
+    if (isNickNameValid.value) {
+      debouncedCheckNickName();
+    }
   }
-});
+);
 
 // 이메일 입력 감시
-watch(() => formData.value.email, () => {
-  emailTouched.value = true;
-});
+watch(
+  () => formData.value.email,
+  () => {
+    emailTouched.value = true;
+  }
+);
 
 const checkNickName = async () => {
-// [Backend Required] 닉네임 중복 확인 (DB 조회 필요)
-// [백엔드 연동] 닉네임 중복 확인
-// ex) /api/users/check-nickname?nickname=xxx
-// 이건 잘 모르겠어용..
-  const nickname = formData.value.nickName
+  // [Backend Required] 닉네임 중복 확인 (DB 조회 필요)
+  // [백엔드 연동] 닉네임 중복 확인
+  // ex) /api/users/check-nickname?nickname=xxx
+  // 이건 잘 모르겠어용..
+  const nickname = formData.value.nickName;
   if (!nickname || !isNickNameValid.value) {
     isNickNameAvailable.value = null;
     return;
   }
 
   try {
-    const response = await axios.get(`/api/users/check-nickname?nickname=${nickname}`)
-    isNickNameAvailable.value = !response.data.duplicate
-  } catch (error) {
-    console.error('닉네임 중복 확인 실패', error)
-    isNickNameAvailable.value = null
-  }
-}
+    const response = await checkNickname(nickname);
 
-const debouncedCheckNickName = debounce(checkNickName, 500)
+    isNickNameAvailable.value = !response.data.duplicate;
+  } catch (error) {
+    console.error('닉네임 중복 확인 실패', error);
+    isNickNameAvailable.value = null;
+  }
+};
+
+const debouncedCheckNickName = debounce(checkNickName, 500);
 
 const verifyCode = async () => {
-// [Backend Required] 입력된 인증번호 유효성 확인
-// [백엔드 연동] 인증번호 확인 요청
-// ex) /api/users/verify-code
+  // [Backend Required] 입력된 인증번호 유효성 확인
+  // [백엔드 연동] 인증번호 확인 요청
+  // ex) /api/users/verify-code
   try {
-    const response = await axios.post('/api/users/verify-code', {
-      email: formData.value.email,
-      code: formData.value.verificationCode
-    });
+    const response = await verifyEmailCode(
+      formData.value.email,
+      formData.value.verificationCode
+    );
     if (response.data.success) {
       isVerified.value = true;
       toast.success('인증이 완료되었습니다.', {
         position: 'top-center',
         timeout: 2000,
-        hideProgressBar: true
+        hideProgressBar: true,
       });
     } else {
       toast.error('인증번호가 일치하지 않습니다.', {
         position: 'top-center',
         timeout: 2000,
-        hideProgressBar: true
+        hideProgressBar: true,
       });
     }
   } catch (error) {
     toast.error('인증번호 확인 중 오류가 발생했습니다.', {
       position: 'top-center',
       timeout: 2000,
-      hideProgressBar: true
+      hideProgressBar: true,
     });
   }
-}
+};
 </script>
 
 <style scoped>
@@ -535,7 +557,8 @@ const verifyCode = async () => {
   margin-top: 12px;
 }
 
-.confirm-pwd, .confirm-mail {
+.confirm-pwd,
+.confirm-mail {
   margin: 12px 0 12px 0;
 }
 

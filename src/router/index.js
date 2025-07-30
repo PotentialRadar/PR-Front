@@ -27,6 +27,11 @@ const routes = [
     component: LoginPage,
   },
   {
+    path: '/oauth/success',
+    name: 'OAuthSuccess',
+    component: () => import('@/views/OAuth2Succcess.vue'),
+  },
+  {
     // 회원가입
     path: '/signUp',
     name: 'SignUp',
@@ -51,7 +56,7 @@ const routes = [
     component: ProjectCreatePage,
   },
   {
-    // 유저 포트폴리오 
+    // 유저 포트폴리오
     path: '/portfolio/:userId?',
     name: 'Portfolio',
     component: PortfolioPage,

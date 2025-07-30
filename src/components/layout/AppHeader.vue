@@ -9,25 +9,46 @@
         </div>
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
-          <router-link to="/portfolio" class="nav-item portfolio-search">포트폴리오</router-link>
+          <router-link to="/portfolio" class="nav-item portfolio-search"
+            >포트폴리오</router-link
+          >
           <div class="nav-dropdown">
             <span class="dropdown-trigger">더보기</span>
+            <img
+              src="https://api.builder.io/api/v1/image/assets/TEMP/8730bce826a38c42e3781f01f73b07caeccbd593?width=28"
+              alt="더보기"
+              class="dropdown-icon"
+            />
+
             <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9"
               fill="none">
               <path d="M2 2 L7 7 L12 2" stroke="#48A74C" stroke-width="2" fill="none" stroke-linecap="round"
                 stroke-linejoin="round" />
             </svg>
+
           </div>
         </nav>
       </div>
+
       <div class="header-right">
-        <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
+        <template v-if="userStore.isLoggedIn">
+          <router-link to="/mypage" class="auth-link">마이페이지</router-link>
+          <button @click="userStore.logout" class="auth-link">로그아웃</button>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="auth-link"
+            >로그인&nbsp; | &nbsp;회원가입</router-link
+          >
+        </template>
+
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
+import { useUserStore } from '@/stores/userStore';
+const userStore = useUserStore();
 </script>
 
 <style scoped>
@@ -37,8 +58,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border-bottom: 1px solid #E8E8E8;
-  background: #FFF;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fff;
   position: fixed;
   top: 0;
   left: 0;
@@ -83,6 +104,7 @@
 
 .nav-item:hover {
   color: #4CAF50;
+
 }
 
 .nav-item.router-link-active {
