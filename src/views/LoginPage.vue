@@ -120,8 +120,8 @@
                 >
               </div>
             </form>
-          </div>
-          <!-- 내용전체 컨테이너 -->
+
+          </div> <!-- 내용전체 컨테이너 -->
         </div>
       </div>
     </div>
@@ -347,12 +347,6 @@ form {
 
 .auth-link:hover {
   color: var(--color-black-solid);
-}
-
-.auth-link > p {
-  color: rgba(55, 56, 60, 0.61);
-  text-align: center;
-  font-size: 14px;
 }
 
 .link-divider {

@@ -15,33 +15,33 @@
 
     <!-- 카테고리 섹션 -->
     <section class="category-icons-section">
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('backend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/backend.png" alt="백엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🔧</div>
         </div>
         <div class="category-title">백엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('frontend')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/frontend.png" alt="프론트엔드 아이콘" class="category-icon" />
+          <div class="category-icon">🎨</div>
         </div>
         <div class="category-title">프론트엔드</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('app')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/app_development.png" alt="앱개발 아이콘" class="category-icon" />
+          <div class="category-icon">📱</div>
         </div>
         <div class="category-title">앱개발</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('design')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/design.png" alt="디자인 아이콘" class="category-icon" />
+          <div class="category-icon">🎭</div>
         </div>
         <div class="category-title">디자인</div>
       </div>
-      <div class="category-item">
+      <div class="category-item" @click="filterByCategory('infra')">
         <div class="category-icon-wrapper">
-          <img src="@/assets/icons/infra.png" alt="인프라 아이콘" class="category-icon" />
+          <div class="category-icon">☁️</div>
         </div>
         <div class="category-title">인프라</div>
       </div>
@@ -63,9 +63,10 @@
           <div class="projects-container">
             <div class="project-list">
               <ProjectCard
-                v-for="project in projects"
+                v-for="project in filteredProjects"
                 :key="project.id"
                 :project="project"
+                @apply="openApplyModal"
               />
             </div>
           </div>
@@ -73,14 +74,36 @@
         </div>
       </div>
     </div>
+    <ApplyModal
+        v-if="showApplyModal"
+        :visible="showApplyModal"
+        :project-info="selectedProject"
+        :user-portfolio="userPortfolio"
+        @close="closeApplyModal"
+        @submit="handleApplicationSubmitted"
+        @portfolio-settings="goToPortfolioSettings"
+    />
+  </div>
+  <div
+      v-if="showSuccessToast"
+      class="success-toast"
+  >
+    <span class="toast-icon">✅</span>
+    지원이 성공적으로 완료되었습니다!
+  </div>
+  <div v-if="showFailToast" class="fail-toast">
+    <span class="toast-icon">❌</span>
+    지원에 실패했습니다. 다시 시도해주세요.
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 import SearchSection from '@/components/projectComponents/SearchSection.vue'
 import SortOptions from '@/components/projectComponents/SortOptions.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
+import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
 
 export default {
   name: 'ProjectListPage',
@@ -88,56 +111,172 @@ export default {
     SearchSection,
     SortOptions,
     ProjectCard,
-    PaginationComponent
+    PaginationComponent,
+    ApplyModal
   },
   data() {
     return {
-      projects: [
-        {
-          id: 1,
-          title: 'JAVA Spring, Vue 기반 프로젝트',
-          description: '스터디 하면서 프로젝트 진행할 분들 구합니다',
-          tags: ['JAVA', 'Spring', 'Vue', '웹개발'],
-          status: '모집중',
-          duration: '3개월',
-          teamSize: '3명',
-          applicants: '0명',
-          deadline: 'D-16',
-        },
-        {
-          id: 2,
-          title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
-          description: '',
-          tags: ['Android', '모바일', '어플'],
-          status: '모집중',
-          duration: '3개월',
-          teamSize: '6명',
-          applicants: '2명',
-          deadline: 'D-13',
-        },
-        {
-          id: 3,
-          title: 'Web 프레임워크 및 UI 시스템 고도화',
-          description: '',
-          tags: ['React', 'TypeScript', 'vite', 'StoryBook', 'CSS-in-JS'],
-          status: '모집중',
-          duration: '6개월',
-          teamSize: '3명',
-          applicants: '0명',
-          deadline: 'D-16',
-        }
-      ]
+      projects: [],
+      selectedCategory: null,
+      showApplyModal: false,
+      showSuccessToast: false,
+      showFailToast: false, // 모달 ON/OFF
+      selectedProject: null,         // 모달에 넘길 프로젝트 데이터
+      userPortfolio: {               // 예시. 실제론 유저 데이터 연동!
+        isPublic: true,
+        lastUpdated: '2024-07-29'
+      }
+    }
+  },
+  created() {
+    this.fetchProjects();
+  },
+  computed: {
+    filteredProjects() {
+      // 카테고리 필터도 실제 적용시 아래처럼 조건 추가
+      // if (this.selectedCategory) { ... }
+      return this.projects;
     }
   },
   methods: {
+    // 프로젝트 리스트 API 호출
+    async fetchProjects() {
+      try {
+        const response = await axios.get('http://localhost:8080/api/projects');
+        this.projects = response.data
+            .slice() // 데이터 복제
+            .sort((a, b) => new Date(a.recruitDeadline) - new Date(b.recruitDeadline))
+            .map(project => ({
+          id: project.projectId,
+          title: project.title,
+          description: project.description,
+          tags: project.techStacks,
+          status: project.status === 'RECRUITING' ? '모집중' : project.status,
+          recruitCount: project.recruitCount,
+          appliedCount: project.appliedCount,
+          startDate: project.startDate,
+          endDate: project.endDate,
+          viewCount: project.viewCount ?? 0,
+          deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '',
+        }))
+      } catch (error) {
+        alert('프로젝트 목록을 불러오는데 실패했습니다.');
+        console.error(error);
+      }
+    },
+    calcDeadline(recruitDeadline) {
+      const today = new Date();
+      const deadline = new Date(recruitDeadline);
+      const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+      return diff > 0 ? `D-${diff}` : '마감';
+    },
     goToCreateProject() {
-      this.$router.push({ name: 'CreateProject' }); 
+      this.$router.push({name: 'ProjectCreate'})
+    },
+    filterByCategory(category) {
+      this.selectedCategory = this.selectedCategory === category ? null : category
+    },
+    openApplyModal(project) {
+      if (!project) return
+      this.selectedProject = {
+        title: project.title,
+        description: project.description,
+        projectId: project.id
+      }
+      this.showApplyModal = true
+    },
+    closeApplyModal() {
+      this.showApplyModal = false
+      this.selectedProject = null
+    },
+    goToPortfolioSettings() {
+      this.closeApplyModal()
+      this.$router.push({name: 'PortfolioSettings'})
+    },
+    async handleApplicationSubmitted(data) {
+      if (!data || !data.applicationForm) return
+
+      const message = data.applicationForm.message || ''
+      const part = data.applicationForm.part || ''
+
+      try {
+        await axios.post(
+            `http://localhost:8080/api/projects/${this.selectedProject.projectId}/apply`,
+            {
+              userId: 3,
+              applicationMessage: message,
+              techStack: part
+            }
+        )
+        this.showSuccessToast = true
+        setTimeout(() => {
+          this.showSuccessToast = false
+        }, 3000)
+        this.closeApplyModal()
+      } catch (e) {
+        if (e.response && e.response.status === 409) {
+          this.showFailToast = true
+        } else {
+          this.showFailToast = true
+          console.error(e)
+        }
+        setTimeout(() => {
+          this.showFailToast = false
+        }, 3000)
+        this.closeApplyModal()
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+.success-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  z-index: 1001;
+  animation: slideInRight 0.3s ease;
+}
+.fail-toast {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  background: linear-gradient(135deg, #f44336, #e57373);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  z-index: 1001;
+  animation: slideInRight 0.3s ease;
+}
+.toast-icon {
+  font-size: 18px;
+}
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 .project-list-page {
   min-height: 100vh;
   background: #FFF;
@@ -258,6 +397,10 @@ export default {
   background: rgba(76, 175, 80, 0.05);
 }
 
+.category-item.active {
+  background: rgba(76, 175, 80, 0.1);
+}
+
 .category-icon-wrapper {
   width: 70px;
   height: 70px;
@@ -277,8 +420,7 @@ export default {
 }
 
 .category-icon {
-  width: 40px;
-  height: 40px;
+  font-size: 32px;
   transition: all 0.3s ease;
 }
 
@@ -442,8 +584,7 @@ export default {
   }
 
   .category-icon {
-    width: 35px;
-    height: 35px;
+    font-size: 28px;
   }
 
   .category-title {
@@ -493,8 +634,7 @@ export default {
   }
 
   .category-icon {
-    width: 30px;
-    height: 30px;
+    font-size: 24px;
   }
 
   .category-title {

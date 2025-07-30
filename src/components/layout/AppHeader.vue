@@ -4,7 +4,7 @@
       <div class="header-left">
         <div class="logo-container">
           <router-link to="/" class="logo-link">
-            <img src="/pr-logo.png" alt="로고" class="logo" />
+            <img src="/pr-Photoroom.png" alt="로고" class="logo" />
           </router-link>
         </div>
         <nav class="nav-menu">
@@ -19,6 +19,13 @@
               alt="더보기"
               class="dropdown-icon"
             />
+
+            <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9"
+              fill="none">
+              <path d="M2 2 L7 7 L12 2" stroke="#48A74C" stroke-width="2" fill="none" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+
           </div>
         </nav>
       </div>
@@ -33,6 +40,7 @@
             >로그인&nbsp; | &nbsp;회원가입</router-link
           >
         </template>
+
       </div>
     </div>
   </header>
@@ -46,7 +54,7 @@ const userStore = useUserStore();
 <style scoped>
 .app-header {
   width: 100%;
-  height: 65px;
+  height: 68px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -57,7 +65,7 @@ const userStore = useUserStore();
   left: 0;
   right: 0;
   z-index: 2000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 선택 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .container {
@@ -74,7 +82,7 @@ const userStore = useUserStore();
 
 .logo {
   width: auto;
-  height: 40px; /* 또는 로고 이미지에 맞는 높이로 설정 */
+  height: 40px;
   opacity: 1;
   margin-right: 40px;
 }
@@ -95,31 +103,33 @@ const userStore = useUserStore();
 }
 
 .nav-item:hover {
-  color: #ff7d12;
+  color: #4CAF50;
+
 }
 
-.portfolio-search {
-  text-decoration: underline;
+.nav-item.router-link-active {
+  color: #4CAF50;
+  font-weight: 700;
 }
 
 .nav-dropdown {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 22px 5px 25px 20px;
+  padding: 20px 5px;
   cursor: pointer;
 }
 
 .dropdown-trigger {
-  color: #555;
+  color: #424953;
   font-size: 15px;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 27px;
 }
 
 .dropdown-icon {
   width: 14px;
-  height: 9px;
+  height: 10px;
 }
 
 .header-right {
@@ -130,7 +140,7 @@ const userStore = useUserStore();
 
 .auth-link {
   color: #666;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 24px;
   text-decoration: none;
@@ -138,7 +148,7 @@ const userStore = useUserStore();
 }
 
 .auth-link:hover {
-  color: #ff7d12;
+  color: #4CAF50;
 }
 
 .separator {

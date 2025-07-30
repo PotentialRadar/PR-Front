@@ -44,16 +44,23 @@
               {{ getError('projectTitle').value }}
             </div>
           </div>
-          <div class="input-group">
-            <input
-              type="text"
-              v-model="formData.projectSubtitle"
-              :class="['project-subtitle-input', { 'error': getError('projectSubtitle').value }]"
-              placeholder="프로젝트의 간략한 소개말을 입력해주세요."
-              @blur="validateField('projectSubtitle', formData.projectSubtitle, validationSchema.projectSubtitle)"
-            />
-            <div v-if="getError('projectSubtitle').value" class="error-message">
-              {{ getError('projectSubtitle').value }}
+        </div>
+
+        <div class="form-section">
+
+          <div class="section-title">프로젝트 내용</div>
+          <div class="form-inputs">
+            <div class="input-group">
+              <textarea
+                  v-model="formData.projectDescription"
+                  :class="['project-description-textarea', { 'error': getError('projectDescription').value }]"
+                  placeholder="프로젝트에 대한 정보를 입력해주세요."
+                  rows="6"
+                  @blur="validateField('projectDescription', formData.projectDescription, validationSchema.projectDescription)"
+              ></textarea>
+              <div v-if="getError('projectDescription').value" class="error-message">
+                {{ getError('projectDescription').value }}
+              </div>
             </div>
           </div>
         </div>
@@ -101,6 +108,7 @@
             </div>
           </div>
         </div>
+
         <div class="form-section">
           <div class="section-title">기술 스택</div>
           <p class="upload-note">입력된 기술 스택은 프로젝트 추천 서비스에 이용됩니다.</p>
@@ -114,21 +122,17 @@
           </div>
         </div>
 
-        <div class="form-section">
-
-          <div class="section-title">프로젝트 내용</div>
-          <div class="form-inputs">
-            <div class="input-group">
-              <textarea
-                v-model="formData.projectDescription"
-                :class="['project-description-textarea', { 'error': getError('projectDescription').value }]"
-                placeholder="프로젝트에 대한 정보를 입력해주세요."
-                rows="6"
-                @blur="validateField('projectDescription', formData.projectDescription, validationSchema.projectDescription)"
-              ></textarea>
-              <div v-if="getError('projectDescription').value" class="error-message">
-                {{ getError('projectDescription').value }}
-              </div>
+        <div class="form-section deadline-section">
+          <div class="section-title">모집 마감일</div>
+          <div class="input-group">
+            <input
+                type="date"
+                v-model="formData.recruitDeadline"
+                :min="new Date().toISOString().slice(0, 10)"
+                :class="['deadline-input', { 'error': getError('recruitDeadline').value }]"
+            />
+            <div v-if="getError('recruitDeadline').value" class="error-message">
+              {{ getError('recruitDeadline').value }}
             </div>
           </div>
         </div>
@@ -171,16 +175,19 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
+import axios from 'axios'
 import PersonnelCounter from '@/components/projectComponents/PersonnelCounter.vue'
 import TechStackSelector from '@/components/common/TechStackSelector.vue'
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue'
 import { useFormValidation } from '@/composables/useFormValidation.js'
+import {useRouter} from "vue-router";
+
+const API_URL = 'http://localhost:8080/api/projects'
 
 export default {
   name: 'ProjectCreatePage',
   components: {
-    // DateRangeInput, // 제거
     PersonnelCounter,
     TechStackSelector,
     FileUploadArea
@@ -198,29 +205,32 @@ export default {
       getError
     } = useFormValidation()
 
+    const router = useRouter()
     const showSuccess = ref(false)
 
     const formData = reactive({
-      projectTitle: '', 
-      projectSubtitle: '', 
-      projectDurationValue: null, 
-      projectDurationUnit: '',    
-      personnel: 1, 
+      projectTitle: '',
+      projectSubtitle: '',
+      projectDurationValue: null,
+      projectDurationUnit: '',
+      personnel: 1,
       techStack: [],
       projectDescription: '',
-      files: []
+      files: [],
+      recruitDeadline: '',
+      viewCount: 0
     })
 
     const validationSchema = {
-      projectTitle: [ 
+      projectTitle: [
         'required',
         { minLength: 5, message: '프로젝트 제목은 최소 5자 이상이어야 합니다.' },
         { maxLength: 100, message: '프로젝트 제목은 최대 100자까지 가능합니다.' }
       ],
-      projectSubtitle: [ 
+      projectSubtitle: [
         { maxLength: 200, message: '소제목은 최대 200자까지 가능합니다.' }
       ],
-      projectDurationValue: [ // 진행 기간 숫자 값 유효성 검사 추가
+      projectDurationValue: [
         'required',
         (value) => {
           if (value === null || value === '' || isNaN(value) || value < 0) return '올바른 진행 기간 숫자를 입력해주세요.'
@@ -231,6 +241,16 @@ export default {
         'required',
         (value) => {
           if (!value) return '진행 기간 단위를 선택해주세요.'
+          return true
+        }
+      ],
+      recruitDeadline: [
+        'required',
+        (value) => {
+          if (!value) return '모집 마감일을 선택해주세요.'
+          // 오늘 날짜보다 이전일 수 없음
+          const today = new Date().toISOString().slice(0, 10)
+          if (value < today) return '오늘 이후의 날짜를 선택하세요.'
           return true
         }
       ],
@@ -267,25 +287,74 @@ export default {
       ]
     }
 
-    const submitForm = async () => {
-      validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue);
-      validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit);
+    // 날짜 유틸
+    function addDurationToDate(start, value, unit) {
+      const date = new Date(start)
+      if (unit === 'days') date.setDate(date.getDate() + value)
+      if (unit === 'weeks') date.setDate(date.getDate() + value * 7)
+      if (unit === 'months') date.setMonth(date.getMonth() + value)
+      if (unit === 'years') date.setFullYear(date.getFullYear() + value)
+      return date.toISOString().slice(0, 10)
+    }
 
+    //구인글 등록 submitForm 실제 동작 코드
+    const submitForm = async () => {
+      validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)
+      validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit)
+      submitAttempted.value = true
 
       if (!validateForm(formData, validationSchema)) {
+        isSubmitting.value = false
         return
       }
 
       isSubmitting.value = true
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // 1. 파일 업로드(S3)
+        let fileUrl = null
+        if (formData.files && formData.files.length > 0) {
+          const uploadData = new FormData()
+          uploadData.append('file', formData.files[0])
+          const uploadRes = await axios.post(`${API_URL}/upload-file`, uploadData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+          fileUrl = uploadRes.data // S3 URL
+        }
+
+        // 2. 날짜 계산 (시작일: 오늘, 마감일: 오늘+기간)
+        const today = new Date()
+        const startDate = today.toISOString().slice(0, 10)
+        const endDate = addDurationToDate(today, formData.projectDurationValue, formData.projectDurationUnit)
+
+        // 3. techStacks DTO 변환
+        const techStacks = formData.techStack.map(ts => ({
+          techStackName: ts.techStackName || ts.name, // 실제 구조에 맞게
+          recruitCount: ts.recruitCount || 1 // 기본값 1
+        }))
+
+        // 4. 등록 DTO 맞춰서 body 생성
+        const body = {
+          title: formData.projectTitle,
+          description: formData.projectDescription,
+          recruitDeadline: formData.recruitDeadline,
+          startDate: startDate,
+          endDate: endDate,
+          fileUrl: fileUrl,
+          status: 'RECRUITING',
+          techStacks: techStacks,
+          recruitCount: formData.personnel
+        }
+
+        // 5. 실제 구인글 등록 요청 (userId=1는 임시)
+        await axios.post(`${API_URL}?userId=1`, body, {
+          headers: { 'Content-Type': 'application/json' }
+        })
 
         showSuccess.value = true
         clearErrors()
-
-        console.log('Form submitted successfully:', formData)
-
+        router.push('/projects')
+        // 필요시 resetForm()
       } catch (error) {
         console.error('Submission error:', error)
         alert('등록 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -305,7 +374,6 @@ export default {
         projectDescription: '',
         files: []
       })
-
       clearErrors()
       showSuccess.value = false
     }
@@ -511,6 +579,28 @@ export default {
 
 .personnel-error {
   align-self: flex-end; /* 에러 메시지도 오른쪽 정렬 */
+}
+
+.deadline-section {
+  margin-bottom: 80px; /* 다른 섹션과 동일하게 */
+}
+.deadline-input {
+  width: 230px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid var(--color-grey-85, #D9D9D9);
+  background: #FFF;
+  font-size: 15px;
+  color: #262626;
+  transition: all 0.2s;
+}
+.deadline-input:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.08);
+}
+.deadline-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220,53,69,0.1);
 }
 
 .form-inputs {
