@@ -27,7 +27,7 @@ const routes = [
   {
     path: '/oauth/success',
     name: 'OAuthSuccess',
-    component: () => import('@/views/OAuthSuccess.vue'),
+    component: () => import('@/views/OAuth2Succcess.vue'),
   },
   {
     path: '/signUp',

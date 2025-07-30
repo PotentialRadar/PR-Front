@@ -82,11 +82,29 @@
                 <button
                   class="email-button"
                   type="button"
-                  @click="handleEmailLogin"
+                  @click="toggleEmailForm"
                 >
-                  <!-- [API 연결 지점] 이메일 로그인 연동 (추후 구현) -->
                   <span class="email-button-text">이메일로 계속하기</span>
                 </button>
+
+                <!-- 이메일 입력창은 조건부 렌더링으로 분리 -->
+                <div v-if="showEmailForm" class="email-form">
+                  <input
+                    v-model="email"
+                    type="email"
+                    placeholder="이메일"
+                    class="form-input"
+                  />
+                  <input
+                    v-model="password"
+                    type="password"
+                    placeholder="비밀번호"
+                    class="form-input"
+                  />
+                  <button class="google-button" @click="handleEmailLogin">
+                    로그인
+                  </button>
+                </div>
               </div>
 
               <div class="auth-links">
@@ -110,6 +128,12 @@
 
 <script setup>
 import { KAKAO_AUTH_URL, GOOGLE_AUTH_URL } from '../constants/oauth';
+import { ref } from 'vue';
+import { loginByEmail } from '../api/login';
+const showEmailForm = ref(false); // 👈 버튼 누르면 폼 보이게 할 변수 추가
+
+const email = ref('');
+const password = ref('');
 
 // [API 연결 함수] 카카오 로그인 처리
 const handleKakaoLogin = () => {
@@ -122,8 +146,23 @@ const handleGoogleLogin = () => {
 };
 
 // [API 연결 함수] 이메일 로그인 처리
-const handleEmailLogin = () => {
-  console.log('Email login clicked');
+const handleEmailLogin = async () => {
+  try {
+    const response = await loginByEmail({
+      email: email.value,
+      password: password.value,
+    });
+    const token = response.data.accessToken;
+    document.cookie = `auth-token=${token}; path=/;`;
+    window.location.href = '/';
+  } catch (error) {
+    alert('로그인 실패: ' + error.response?.data?.message);
+  }
+};
+
+// 👉 "이메일로 계속하기" 버튼 클릭 시
+const toggleEmailForm = () => {
+  showEmailForm.value = !showEmailForm.value;
 };
 
 // 비밀번호 재설정
@@ -314,6 +353,21 @@ form {
   color: rgba(55, 56, 60, 0.61);
   margin-top: 30px;
   padding: 0 25px 0 20px;
+}
+.form-input {
+  width: 100%;
+  height: 40px;
+  margin-bottom: 10px;
+  padding: 0 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.email-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Responsive design */
