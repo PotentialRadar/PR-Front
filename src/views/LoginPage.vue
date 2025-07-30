@@ -88,7 +88,11 @@
                 </button>
 
                 <!-- 이메일 입력창은 조건부 렌더링으로 분리 -->
-                <div v-if="showEmailForm" class="email-form">
+                <form
+                  v-if="showEmailForm"
+                  class="email-form"
+                  @submit.prevent="handleEmailLogin"
+                >
                   <input
                     v-model="email"
                     type="email"
@@ -101,10 +105,8 @@
                     placeholder="비밀번호"
                     class="form-input"
                   />
-                  <button class="google-button" @click="handleEmailLogin">
-                    로그인
-                  </button>
-                </div>
+                  <button type="submit" class="google-button">로그인</button>
+                </form>
               </div>
 
               <div class="auth-links">
@@ -129,11 +131,14 @@
 <script setup>
 import { KAKAO_AUTH_URL, GOOGLE_AUTH_URL } from '../constants/oauth';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
 import { loginByEmail } from '../api/login';
 const showEmailForm = ref(false); // 👈 버튼 누르면 폼 보이게 할 변수 추가
-
+const router = useRouter();
 const email = ref('');
 const password = ref('');
+const userStore = useUserStore();
 
 // [API 연결 함수] 카카오 로그인 처리
 const handleKakaoLogin = () => {
@@ -148,15 +153,19 @@ const handleGoogleLogin = () => {
 // [API 연결 함수] 이메일 로그인 처리
 const handleEmailLogin = async () => {
   try {
-    const response = await loginByEmail({
+    const result = await loginByEmail({
       email: email.value,
       password: password.value,
     });
-    const token = response.data.accessToken;
-    document.cookie = `auth-token=${token}; path=/;`;
-    window.location.href = '/';
+    localStorage.setItem('accessToken', result.accessToken);
+    localStorage.setItem('refreshToken', result.refreshToken);
+
+    //Pinia 상태 갱신
+    userStore.login(email.value);
+
+    router.push('/');
   } catch (error) {
-    alert('로그인 실패: ' + error.response?.data?.message);
+    alert('로그인 실패: ' + (error?.response?.data || '서버 오류'));
   }
 };
 
