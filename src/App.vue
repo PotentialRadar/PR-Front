@@ -1,4 +1,5 @@
 <script setup>
+import api from '@/api/axios';
 import { onMounted } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 
@@ -11,11 +12,8 @@ onMounted(async () => {
   const token = localStorage.getItem('accessToken'); // ❌ 없으면 로그인 안 됨!
   if (token) {
     try {
-      const res = await axios.get('/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true, // 쿠키 기반 로그인 시 필요
+      const res = await api.get('/users/me', {
+        withCredentials: true,
       });
       userStore.login(token, res.data);
     } catch (e) {
