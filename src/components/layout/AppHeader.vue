@@ -82,7 +82,7 @@
 }
 
 .nav-item:hover {
-  color: #FF7D12;
+  color: #4CAF50;
 }
 
 .nav-item.router-link-active {
@@ -99,7 +99,6 @@
 }
 
 .dropdown-trigger {
-  /* color: #555; */
   color: #424953;
   font-size: 15px;
   font-weight: 400;
@@ -127,7 +126,7 @@
 }
 
 .auth-link:hover {
-  color: #FF7D12;
+  color: #4CAF50;
 }
 
 .separator {
