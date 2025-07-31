@@ -10,7 +10,9 @@
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-            <!-- 지원하기 버튼 추가 -->
+           
+            <ProjectHeader :project="project" />
+             <!-- 지원하기 버튼 추가 -->
             <div class="apply-button-container">
               <button
                 class="apply-button"
@@ -20,7 +22,6 @@
                 프로젝트 지원하기
               </button>
             </div>
-            <ProjectHeader :project="project" />
           </div>
           <div class="integrated-content-card">
             <div class="tab-section">

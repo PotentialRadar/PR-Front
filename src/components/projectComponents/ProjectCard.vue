@@ -417,7 +417,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  width: 100%;
+  width: 90%;
   padding: 16px 32px;
   background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
   color: #FFF;
