@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '@/views/HomePage.vue';
 import LoginPage from '@/views/LoginPage.vue';
+import EmailLoginPage from '@/views/EmailLoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import MyProjectListPage from '@/views/MyProjectListPage.vue';
@@ -26,6 +27,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginPage,
+  },
+  {
+    // 이메일 로그인
+    path: '/email-login',
+    name: 'EmailLogin',
+    component: EmailLoginPage,
   },
   {
     path: '/oauth/success',

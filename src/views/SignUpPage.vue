@@ -288,7 +288,7 @@ const goBack = () => {
 
 const requestVerification = async () => {
   // [Backend Required] 이메일 인증번호 전송 (서버에 이메일 전달)
-  // [백엔드 연동] 이메일 인증번호 발송 요청
+  // 이메일 인증번호 발송 요청
   // ex) /api/users/send-code
   if (!isEmailValid.value) {
     toast.error('올바른 이메일 형식을 입력해주세요.', {
@@ -383,9 +383,8 @@ watch(
 
 const checkNickName = async () => {
   // [Backend Required] 닉네임 중복 확인 (DB 조회 필요)
-  // [백엔드 연동] 닉네임 중복 확인
+  // 닉네임 중복 확인
   // ex) /api/users/check-nickname?nickname=xxx
-  // 이건 잘 모르겠어용..
   const nickname = formData.value.nickName;
   if (!nickname || !isNickNameValid.value) {
     isNickNameAvailable.value = null;
@@ -406,7 +405,7 @@ const debouncedCheckNickName = debounce(checkNickName, 500);
 
 const verifyCode = async () => {
   // [Backend Required] 입력된 인증번호 유효성 확인
-  // [백엔드 연동] 인증번호 확인 요청
+  // 인증번호 확인 요청
   // ex) /api/users/verify-code
   try {
     const response = await verifyEmailCode(
