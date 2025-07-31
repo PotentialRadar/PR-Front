@@ -27,8 +27,12 @@
               <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
             </div>
             <div class="tab-content">
-              <ProjectWorkContent :description="project.description" :file-url="project.fileUrl" />
-              <ProjectComment :projectId="project.projectId" id="comment-section" />
+              <ProjectWorkContent
+                  :description="project?.description || ''"
+                  :tags="project?.tags || []"
+                  :file-url="project?.fileUrl || ''"
+              />
+              <ProjectComment :projectId="projectId" />
             </div>
           </div>
         </div>
@@ -174,156 +178,81 @@
   </div>
 </template>
 
-<script>
-import axios from 'axios'
-import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
+<script setup>
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { projects } from '@/components/data/projects'
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
+import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue'
 
-export default {
-  name: 'ProjectDetailPage',
-  components: {
-    TabNavigation,
-    ProjectHeader,
-    ProjectWorkContent,
-    ProjectComment
-  },
-  data() {
-    return {
-      project: {},
-      activeTab: 'content',
-      showApplyModal: false,
-      showSuccessToast: false,
-      isSubmitting: false,
-      applicationForm: {
-        part: '',
-        message: ''
-      },
-      // 프로젝트 정보 (실제로는 props나 API에서 받아올 데이터)
-      projectInfo: {
-        name: '혁신적인 SNS 플랫폼 개발 프로젝트',
-        description: '차세대 소셜 네트워크 서비스'
-      },
-      // 사용자 포트폴리오 상태 (실제로는 사용자 정보에서 받아올 데이터)
-      userPortfolio: {
-        isPublic: true,
-        lastUpdated: '2024-07-20'
-      }
-    }
-  },
-  computed: {
-    isFormValid() {
-      return this.applicationForm.part &&
-             this.applicationForm.message.trim().length > 0 &&
-             this.applicationForm.message.length <= 500
-    }
-  },
-  async created() {
-    const id = this.$route.params.id
-    try {
-      const res = await axios.get(`http://localhost:8080/api/projects/${id}`)
-      this.project = res.data
-    } catch (e) {
-      alert('프로젝트 정보를 불러오지 못했습니다.')
-      console.error(e)
-    }
-  },
-  methods: {
-    handleTabChange(tab) {
-      this.activeTab = tab
+const route = useRoute()
+const router = useRouter()
+const projectId = Number(route.params.id)
+const project = computed(() => projects.find(p => p.id === projectId))
 
-      const sectionMap = {
-        content: 'content-section',
-        comment: 'comment-section'
-      }
-      const targetId = sectionMap[tab]
-      if (!targetId) return
-
-      this.$nextTick(() => {
-        const element = document.getElementById(targetId)
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          })
-        }
-      })
-    },
-
-    openApplyModal() {
-      this.showApplyModal = true
-      // 모달 열릴 때 body 스크롤 방지
-      document.body.style.overflow = 'hidden'
-    },
-
-    closeApplyModal() {
-      this.showApplyModal = false
-      document.body.style.overflow = ''
-      // 폼 초기화
-      this.applicationForm = {
-        part: '',
-        message: ''
-      }
-    },
-
-    async submitApplication() {
-      if (!this.isFormValid) return
-
-      this.isSubmitting = true
-
-      try {
-        // 실제 API 호출 (프로젝트 지원)
-        await axios.post(
-            `http://localhost:8080/api/projects/${this.project.projectId}/apply`,
-            {
-              userId: 5, // 실제 로그인 유저 ID로 바꾸세요
-              applicationMessage: this.applicationForm.message,
-              techStack: this.applicationForm.part
-            }
-        )
-
-        this.showSuccessToast = true
-
-        // 3초 후 토스트 메시지 숨김
-        setTimeout(() => {
-          this.showSuccessToast = false
-        }, 3000)
-
-        this.closeApplyModal()
-      } catch (error) {
-        console.error('지원 실패:', error)
-        alert('지원 중 오류가 발생했습니다. 다시 시도해주세요.')
-      } finally {
-        this.isSubmitting = false
-      }
-    },
-
-    formatDate(dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    },
-
-    goToPortfolioSettings() {
-      // 포트폴리오 설정 페이지로 이동하는 로직
-      console.log('포트폴리오 설정 페이지로 이동')
-      // 실제로는 this.$router.push('/portfolio/settings') 등을 사용
-    }
-  },
-
-  // ESC 키로 모달 닫기
-  mounted() {
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.showApplyModal) {
-        this.closeApplyModal()
-      }
-    })
-  }
+// 탭 관리
+const activeTab = ref('content')
+function handleTabChange(tab) {
+  activeTab.value = tab
+  const sectionMap = { content: 'content-section', comment: 'comment-section' }
+  const targetId = sectionMap[tab]
+  if (!targetId) return
+  setTimeout(() => {
+    const el = document.getElementById(targetId)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 20)
 }
+
+// 지원 모달 관련
+const showApplyModal = ref(false)
+const showSuccessToast = ref(false)
+const isSubmitting = ref(false)
+const applicationForm = ref({ part: '', message: '' })
+
+function openApplyModal() {
+  showApplyModal.value = true
+  document.body.style.overflow = 'hidden'
+}
+function closeApplyModal() {
+  showApplyModal.value = false
+  document.body.style.overflow = ''
+  applicationForm.value = { part: '', message: '' }
+}
+function formatDate(dateString) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+const userPortfolio = ref({
+  isPublic: true,
+  lastUpdated: '2024-07-20'
+})
+const isFormValid = computed(() =>
+    applicationForm.value.part &&
+    applicationForm.value.message.trim().length > 0 &&
+    applicationForm.value.message.length <= 500
+)
+async function submitApplication() {
+  if (!isFormValid.value) return
+  isSubmitting.value = true
+  showSuccessToast.value = true
+  setTimeout(() => { showSuccessToast.value = false }, 3000)
+  closeApplyModal()
+  isSubmitting.value = false
+}
+function goToPortfolioSettings() {
+  router.push('/portfolio/settings')
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && showApplyModal.value) {
+    closeApplyModal()
+  }
+})
 </script>
 
 <style scoped>

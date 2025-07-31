@@ -56,108 +56,93 @@
 
 <script>
 import CommentItem from './CommentItem.vue'
+import { projectCommentsStore } from '@/components/data/projectComments'
 
 export default {
   name: 'ProjectComment',
-  components: {
-    CommentItem
+  components: { CommentItem },
+  props: {
+    projectId: {
+      type: [String, Number],
+      required: true
+    }
   },
   data() {
     return {
       newComment: '',
-      comments: [
-        {
-          id: 1,
-          username: 'd*****t',
-          text: '안녕하세요, AI 필터, 리터치 기능은 제공을 해주시는 걸까요? 아니면 개발사가 알아서 구현해야하는 건가요?',
-          date: '2025-07-15 01:14:59',
-          avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
-          isReply: false
-        },
-        {
-          id: 2,
-          username: 't*****r',
-          text: '안녕하세요. 개발사가 자체적으로 구현하셔야 합니다. API 를 활용하시거나..',
-          date: '2025-07-15 09:39:16',
-          avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
-          isReply: true
-        },
-        {
-          id: 3,
-          username: 'userABC',
-          text: '또 다른 질문입니다!',
-          date: '2025-07-20 10:00:00',
-          avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
-          isReply: false
-        }
-      ],
-      activeReplyCommentId: null, // 현재 답글 폼이 열려있는 댓글의 ID
-      newReplyText: ''           // 답글 폼에 입력될 텍스트
+      comments: [],
+      activeReplyCommentId: null,
+      newReplyText: ''
+    }
+  },
+  mounted() {
+    this.loadComments()
+  },
+  watch: {
+    projectId: {
+      handler() {
+        this.loadComments()
+      },
+      immediate: true
     }
   },
   methods: {
+    loadComments() {
+      this.comments = projectCommentsStore[this.projectId] ? [...projectCommentsStore[this.projectId]] : []
+    },
     submitComment() {
       if (this.newComment.trim()) {
-        console.log('새로운 댓글 등록:', this.newComment);
-        // 새 댓글 객체 생성 및 배열에 추가 (실제로는 API 호출)
         const newId = this.comments.length ? Math.max(...this.comments.map(c => c.id)) + 1 : 1;
-        this.comments.push({
+        const newCommentObj = {
           id: newId,
-          username: '새로운유저', // 실제 유저 이름으로 대체
+          username: '새로운유저',
           text: this.newComment.trim(),
           date: new Date().toLocaleString(),
           avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
           isReply: false
-        });
-        this.newComment = '';
+        }
+        this.comments.push(newCommentObj)
+        // store에 실제로 반영(프론트 전용)
+        if (!projectCommentsStore[this.projectId]) projectCommentsStore[this.projectId] = []
+        projectCommentsStore[this.projectId].push(newCommentObj)
+        this.newComment = ''
       }
     },
-    // CommentItem에서 'reply-to' 이벤트를 받았을 때 호출
     handleReplyTo(commentId) {
-      this.activeReplyCommentId = commentId; // 어떤 댓글에 대한 답글 폼을 열지 설정
-      this.newReplyText = ''; // 답글 텍스트 초기화
+      this.activeReplyCommentId = commentId
+      this.newReplyText = ''
     },
-    // 답글 등록
     submitReply() {
       if (this.newReplyText.trim() && this.activeReplyCommentId !== null) {
-        console.log(`댓글 ID ${this.activeReplyCommentId}에 대한 답글 등록:`, this.newReplyText);
-        // 답글을 기존 댓글 아래에 추가 (실제로는 API 호출 후 목록 업데이트)
-        // 여기서는 임시로 해당 댓글 아래에 대댓글로 추가하는 로직을 보여줍니다.
-        const parentCommentIndex = this.comments.findIndex(c => c.id === this.activeReplyCommentId);
+        const parentCommentIndex = this.comments.findIndex(c => c.id === this.activeReplyCommentId)
         if (parentCommentIndex !== -1) {
-          const newId = Math.max(...this.comments.map(c => c.id)) + 1;
+          const newId = Math.max(...this.comments.map(c => c.id)) + 1
           const newReply = {
             id: newId,
-            username: '답글유저', // 실제 유저 이름으로 대체
+            username: '답글유저',
             text: this.newReplyText.trim(),
             date: new Date().toLocaleString(),
             avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/61a4dd55df3c773db2ad493c4d652e8db101828c?width=110',
-            isReply: true // 대댓글로 설정
-          };
-          // 부모 댓글 바로 다음에 대댓글을 삽입
-          this.comments.splice(parentCommentIndex + 1, 0, newReply);
+            isReply: true
+          }
+          this.comments.splice(parentCommentIndex + 1, 0, newReply)
+          // store에도 추가
+          projectCommentsStore[this.projectId].splice(parentCommentIndex + 1, 0, newReply)
         }
-        
-        this.newReplyText = '';
-        this.activeReplyCommentId = null; // 폼 닫기
+        this.newReplyText = ''
+        this.activeReplyCommentId = null
       } else {
-        alert('답글 내용을 입력해주세요.');
+        alert('답글 내용을 입력해주세요.')
       }
     },
-    // 답글 취소
     cancelReply() {
-      this.newReplyText = '';
-      this.activeReplyCommentId = null; // 폼 닫기
+      this.newReplyText = ''
+      this.activeReplyCommentId = null
     },
-    handleEditComment(commentId) {
-      console.log(`[ProjectFreeTalk] 댓글 ID ${commentId} 수정 요청`);
-      // 실제 수정 로직 (예: 수정 모달 띄우기, 텍스트를 입력 폼으로 전환 등)
-      // 이 부분은 ProjectFreeTalk에서 직접 처리하거나, CommentItem으로 다시 props를 내려주어 처리할 수 있습니다.
-    },
+    handleEditComment(commentId) {},
     handleDeleteComment(commentId) {
-      console.log(`[ProjectFreeTalk] 댓글 ID ${commentId} 삭제 요청`);
-      this.comments = this.comments.filter(c => c.id !== commentId);
-      // 실제로는 API 호출을 통해 서버에서도 삭제해야 합니다.
+      this.comments = this.comments.filter(c => c.id !== commentId)
+      projectCommentsStore[this.projectId] = this.comments
     }
   }
 }
