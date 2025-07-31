@@ -13,17 +13,20 @@
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
           <router-link to="/portfolios" class="nav-item">포트폴리오</router-link>
           <router-link to="/new-project" class="nav-item">프로젝트 생성</router-link>
-          <router-link to="/portfolio/:userId?" class="nav-item">마이페이지</router-link>
         </nav>
       </div>
 
       <div class="header-right">
         <template v-if="userStore.isLoggedIn">
-          <router-link to="/portfolio/:userId?" class="auth-link">마이페이지</router-link>
-          <button @click="handleLogout" class="auth-link">로그아웃</button>
+          <!-- <router-link to="/portfolio/:userId?" class="auth-link">마이페이지</router-link>
+          <button @click="handleLogout" class="auth-link">로그아웃</button> -->
+          <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
         </template>
         <template v-else>
-          <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
+          <!-- <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link> -->
+          <router-link to="/portfolio/:userId?" class="auth-link">마이페이지</router-link>
+          <span class="auth-link">|</span>
+          <button @click="handleLogout" class="auth-link">로그아웃</button>
         </template>
 
       </div>
