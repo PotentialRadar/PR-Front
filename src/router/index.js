@@ -3,6 +3,7 @@ import HomePage from '@/views/HomePage.vue';
 import LoginPage from '@/views/LoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
+import MyProjectListPage from '@/views/MyProjectListPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
@@ -36,6 +37,12 @@ const routes = [
     path: '/signUp',
     name: 'SignUp',
     component: SignUpPage,
+  },
+  {
+    // 내 프로젝트 리스트
+    path: '/my-projects',
+    name: 'MyProjectList',
+    component: MyProjectListPage,
   },
   {
     // 프로젝트 리스트
