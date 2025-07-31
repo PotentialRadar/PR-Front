@@ -9,17 +9,17 @@
       <!-- User info container -->
       <div class="user-info-container">
          <div class="job-category-label">
-          {{ profileData.jobCategory }}
+          {{ userInfo?.category || 'Developer' }}
         </div>
         <div class="profile-picture-container">
-          <img class="profile-picture" :src="profileData.avatar" alt="Profile picture" />
+          <img class="profile-picture" :src="userInfo?.avatar || defaultAvatar" :alt="`${userInfo?.name || 'User'} profile picture`" />
         </div>
         <div class="user-details">
           <div class="name-section">
-            <h1 class="username">{{ profileData.username }}</h1>
+            <h1 class="username">{{ userInfo?.name || 'Unknown User' }}</h1>
           </div>
-          <p class="job-title">{{ profileData.jobTitle }}</p>
-          <p class="handle">{{ profileData.handle }}</p>
+          <p class="job-title">{{ userInfo?.jobTitle || 'Developer' }}</p>
+          <p class="handle">@{{ userId || 'user' }}</p>
         </div>
       </div>
     </div>
@@ -62,20 +62,26 @@ import ToastNotification from '../common/ToastNotification.vue'
 // Props
 const props = defineProps({
   userId: {
-    type: String,
-    default: 'jamie'
+    type: [String, Number],
+    default: 'user'
   },
   isOwnProfile: {
     type: Boolean,
     default: false
+  },
+  userInfo: {
+    type: Object,
+    default: () => ({
+      name: 'Unknown User',
+      jobTitle: 'Developer',
+      category: 'Developer',
+      avatar: ''
+    })
   }
 })
 
-// Check if this is the user's own profile
-const isOwnProfile = computed(() => {
-  // This would normally check against current user ID
-  return props.userId === 'current-user-id' // placeholder logic
-})
+// Default avatar fallback
+const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
 
 // Reactive data
 const isLiked = ref(false)
@@ -87,15 +93,6 @@ const toast = reactive({
   visible: false,
   message: '',
   type: 'success'
-})
-
-// Profile data (this would typically come from an API)
-const profileData = ref({
-  username: 'jamie',
-  jobTitle: '프로덕트 디자이너',
-  jobCategory: 'Designer', // Frontend Developer, Backend Developer, Designer, etc.
-  handle: '@jamiee',
-  avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/ef81e2192667247c983c115e37a8d421e66c194c?width=250'
 })
 
 // Methods
@@ -122,11 +119,12 @@ const toggleLike = () => {
   }
 
   // Here you would typically sync with your API
-  // syncLikeWithAPI(profileData.value.userId, isLiked.value)
+  // syncLikeWithAPI(props.userId, isLiked.value)
 }
 
 const openChatModal = () => {
   showContactModal.value = true
+  showToast('채팅 기능은 준비 중입니다.', 'info')
 }
 
 const closeContactModal = () => {

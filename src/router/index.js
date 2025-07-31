@@ -4,6 +4,7 @@ import LoginPage from '@/views/LoginPage.vue';
 import EmailLoginPage from '@/views/EmailLoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
+import MyProjectListPage from '@/views/MyProjectListPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
@@ -45,6 +46,12 @@ const routes = [
     component: SignUpPage,
   },
   {
+    // 내 프로젝트 리스트
+    path: '/my-projects',
+    name: 'MyProjectList',
+    component: MyProjectListPage,
+  },
+  {
     // 프로젝트 리스트
     path: '/projects',
     name: 'ProjectList',
@@ -55,6 +62,7 @@ const routes = [
     path: '/projects/:id',
     name: 'ProjectDetail',
     component: ProjectDetailPage,
+    props: true,
   },
   {
     // 프로젝트 생성

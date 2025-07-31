@@ -3,6 +3,16 @@
     <div class="project-description">
       {{ description }}
     </div>
+
+    <!-- 사용 기술(태그) 리스트 추가 -->
+    <div v-if="tags && tags.length" class="project-tags-list">
+      <span
+          v-for="tag in tags"
+          :key="tag"
+          class="project-tag"
+      >{{ tag }}</span>
+    </div>
+
     <div v-if="fileUrl" class="project-file">
       <img v-if="isImage(fileUrl)" :src="fileUrl" alt="첨부이미지" />
       <a v-else :href="fileUrl" target="_blank" download>첨부파일 다운로드</a>
@@ -13,8 +23,18 @@
 <script>
 export default {
   props: {
-    description: String,
-    fileUrl: String,
+    description: {
+      type: String,
+      default: '',
+    },
+    tags: {
+      type: Array,
+      default: () => [],
+    },
+    fileUrl: {
+      type: String,
+      default: '',
+    },
   },
   methods: {
     isImage(url) {
@@ -25,69 +45,23 @@ export default {
 </script>
 
 <style scoped>
-.work-content {
-  padding: 60px 0;
+.project-content {
+  padding: 30px 0;
 }
 
-.section-header {
-  margin-bottom: 24px;
-}
-
-.section-header h3 {
-  color: #262626;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 20px;
-  margin: 0;
-}
-
-.content-text {
+.project-tags-list {
+  margin: 20px 0 10px 0;
   display: flex;
-  flex-direction: column;
-  gap: 40px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
-
-.content-block {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.block-title {
-  color: #262626;
+.project-tag {
+  background: #e9f5ec;
+  color: #219653;
+  border-radius: 7px;
+  padding: 5px 14px;
   font-size: 13px;
-  font-weight: 700;
-  line-height: 15px;
-}
-
-.block-content {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.sub-section {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.sub-title {
-  color: #262626;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 24px;
-}
-
-.content-line {
-  color: #262626;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 24px;
-  margin-bottom: 0;
-}
-
-.content-line.indented {
-  padding-left: 3px;
+  font-weight: 600;
+  margin-right: 4px;
 }
 </style>

@@ -27,11 +27,11 @@
       이런 기술을 사용할 예정이에요
     </div>
     <div v-if="project.techStacks && project.techStacks.length" class="technology-tags">
-      <span
-          v-for="(ts, i) in project.techStacks"
-          :key="'ts-'+i"
-          class="tech-tag"
-      >{{ ts.techStackName }}</span>
+  <span
+      v-for="(ts, i) in project.techStacks"
+      :key="'ts-'+i"
+      class="tech-tag"
+  >{{ ts.techStackName }}</span>
     </div>
 
     <div class="project-metadata">
@@ -62,6 +62,10 @@
 export default {
   props: {
     project: { type: Object, required: true }
+  },
+  mounted() {
+    // 여기가 중요!
+    console.log('project.techStacks:', this.project.techStacks)
   },
   methods: {
     formatDate(dateStr) {
@@ -244,6 +248,19 @@ export default {
   font-weight: 400;
   line-height: 15px;
 }
-
+.technology-tags {
+  margin: 16px 0 0 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tech-tag {
+  background: #e9f5ec;
+  color: #219653;
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 </style>
