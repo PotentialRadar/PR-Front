@@ -1,44 +1,28 @@
 <template>
   <header class="app-header">
     <div class="container">
+
       <div class="header-left">
         <div class="logo-container">
           <router-link to="/" class="logo-link">
             <img src="/pr-Photoroom.png" alt="로고" class="logo" />
           </router-link>
         </div>
+
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
-          <router-link to="/portfolio" class="nav-item portfolio-search"
-            >포트폴리오</router-link
-          >
-          <div class="nav-dropdown">
-            <span class="dropdown-trigger">더보기</span>
-            <img
-              src="https://api.builder.io/api/v1/image/assets/TEMP/8730bce826a38c42e3781f01f73b07caeccbd593?width=28"
-              alt="더보기"
-              class="dropdown-icon"
-            />
-
-            <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9"
-              fill="none">
-              <path d="M2 2 L7 7 L12 2" stroke="#48A74C" stroke-width="2" fill="none" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-
-          </div>
+          <router-link to="/portfolios" class="nav-item portfolio-search">포트폴리오</router-link>
+          <router-link to="/new-project" class="nav-item portfolio-search">프로젝트 생성</router-link>
         </nav>
       </div>
 
       <div class="header-right">
         <template v-if="userStore.isLoggedIn">
-          <router-link to="/mypage" class="auth-link">마이페이지</router-link>
-          <button @click="userStore.logout" class="auth-link">로그아웃</button>
+          <router-link to="/portfolio" class="auth-link">마이페이지</router-link>
+          <button @click="handleLogout" class="auth-link">로그아웃</button>
         </template>
         <template v-else>
-          <router-link to="/login" class="auth-link"
-            >로그인&nbsp; | &nbsp;회원가입</router-link
-          >
+          <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
         </template>
 
       </div>
@@ -48,7 +32,19 @@
 
 <script setup>
 import { useUserStore } from '@/stores/userStore';
+import { useToast } from 'vue-toastification';
 const userStore = useUserStore();
+const toast = useToast();
+
+const handleLogout = () => {
+  userStore.logout();
+
+  toast.success('로그아웃되었습니다.', {
+    position: 'top-center',
+    timeout: 2000,
+    hideProgressBar: true,
+  });
+};
 </script>
 
 <style scoped>
