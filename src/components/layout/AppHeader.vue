@@ -11,8 +11,9 @@
 
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
-          <router-link to="/portfolios" class="nav-item portfolio-search">포트폴리오</router-link>
-          <router-link to="/new-project" class="nav-item portfolio-search">프로젝트 생성</router-link>
+          <router-link to="/portfolios" class="nav-item">포트폴리오</router-link>
+          <router-link to="/new-project" class="nav-item">프로젝트 생성</router-link>
+          <router-link to="/portfolio/:userId?" class="nav-item">마이페이지</router-link>
         </nav>
       </div>
 
