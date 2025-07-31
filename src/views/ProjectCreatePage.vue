@@ -31,7 +31,7 @@
     <div class="form-container">
       <div class="form-content">
         <div class="form-section">
-          <div class="section-title">프로젝트 기본 정보</div>
+          <div class="section-title">프로젝트 제목</div>
           <div class="input-group">
             <input
               type="text"
@@ -655,7 +655,7 @@ export default {
 }
 
 .project-description-textarea {
-  height: 180px;
+  height: 500px;
   resize: vertical;
   min-height: 120px;
   max-height: 400px;

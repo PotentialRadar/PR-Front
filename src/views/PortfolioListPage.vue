@@ -179,6 +179,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 반응형 데이터
 const selectedCategory = ref('전체')
@@ -325,7 +328,8 @@ const toggleLike = (portfolioId) => {
 }
 
 const viewPortfolio = (portfolioId) => {
-  console.log('포트폴리오 상세보기:', portfolioId)
+  // 포트폴리오 상세 페이지로 이동
+  router.push(`/portfolio/${portfolioId}`)
 }
 
 const getSkillType = (skill) => {
@@ -1200,4 +1204,5 @@ const getSkillType = (skill) => {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(76, 175, 80, 0.5);
 }
+
 </style>
