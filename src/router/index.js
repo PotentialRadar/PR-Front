@@ -48,6 +48,7 @@ const routes = [
     path: '/projects/:id',
     name: 'ProjectDetail',
     component: ProjectDetailPage,
+    props: true,
   },
   {
     // 프로젝트 생성
