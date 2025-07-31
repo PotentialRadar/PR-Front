@@ -18,7 +18,7 @@
 
       <div class="header-right">
         <template v-if="userStore.isLoggedIn">
-          <router-link to="/portfolio" class="auth-link">마이페이지</router-link>
+          <router-link to="/portfolio/:userId?" class="auth-link">마이페이지</router-link>
           <button @click="handleLogout" class="auth-link">로그아웃</button>
         </template>
         <template v-else>
