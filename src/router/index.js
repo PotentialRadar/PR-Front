@@ -12,6 +12,7 @@ import FavoritesPage from '@/views/FavoritesPage.vue';
 import DashboardOverview from '@/views/DashboardOverview.vue';
 import DashboardProjects from '@/views/DashboardProjects.vue';
 import DashboardMessages from '@/views/DashboardMessages.vue';
+import SiderDashBoardLayout from '../components/dashboard/SiderDashBoardLayout.vue';
 
 const routes = [
   {
@@ -56,33 +57,78 @@ const routes = [
     component: ProjectCreatePage,
   },
   {
-    // 유저 포트폴리오
+    // 포트폴리오 리스트
+    path: '/portfolios',
+    name: 'PortfolioList',
+    component: PortfolioListPage,
+  },
+
+  // ===========================================
+  // 사이드바가 항상 보이는 마이페이지 관련 라우트들
+  // ===========================================
+  {
+    path: '/myPage',
+    component: SiderDashBoardLayout,
+    children: [
+      {
+        // 마이페이지 기본 페이지 (내 포트폴리오로 리다이렉트)
+        path: '',
+        redirect: '/myPage/portfolio/:userId',
+      },
+      {
+        // 내 포트폴리오
+        path: 'portfolio/:userId',
+        name: 'MyPortfolio',
+        component: PortfolioPage,
+      },
+      // {
+      //   // 내 프로젝트 (추후 구현 예정)
+      //   path: 'projects',
+      //   name: 'MyProjects',
+      //   component: () => import('@/views/MyProjectsPage.vue'), // 새로 만들어야 할 컴포넌트
+      // },
+      {
+        // 좋아요 목록
+        path: 'favorites',
+        name: 'MyFavorites',
+        component: FavoritesPage,
+      },
+      {
+        // 정보 수정
+        path: 'edit-portfolio',
+        name: 'MyPortfolioUpdate',
+        component: PortfolioUpdatePage,
+      },
+    ],
+  },
+
+  // ===========================================
+  // 기존 개별 페이지 라우트들 (하위 호환성 유지)
+  // ===========================================
+  {
+    // 유저 포트폴리오 (다른 사용자 포트폴리오 보기용)
     path: '/portfolio/:userId?',
     name: 'Portfolio',
     component: PortfolioPage,
     props: true,
   },
   {
-    // 포트폴리오 수정
+    // 포트폴리오 수정 (개별 페이지로도 접근 가능)
     path: '/edit-portfolio',
     name: 'PortfolioUpdate',
     component: PortfolioUpdatePage,
     props: true,
   },
   {
-    // 포트폴리오 리스트
-    path: '/portfolios',
-    name: 'PortfolioList',
-    component: PortfolioListPage,
-  },
-  {
-    // 좋아요 목록
+    // 좋아요 목록 (개별 페이지로도 접근 가능)
     path: '/favorites',
     name: 'FavoritesPage',
     component: FavoritesPage,
   },
 
-  // Dashboard Routes(나중에 사용)
+  // ===========================================
+  // Dashboard Routes (나중에 사용)
+  // ===========================================
   {
     path: '/dashboard',
     name: 'Dashboard',
