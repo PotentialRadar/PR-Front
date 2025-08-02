@@ -23,7 +23,7 @@
           @mouseenter="handleMouseEnter"
           @mouseleave="handleMouseLeave"
         >
-          <div class="partner-card" v-for="partner in partners" :key="partner.id">
+          <div class="partner-card" v-for="partner in partners" :key="partner.id" @click="goToPortfolio(partner.id)">
             <div class="partner-link">
               <div class="partner-avatar">
                 <img :src="partner.image" :alt="partner.name" />
@@ -64,67 +64,65 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const rawPartners = [
   {
     id: 1,
-    name: '강해림 파트너',
-    skill: '로고',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/eeb2b355fb381af1fbaea6ee3fc632bbb247335f?width=86'
+    name: '김프론트',
+    skill: 'Frontend',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1'
   },
   {
     id: 2,
-    name: '신정훈 파트너',
-    skill: '프로그램',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/521a16cae8539d9b4796dcabbca6126d82c75845?width=86'
+    name: '박디자이너',
+    skill: 'Design',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2'
   },
   {
     id: 3,
-    name: '박지유 파트너',
-    skill: '그래픽',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/9d476c65fa0a254a078ac29bd846ab2f4b3f6e79?width=86'
+    name: '이백엔드',
+    skill: 'Backend',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3'
   },
   {
     id: 4,
-    name: '유영무 파트너',
-    skill: '웹',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/80f2d7a3c0765e59d8a4ecd6e1bc7243ad402626?width=86'
+    name: '정모바일',
+    skill: 'Mobile',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4'
   },
   {
     id: 5,
-    name: '김지용 파트너',
-    skill: '웹',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/27400fd97c40d3e42e2458d9be385ed59b31ec10?width=86'
+    name: '최AI',
+    skill: 'AI/ML',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5'
   },
   {
     id: 6,
-    name: '천동광 파트너',
-    skill: '웹',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/afcfe210158f434b565b702dd6c9935c646915d9?width=86'
-  },
-  {
-    id: 7,
-    name: '이건호 파트너',
-    skill: '모바일웹',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/bc3f1e03f0a18168f30c658e116a7da3f61d488e?width=86'
-  },
-  {
-    id: 8,
-    name: '정하은 파트너',
-    skill: '웹',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/b83fa2b4a046a2e902eca6dff0bb895d0f02b331?width=86'
+    name: '강데브옵스',
+    skill: 'DevOps',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6'
   }
 ]
 
 const partners = ref([...rawPartners, ...rawPartners, ...rawPartners])
 
-const techTags = ref(['Java', 'Python', 'React', 'Node.js', 'C++', 'PHP', 'Kotlin'])
+const techTags = ref(['React', 'Python', 'Node.js', 'Flutter', 'Docker', 'AWS', 'TypeScript', 'Figma'])
 
 const carouselRef = ref(null)
 const isHovered = ref(false)
 
 const baseStep = 2
 let currentStep = baseStep
+
+// 포트폴리오 페이지로 이동하는 함수
+const goToPortfolio = (partnerId) => {
+  // 복제된 데이터로 인해 실제 ID로 변환 (1-6 범위로 제한)
+  const actualId = ((partnerId - 1) % 6) + 1
+  router.push(`/portfolio/${actualId}`)
+}
 
 onMounted(() => {
   setInterval(() => {
@@ -269,6 +267,12 @@ function handleMouseLeave() {
   border-radius: 47px;
   background: #FFF;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.partner-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .partner-link {

@@ -71,25 +71,6 @@
 
         <form @submit.prevent="submitApplication">
           <div class="form-group">
-            <label for="part" class="form-label">지원 파트</label>
-            <select 
-              id="part"
-              v-model="applicationForm.part"
-              class="form-select"
-              required
-            >
-              <option value="">파트를 선택해주세요</option>
-              <option value="frontend">프론트엔드 개발자</option>
-              <option value="backend">백엔드 개발자</option>
-              <option value="fullstack">풀스택 개발자</option>
-              <option value="design">UI/UX 디자이너</option>
-              <option value="planning">기획자</option>
-              <option value="marketing">마케팅</option>
-              <option value="other">기타</option>
-            </select>
-          </div>
-
-          <div class="form-group">
             <label for="message" class="form-label">지원 메시지</label>
             <textarea
               id="message"

@@ -15,19 +15,23 @@
 
             <!-- 내 포트폴리오 -->
             <router-link
-              :to="`/myPage/portfolio/${user.id}`"
+              :to="`/myPage/portfolio`"
               class="nav-item"
               active-class="active"
             >
-              <i class="bi bi-layout-text-window-reverse"></i>
+              <span class="nav-icon">📄</span>
               <span>내 포트폴리오</span>
             </router-link>
 
-            <!-- 내 프로젝트 페이지 보여주기   -->
-            <!-- <router-link to="/myPage/#" class="nav-item" active-class="active">
-              <i class="bi bi-heart"></i>
+            <!-- 내 프로젝트 -->
+            <router-link 
+              to="/myPage/projects" 
+              class="nav-item" 
+              active-class="active"
+            >
+              <span class="nav-icon">📁</span>
               <span>내 프로젝트</span>
-            </router-link> -->
+            </router-link>
 
             <!-- 좋아요 목록 -->
             <router-link
@@ -35,17 +39,17 @@
               class="nav-item"
               active-class="active"
             >
-              <i class="bi bi-heart"></i>
+              <span class="nav-icon">❤️</span>
               <span>좋아요 목록</span>
             </router-link>
 
             <!-- 내 정보 수정 -->
             <router-link
-              to="/myPage/edit-portfolio"
+              to="/myPage/edit-profile"
               class="nav-item"
               active-class="active"
             >
-              <i class="bi bi-pencil-square"></i>
+              <span class="nav-icon">✏️</span>
               <span>내 정보 수정</span>
             </router-link>
           </div>
@@ -117,8 +121,10 @@ export default {
         '/dashboard/profile': '프로필',
         '/dashboard/portfolio': '포트폴리오',
         '/dashboard/settings': '설정',
-        '/favorites': '좋아요 목록',
-        '/edit-portfolio': '내 정보 수정',
+        '/myPage/portfolio': '내 포트폴리오',
+        '/myPage/projects': '내 프로젝트',
+        '/myPage/favorites': '좋아요 목록',
+        '/myPage/edit-profile': '내 정보 수정',
       };
       return routeMap[route.path] || '대시보드';
     });
@@ -244,31 +250,57 @@ export default {
   overflow-y: auto;
 }
 
+.nav-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 10px;
-  margin-bottom: 8px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
   text-decoration: none;
-  color: #333;
+  color: #374151;
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .nav-item:hover {
   background-color: #f3f4f6;
+  color: #1f2937;
 }
 
 .nav-item.active {
-  background-color: #e0e7ff;
-  font-weight: bold;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 600;
 }
 
-.nav-item i {
-  margin-right: 10px;
+.nav-icon {
+  margin-right: 12px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  display: inline-block;
 }
 
 .sidebar-header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.logo-link {
+  display: block;
+  font-size: 20px;
+  font-weight: bold;
+  color: #1f2937;
+  text-decoration: none;
 }
 </style>

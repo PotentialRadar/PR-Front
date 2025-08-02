@@ -10,9 +10,8 @@
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-           
             <ProjectHeader :project="project" />
-             <!-- 지원하기 버튼 추가 -->
+            <!-- 지원하기 버튼 추가 -->
             <div class="apply-button-container">
               <button
                 class="apply-button"
@@ -30,8 +29,12 @@
             <div class="tab-content">
               <ProjectWorkContent
                   :description="project?.description || ''"
-                  :tags="project?.tags || []"
+                  :tags="project?.techStacks?.map(tech => tech.techStackName) || []"
                   :file-url="project?.fileUrl || ''"
+                  :attachments="project?.attachments || []"
+                  :author="project?.author || null"
+                  @contact-author="handleContactAuthor"
+                  @view-portfolio="handleViewPortfolio"
               />
               <ProjectComment :projectId="projectId" />
             </div>
@@ -40,133 +43,16 @@
       </div>
     </div>
 
-    <!-- 지원하기 모달 -->
-    <div
-      v-if="showApplyModal"
-      class="modal-overlay"
-      @click.self="closeApplyModal"
-    >
-      <div class="modal-container">
-        <div class="modal-header">
-          <h2 class="modal-title">프로젝트 지원하기</h2>
-          <button
-            class="close-button"
-            @click="closeApplyModal"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- 프로젝트 정보 섹션 -->
-          <div class="project-info-section">
-            <div class="project-info-card">
-              <div class="project-info-header">
-                <span class="project-icon">📋</span>
-                <h3 class="project-info-title">지원 프로젝트</h3>
-              </div>
-              <div class="project-name">{{ project.title }}</div>
-              <div class="project-description">{{ project.description }}</div>
-            </div>
-          </div>
-
-          <!-- 포트폴리오 상태 섹션 -->
-          <div class="portfolio-status-section">
-            <div class="portfolio-status-card">
-              <div class="portfolio-status-header">
-                <span class="portfolio-icon">👤</span>
-                <h3 class="portfolio-status-title">내 포트폴리오 상태</h3>
-              </div>
-              <div class="portfolio-status-content">
-                <div class="status-indicator">
-                  <span
-                    class="status-badge"
-                    :class="{ 'public': userPortfolio.isPublic, 'private': !userPortfolio.isPublic }"
-                  >
-                    <span class="status-icon">
-                      {{ userPortfolio.isPublic ? '🌐' : '🔒' }}
-                    </span>
-                    {{ userPortfolio.isPublic ? '공개' : '비공개' }}
-                  </span>
-                </div>
-                <div class="portfolio-info">
-                  <div class="portfolio-detail">
-                    최근 업데이트: {{ formatDate(userPortfolio.lastUpdated) }}
-                  </div>
-                  <div v-if="!userPortfolio.isPublic" class="portfolio-warning">
-                    <span class="warning-icon">⚠️</span>
-                    포트폴리오가 비공개 상태입니다. 지원 시 프로젝트 관리자가 확인할 수 없습니다.
-                  </div>
-                  <div v-else class="portfolio-success">
-                    <span class="success-icon">✅</span>
-                    포트폴리오가 공개되어 있어 프로젝트 관리자가 확인할 수 있습니다.
-                  </div>
-                </div>
-              </div>
-              <div v-if="!userPortfolio.isPublic" class="portfolio-action">
-                <button class="portfolio-edit-button" @click="goToPortfolioSettings">
-                  포트폴리오 공개 설정하기
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <form @submit.prevent="submitApplication">
-            <div class="form-group">
-              <label for="part" class="form-label">지원 파트</label>
-              <select
-                id="part"
-                v-model="applicationForm.part"
-                class="form-select"
-                required
-              >
-                <option value="">파트를 선택해주세요</option>
-                <option value="frontend">프론트엔드 개발자</option>
-                <option value="backend">백엔드 개발자</option>
-                <option value="fullstack">풀스택 개발자</option>
-                <option value="design">UI/UX 디자이너</option>
-                <option value="planning">기획자</option>
-                <option value="marketing">마케팅</option>
-                <option value="other">기타</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="message" class="form-label">지원 메시지</label>
-              <textarea
-                id="message"
-                v-model="applicationForm.message"
-                class="form-textarea"
-                placeholder="자신을 소개하고, 이 프로젝트에 참여하고 싶은 이유를 간단히 작성해주세요."
-                rows="6"
-                required
-              ></textarea>
-              <div class="character-count">
-                {{ applicationForm.message.length }}/500
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button
-                type="button"
-                class="cancel-button"
-                @click="closeApplyModal"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                class="submit-button"
-                :disabled="!isFormValid || isSubmitting"
-              >
-                <span v-if="isSubmitting" class="loading-spinner"></span>
-                {{ isSubmitting ? '지원 중...' : '지원하기' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- 지원하기 모달 컴포넌트 사용 -->
+    <ApplyModal
+      :visible="showApplyModal"
+      :project-info="modalProjectInfo"
+      :user-portfolio="userPortfolio"
+      @close="closeApplyModal"
+      @submit="handleApplicationSubmit"
+      @error="handleApplicationError"
+      @portfolio-settings="goToPortfolioSettings"
+    />
 
     <!-- 지원 완료 토스트 메시지 -->
     <div
@@ -187,6 +73,7 @@ import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue'
+import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -209,46 +96,78 @@ function handleTabChange(tab) {
 // 지원 모달 관련
 const showApplyModal = ref(false)
 const showSuccessToast = ref(false)
-const isSubmitting = ref(false)
-const applicationForm = ref({ part: '', message: '' })
 
-function openApplyModal() {
-  showApplyModal.value = true
-  document.body.style.overflow = 'hidden'
-}
-function closeApplyModal() {
-  showApplyModal.value = false
-  document.body.style.overflow = ''
-  applicationForm.value = { part: '', message: '' }
-}
-function formatDate(dateString) {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+// 모달에 전달할 프로젝트 정보
+const modalProjectInfo = computed(() => ({
+  title: project.value?.title || '',
+  description: project.value?.description || ''
+}))
+
+// 사용자 포트폴리오 정보
 const userPortfolio = ref({
   isPublic: true,
   lastUpdated: '2024-07-20'
 })
-const isFormValid = computed(() =>
-    applicationForm.value.part &&
-    applicationForm.value.message.trim().length > 0 &&
-    applicationForm.value.message.length <= 500
-)
-async function submitApplication() {
-  if (!isFormValid.value) return
-  isSubmitting.value = true
-  showSuccessToast.value = true
-  setTimeout(() => { showSuccessToast.value = false }, 3000)
-  closeApplyModal()
-  isSubmitting.value = false
+
+function openApplyModal() {
+  showApplyModal.value = true
 }
+
+function closeApplyModal() {
+  showApplyModal.value = false
+}
+
+// 지원서 제출 처리
+async function handleApplicationSubmit(applicationData) {
+  try {
+    console.log('지원서 데이터:', applicationData)
+    
+    // 여기서 실제 API 호출
+    // await applyToProject(applicationData)
+    
+    // 성공 토스트 표시
+    showSuccessToast.value = true
+    setTimeout(() => { 
+      showSuccessToast.value = false 
+    }, 3000)
+    
+  } catch (error) {
+    console.error('지원 실패:', error)
+    // 에러 처리
+  }
+}
+
+// 지원 에러 처리
+function handleApplicationError(error) {
+  console.error('지원 처리 중 에러:', error)
+  // 에러 메시지 표시 로직
+}
+
+// 포트폴리오 설정 페이지로 이동
 function goToPortfolioSettings() {
   router.push('/portfolio/settings')
 }
+
+// 작성자 연락하기 처리
+function handleContactAuthor(author) {
+  console.log('작성자 연락하기:', author)
+  // 여기서 연락하기 로직 구현 (메시지 모달, 채팅 등)
+}
+
+// 작성자 포트폴리오 보기 처리
+function handleViewPortfolio(author) {
+  console.log('포트폴리오 보기:', author)
+  
+  // 작성자의 포트폴리오 페이지로 이동 (숫자 userId 사용)
+  if (author && author.userId) {
+    router.push(`/portfolio/${author.userId}`)
+  } else {
+    // fallback: 일반 포트폴리오 페이지로 이동
+    router.push('/portfolio')
+  }
+}
+
+// ESC 키로 모달 닫기
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && showApplyModal.value) {
     closeApplyModal()
@@ -414,377 +333,6 @@ document.addEventListener('keydown', (e) => {
   font-size: 16px;
 }
 
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 20px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-  animation: slideUp 0.3s ease;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 30px 30px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.modal-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #999;
-  transition: color 0.2s ease;
-  padding: 5px;
-  border-radius: 50%;
-}
-
-.close-button:hover {
-  color: #333;
-  background: #f5f5f5;
-}
-
-.modal-body {
-  padding: 30px;
-  overflow-y: auto;
-  flex: 1;
-
-  /* 커스텀 스크롤바 스타일링 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(76, 175, 80, 0.3) transparent;
-}
-
-/* 웹킷 기반 브라우저용 스크롤바 스타일 */
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 10px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: rgba(76, 175, 80, 0.3);
-  border-radius: 10px;
-  transition: background 0.3s ease;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(76, 175, 80, 0.5);
-}
-
-/* 프로젝트 정보 섹션 */
-.project-info-section {
-  margin-bottom: 25px;
-}
-
-.project-info-card {
-  background: linear-gradient(135deg, #f8fffa, #f0fff4);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.project-info-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.project-icon {
-  font-size: 20px;
-}
-
-.project-info-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.project-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2E7D32;
-  margin-bottom: 8px;
-  line-height: 1.3;
-}
-
-.project-description {
-  font-size: 14px;
-  color: #666;
-}
-
-/* 포트폴리오 상태 섹션 */
-.portfolio-status-section {
-  margin-bottom: 25px;
-}
-
-.portfolio-status-card {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.portfolio-status-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.portfolio-icon {
-  font-size: 20px;
-}
-
-.portfolio-status-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.portfolio-status-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.status-badge.public {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.status-badge.private {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.status-icon {
-  font-size: 16px;
-}
-
-.portfolio-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.portfolio-detail {
-  font-size: 13px;
-  color: #666;
-}
-
-.portfolio-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #856404;
-  line-height: 1.4;
-}
-
-.portfolio-success {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px;
-  background: #d1f2eb;
-  border: 1px solid #a7f3d0;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #0f5132;
-  line-height: 1.4;
-}
-
-.warning-icon,
-.success-icon {
-  font-size: 14px;
-  margin-top: 1px;
-}
-
-.portfolio-action {
-  margin-top: 15px;
-}
-
-.portfolio-edit-button {
-  background: linear-gradient(135deg, #17a2b8, #20c997);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.portfolio-edit-button:hover {
-  background: linear-gradient(135deg, #138496, #1e9e8a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
-}
-
-/* 기존 폼 스타일 */
-.form-group {
-  margin-bottom: 25px;
-}
-
-.form-label {
-  display: block;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.form-select,
-.form-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e8e8e8;
-  border-radius: 12px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  font-family: inherit;
-}
-
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.character-count {
-  text-align: right;
-  font-size: 12px;
-  color: #999;
-  margin-top: 5px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 30px;
-}
-
-.cancel-button,
-.submit-button {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.cancel-button {
-  background: #f8f9fa;
-  color: #6c757d;
-}
-
-.cancel-button:hover {
-  background: #e9ecef;
-}
-
-.submit-button {
-  background: linear-gradient(135deg, #4CAF50, #66BB6A);
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049, #5cb85c);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* 로딩 스피너 */
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* 성공 토스트 */
 .success-toast {
   position: fixed;
@@ -867,22 +415,6 @@ document.addEventListener('keydown', (e) => {
 }
 
 /* 애니메이션 */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @keyframes slideInRight {
   from {
     opacity: 0;
@@ -934,44 +466,12 @@ document.addEventListener('keydown', (e) => {
     display: none;
   }
 
-  .modal-container {
-    width: 95%;
-    margin: 20px;
-  }
-
-  .modal-header,
-  .modal-body {
-    padding: 20px;
-  }
-
-  .modal-title {
-    font-size: 20px;
-  }
-
-  .project-info-card,
-  .portfolio-status-card {
-    padding: 16px;
-  }
-
-  .project-name {
-    font-size: 16px;
-  }
-
-  .portfolio-warning,
-  .portfolio-success {
-    padding: 10px;
-    font-size: 12px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
   .success-toast {
     top: 20px;
     right: 20px;
     left: 20px;
     text-align: center;
+    transform: none;
   }
 }
 
