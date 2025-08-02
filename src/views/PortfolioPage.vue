@@ -265,7 +265,7 @@ const loadPortfolioData = async (userId) => {
   portfolioNotFound.value = false
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // await new Promise(resolve => setTimeout(resolve, 1000))
     
     const userData = getPortfolioById(parseInt(userId))
     

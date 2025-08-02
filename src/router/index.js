@@ -5,6 +5,7 @@ import EmailLoginPage from '@/views/EmailLoginPage.vue';
 import SignUpPage from '@/views/SignUpPage.vue';
 import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import MyProjectListPage from '@/views/MyProjectListPage.vue';
+import MyMessagesPage from '@/views/MyMessagesPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
 import ProfileEditPage from '@/views/ProfileEditPage.vue';
@@ -55,6 +56,11 @@ const routes = [
     path: '/my-projects',
     name: 'MyProjectList',
     component: MyProjectListPage,
+  },
+  {
+    path: '/my-messages',
+    name: 'MyMessages',
+    component: MyMessagesPage,
   },
   {
     // 프로젝트 리스트
