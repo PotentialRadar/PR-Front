@@ -15,7 +15,7 @@
 
             <!-- 내 포트폴리오 -->
             <router-link
-              :to="`/myPage/portfolio/${user.id}`"
+              :to="`/myPage/portfolio`"
               class="nav-item"
               active-class="active"
             >

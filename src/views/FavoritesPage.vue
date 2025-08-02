@@ -1,16 +1,5 @@
 <template>
   <div class="favorites-page">
-    <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">즐겨찾기</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">관심있는 프로젝트와 포트폴리오를 모아보세요</p>
-      </div>
-    </div>
-
     <div class="container">
       <div class="content-wrapper">
         <!-- 탭 메뉴 -->
@@ -20,36 +9,36 @@
             @click="setActiveTab('projects')"
           >
             <i class="bi bi-folder"></i>
-            프로젝트 ({{ favoriteProjects.length }})
+            프로젝트
           </button>
           <button 
             :class="['tab-button', { 'active': activeTab === 'portfolios' }]"
             @click="setActiveTab('portfolios')"
           >
             <i class="bi bi-person-badge"></i>
-            포트폴리오 ({{ favoritePortfolios.length }})
+            포트폴리오
           </button>
         </div>
 
         <!-- 프로젝트 탭 콘텐츠 -->
         <div v-if="activeTab === 'projects'" class="tab-content">
-          <div v-if="favoriteProjects.length > 0" class="favorites-grid">
-            <div v-for="project in favoriteProjects" :key="project.id" class="favorite-item">
-              <div class="item-header">
-                <div class="item-info">
-                  <h3 class="item-title">{{ project.title }}</h3>
-                  <p class="item-description">{{ project.description }}</p>
+          <div v-if="favoriteProjects.length > 0" class="content-grid">
+            <div v-for="project in favoriteProjects" :key="project.id" class="content-card project-card">
+              <div class="card-header">
+                <div class="project-info">
+                  <h3 class="project-title">{{ project.title }}</h3>
+                  <p class="project-description">{{ project.description }}</p>
                 </div>
-                <button class="remove-favorite" @click="removeFavoriteProject(project.id)">
+                <button class="favorite-btn active" @click="removeFavoriteProject(project.id)">
                   <i class="bi bi-heart-fill"></i>
                 </button>
               </div>
               
-              <div class="item-tags">
+              <div class="project-tags">
                 <span v-for="tag in project.tags" :key="tag" class="tag">{{ tag }}</span>
               </div>
               
-              <div class="item-meta">
+              <div class="project-meta">
                 <div class="meta-item">
                   <i class="bi bi-clock"></i>
                   <span>{{ project.duration }}</span>
@@ -66,9 +55,11 @@
                 </div>
               </div>
               
-              <div class="item-actions">
-                <button class="view-button">상세보기</button>
-                <button class="apply-button">지원하기</button>
+              <div class="card-actions">
+                <button class="action-btn secondary">
+                  <i class="bi bi-eye"></i>
+                  상세보기
+                </button>
               </div>
             </div>
           </div>
@@ -77,8 +68,8 @@
             <div class="empty-icon">
               <i class="bi bi-heart"></i>
             </div>
-            <h3 class="empty-title">좋아요한 프로젝트가 없습니다</h3>
-            <p class="empty-description">관심있는 프로젝트에 좋아요를 눌러보세요</p>
+            <h3 class="empty-title">관심 프로젝트가 없습니다</h3>
+            <p class="empty-description">마음에 드는 프로젝트에 좋아요를 눌러보세요</p>
             <button class="browse-button" @click="goToProjects">
               <i class="bi bi-search"></i>
               프로젝트 둘러보기
@@ -88,19 +79,23 @@
 
         <!-- 포트폴리오 탭 콘텐츠 -->
         <div v-if="activeTab === 'portfolios'" class="tab-content">
-          <div v-if="favoritePortfolios.length > 0" class="favorites-grid">
-            <div v-for="portfolio in favoritePortfolios" :key="portfolio.id" class="favorite-item portfolio-item">
-              <div class="item-header">
+          <div v-if="favoritePortfolios.length > 0" class="content-grid">
+            <div v-for="portfolio in favoritePortfolios" :key="portfolio.id" class="content-card portfolio-card">
+              <div class="card-header">
                 <div class="portfolio-profile">
-                  <div class="profile-image">
+                  <div class="profile-avatar">
                     <img :src="portfolio.avatar" :alt="portfolio.name" />
                   </div>
-                  <div class="profile-info">
+                  <div class="profile-details">
                     <h3 class="profile-name">{{ portfolio.name }}</h3>
                     <p class="profile-job">{{ portfolio.jobTitle }}</p>
+                    <div class="profile-location">
+                      <i class="bi bi-geo-alt"></i>
+                      <span>{{ portfolio.location }}</span>
+                    </div>
                   </div>
                 </div>
-                <button class="remove-favorite" @click="removeFavoritePortfolio(portfolio.id)">
+                <button class="favorite-btn active" @click="removeFavoritePortfolio(portfolio.id)">
                   <i class="bi bi-heart-fill"></i>
                 </button>
               </div>
@@ -113,11 +108,17 @@
                   +{{ portfolio.skills.length - 4 }}
                 </span>
               </div>
-            
+
+              <div class="portfolio-experience">
+                <i class="bi bi-briefcase"></i>
+                <span>{{ portfolio.experience }}</span>
+              </div>
               
-              <div class="item-actions">
-                <button class="view-button">포트폴리오 보기</button>
-                <button class="contact-button">연락하기</button>
+              <div class="card-actions">
+                <button class="action-btn secondary">
+                  <i class="bi bi-eye"></i>
+                  포트폴리오 보기
+                </button>
               </div>
             </div>
           </div>
@@ -126,7 +127,7 @@
             <div class="empty-icon">
               <i class="bi bi-person-heart"></i>
             </div>
-            <h3 class="empty-title">좋아요한 포트폴리오가 없습니다</h3>
+            <h3 class="empty-title">관심 포트폴리오가 없습니다</h3>
             <p class="empty-description">마음에 드는 포트폴리오에 좋아요를 눌러보세요</p>
             <button class="browse-button" @click="goToPortfolios">
               <i class="bi bi-search"></i>
@@ -140,8 +141,10 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const activeTab = ref('projects')
 
 // 샘플 데이터
@@ -153,7 +156,8 @@ const favoriteProjects = ref([
     tags: ['React', 'TypeScript', 'Dashboard'],
     duration: '3개월',
     teamSize: '4명',
-    deadline: 'D-5'
+    deadline: 'D-5',
+    addedDate: '2024-01-15'
   },
   {
     id: 2,
@@ -162,7 +166,8 @@ const favoriteProjects = ref([
     tags: ['AI', 'Node.js', 'ChatGPT'],
     duration: '6개월',
     teamSize: '6명',
-    deadline: 'D-12'
+    deadline: 'D-12',
+    addedDate: '2024-01-10'
   },
   {
     id: 3,
@@ -171,7 +176,8 @@ const favoriteProjects = ref([
     tags: ['Flutter', 'Mobile', 'E-commerce'],
     duration: '4개월',
     teamSize: '5명',
-    deadline: 'D-20'
+    deadline: 'D-20',
+    addedDate: '2024-01-05'
   }
 ])
 
@@ -183,7 +189,8 @@ const favoritePortfolios = ref([
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
     skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'CSS', 'HTML'],
     experience: '3년 경력',
-    location: '서울'
+    location: '서울',
+    addedDate: '2024-01-12'
   },
   {
     id: 2,
@@ -192,7 +199,8 @@ const favoritePortfolios = ref([
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
     skills: ['Figma', 'Sketch', 'Adobe XD', 'Prototyping'],
     experience: '5년 경력',
-    location: '부산'
+    location: '부산',
+    addedDate: '2024-01-08'
   },
   {
     id: 3,
@@ -201,11 +209,32 @@ const favoritePortfolios = ref([
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
     skills: ['Node.js', 'Python', 'Docker', 'AWS', 'MySQL'],
     experience: '4년 경력',
-    location: '대구'
+    location: '대구',
+    addedDate: '2024-01-14'
   }
 ])
 
-// 메서드
+// Computed
+const recentFavoritesCount = computed(() => {
+  const oneWeekAgo = new Date()
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+  
+  const recentProjects = favoriteProjects.value.filter(p => 
+    new Date(p.addedDate) >= oneWeekAgo
+  ).length
+  
+  const recentPortfolios = favoritePortfolios.value.filter(p => 
+    new Date(p.addedDate) >= oneWeekAgo
+  ).length
+  
+  return recentProjects + recentPortfolios
+})
+
+const urgentDeadlineCount = computed(() => {
+  return favoriteProjects.value.filter(p => isUrgent(p.deadline)).length
+})
+
+// Methods
 const setActiveTab = (tab) => {
   activeTab.value = tab
 }
@@ -233,143 +262,48 @@ const isUrgent = (deadline) => {
 }
 
 const goToProjects = () => {
-  // 프로젝트 목록 페이지로 이동
-  console.log('프로젝트 목록으로 이동')
+  router.push('/projects')
 }
 
 const goToPortfolios = () => {
-  // 포트폴리오 목록 페이지로 이동
-  console.log('포트폴리오 목록으로 이동')
+  router.push('/portfolios')
 }
 </script>
 
 <style scoped>
 .favorites-page {
-  min-height: 100vh;
-  background: #FFF;
-  padding-top: 60px;
-}
-
-/* 페이지 헤더 */
-.page-header {
-  width: 100%;
-  margin-bottom: 60px;
-  text-align: center;
-  position: relative;
-}
-
-.header-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  position: relative;
-  padding: 50px 20px 40px 20px;
-}
-
-.title-section {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.page-title {
-  font-size: 42px;
-  font-weight: 900;
-  color: #262626;
-  margin: 0;
-  letter-spacing: -1px;
-  position: relative;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.title-underline {
-  width: 80px;
-  height: 4px;
-  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
-  border-radius: 2px;
-  position: relative;
-  animation: expandLine 1s ease-out;
-}
-
-.title-underline::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  background: #4CAF50;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-.page-subtitle {
-  font-size: 18px;
-  color: #808080;
-  margin: 0;
-  font-weight: 400;
-  max-width: 600px;
-  line-height: 1.6;
-  opacity: 0;
-  animation: fadeInUp 0.8s ease-out 0.3s forwards;
-}
-
-@keyframes expandLine {
-  0% { width: 0; }
-  100% { width: 80px; }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: calc(100vh - 60px);
 }
 
 .container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .content-wrapper {
-  width: 100%;
-  max-width: 1200px;
-  padding: 20px 0 90px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 /* 탭 메뉴 */
 .tab-menu {
   display: flex;
   gap: 8px;
-  margin-bottom: 40px;
   padding: 6px;
-  background: #F5F5F5;
+  background: white;
   border-radius: 12px;
   width: fit-content;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .tab-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 12px 20px;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -383,14 +317,13 @@ const goToPortfolios = () => {
 
 .tab-button:hover {
   color: #333;
-  background: rgba(255, 255, 255, 0.5);
+  background: #f8f9fa;
 }
 
 .tab-button.active {
-  background: #FFF;
-  color: #4CAF50;
+  background: #4CAF50;
+  color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tab-button i {
@@ -399,53 +332,52 @@ const goToPortfolios = () => {
 
 /* 콘텐츠 */
 .tab-content {
-  min-height: 400px;
+  min-height: 300px;
 }
 
-.favorites-grid {
+.content-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 
-.favorite-item {
-  background: #FFF;
-  border: 2px solid rgba(76, 175, 80, 0.1);
+.content-card {
+  background: white;
   border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   position: relative;
+  border-left: 4px solid transparent;
 }
 
-.favorite-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
-  border-radius: 12px 12px 0 0;
+.project-card {
+  border-left-color: #4CAF50;
 }
 
-.favorite-item:hover {
+.portfolio-card {
+  border-left-color: #2196F3;
+}
+
+.content-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(76, 175, 80, 0.3);
-  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.item-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
 }
 
-.item-info {
+.project-info,
+.profile-details {
   flex: 1;
 }
 
-.item-title {
+.project-title,
+.profile-name {
   font-size: 18px;
   font-weight: 700;
   color: #262626;
@@ -453,30 +385,39 @@ const goToPortfolios = () => {
   line-height: 1.4;
 }
 
-.item-description {
+.project-description {
   font-size: 14px;
   color: #666;
   margin: 0;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.remove-favorite {
+.favorite-btn {
   background: none;
   border: none;
-  color: #FF5722;
-  font-size: 18px;
+  color: #ccc;
+  font-size: 20px;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
   border-radius: 50%;
   transition: all 0.2s ease;
 }
 
-.remove-favorite:hover {
-  background: rgba(255, 87, 34, 0.1);
+.favorite-btn.active {
+  color: #e91e63;
+}
+
+.favorite-btn:hover {
+  background: rgba(233, 30, 99, 0.1);
   transform: scale(1.1);
 }
 
-.item-tags {
+/* 프로젝트 카드 전용 */
+.project-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -485,15 +426,15 @@ const goToPortfolios = () => {
 
 .tag {
   padding: 4px 8px;
-  background: #F3F4F6;
-  border: 1px solid #D1D5DB;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
   border-radius: 12px;
-  color: #374151;
+  color: #4CAF50;
   font-size: 12px;
   font-weight: 500;
 }
 
-.item-meta {
+.project-meta {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
@@ -518,79 +459,45 @@ const goToPortfolios = () => {
   font-weight: 600;
 }
 
-.item-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.view-button, .apply-button, .contact-button {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.view-button {
-  background: #FFF;
-  border: 2px solid #E0E0E0;
-  color: #424242;
-}
-
-.view-button:hover {
-  background: #F5F5F5;
-  border-color: #BDBDBD;
-}
-
-.apply-button, .contact-button {
-  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-  border: none;
-  color: #FFF;
-}
-
-.apply-button:hover, .contact-button:hover {
-  background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
-}
-
-/* 포트폴리오 전용 스타일 */
-.portfolio-item .item-header {
-  align-items: center;
-}
-
+/* 포트폴리오 카드 전용 */
 .portfolio-profile {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex: 1;
 }
 
-.profile-image {
+.profile-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid #E0E0E0;
+  flex-shrink: 0;
 }
 
-.profile-image img {
+.profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #262626;
-  margin: 0 0 4px 0;
+.profile-job {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 8px 0;
 }
 
-.profile-job {
-  font-size: 13px;
-  color: #666;
-  margin: 0;
+.profile-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+}
+
+.profile-location i {
+  font-size: 11px;
 }
 
 .portfolio-skills {
@@ -602,27 +509,77 @@ const goToPortfolios = () => {
 
 .skill-tag {
   padding: 4px 8px;
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.2);
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.2);
   border-radius: 12px;
-  color: #4CAF50;
+  color: #2196F3;
   font-size: 11px;
   font-weight: 500;
 }
 
 .more-skills {
   padding: 4px 8px;
-  background: #F0F0F0;
+  background: #f0f0f0;
   border-radius: 12px;
   color: #666;
   font-size: 11px;
   font-weight: 500;
 }
 
-.portfolio-meta {
+.portfolio-experience {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+.portfolio-experience i {
+  color: #2196F3;
+  font-size: 14px;
+}
+
+/* 카드 액션 */
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.action-btn.secondary {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e9ecef;
+}
+
+.action-btn.secondary:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
+  transform: translateY(-1px);
 }
 
 /* 빈 상태 */
@@ -632,7 +589,10 @@ const goToPortfolios = () => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .empty-icon {
@@ -652,7 +612,7 @@ const goToPortfolios = () => {
 }
 
 .empty-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #262626;
   margin: 0 0 12px 0;
@@ -670,9 +630,9 @@ const goToPortfolios = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 14px 24px;
   background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-  color: #FFF;
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 15px;
@@ -691,18 +651,14 @@ const goToPortfolios = () => {
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .favorites-page {
-    padding-top: 60px;
+    padding: 15px;
   }
 
-  .page-title {
-    font-size: 32px;
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .page-subtitle {
-    font-size: 16px;
-  }
-
-  .favorites-grid {
+  .content-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
@@ -717,22 +673,31 @@ const goToPortfolios = () => {
     justify-content: center;
   }
 
-  .item-meta {
+  .project-meta {
     flex-direction: column;
     gap: 8px;
   }
 
-  .item-actions {
+  .card-actions {
     flex-direction: column;
   }
 }
 
 @media (max-width: 480px) {
-  .favorite-item {
+  .favorites-page {
+    padding: 10px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content-card {
     padding: 16px;
   }
 
-  .item-title {
+  .project-title,
+  .profile-name {
     font-size: 16px;
   }
 
@@ -740,13 +705,13 @@ const goToPortfolios = () => {
     gap: 8px;
   }
 
-  .profile-image {
+  .profile-avatar {
     width: 40px;
     height: 40px;
   }
 
   .empty-state {
-    padding: 60px 20px;
+    padding: 40px 20px;
   }
 
   .empty-icon {
@@ -759,7 +724,7 @@ const goToPortfolios = () => {
   }
 
   .empty-title {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .empty-description {

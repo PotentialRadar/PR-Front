@@ -13,7 +13,7 @@
             <div class="unit">건</div>
           </div>
           <div class="card-description">
-            <span class="highlight">실제 프로젝트에 참여한 결과물</span> 위주로 구성되어 있습니다.
+            <span class="highlight">당신의 팀에 딱 맞는 전문가</span>를 찾아보세요.
           </div>
           <div class="card-action">
             <router-link to="/portfolios" class="action-button">
@@ -39,7 +39,7 @@
             <div class="unit">건</div>
           </div>
           <div class="card-description">
-            현재 <span class="highlight">프리모아를 통해 진행중인</span>
+            현재 <span class="highlight">PR을 통해 진행중인</span>
             기획, 디자인, 개발을 포함한 IT 프로젝트입니다.
           </div>
           <div class="card-action">
