@@ -118,12 +118,12 @@ const routes = [
         name: 'ProfileEdit',
         component: ProfileEditPage,
       },
-      {
-        // 계정 설정 (새로 추가)
-        path: 'settings',
-        name: 'AccountSettings',
-        component: () => import('@/views/AccountSettingsPage.vue'),
-      },
+      // {
+      //   // 계정 설정 (새로 추가)
+      //   path: 'settings',
+      //   name: 'AccountSettings',
+      //   component: () => import('@/views/AccountSettingsPage.vue'),
+      // },
       {
         // 내 프로젝트 관리
         path: 'projects',
