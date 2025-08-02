@@ -24,7 +24,7 @@
         </template>
         <template v-else>
           <!-- <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link> -->
-          <router-link to="/portfolio/:userId?" class="auth-link">마이페이지</router-link>
+          <router-link to="/myPage" class="auth-link">마이페이지</router-link>
           <span class="auth-link">|</span>
           <button @click="handleLogout" class="auth-link">로그아웃</button>
         </template>

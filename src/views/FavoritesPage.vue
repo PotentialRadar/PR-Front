@@ -35,28 +35,34 @@
               </div>
               
               <div class="project-tags">
-                <span v-for="tag in project.tags" :key="tag" class="tag">{{ tag }}</span>
+                <span v-for="tech in project.techStacks" :key="tech.techStackName" class="tag">
+                  {{ tech.techStackName }}
+                </span>
               </div>
               
               <div class="project-meta">
                 <div class="meta-item">
-                  <i class="bi bi-clock"></i>
-                  <span>{{ project.duration }}</span>
+                  <i class="bi bi-calendar3"></i>
+                  <span>{{ formatDuration(project.startDate, project.endDate) }}</span>
                 </div>
                 <div class="meta-item">
                   <i class="bi bi-people"></i>
-                  <span>{{ project.teamSize }}</span>
+                  <span>{{ project.recruitCount }}명 모집</span>
                 </div>
                 <div class="meta-item">
-                  <i class="bi bi-calendar-event"></i>
+                  <i class="bi bi-clock"></i>
                   <span class="deadline" :class="{ 'urgent': isUrgent(project.deadline) }">
                     {{ project.deadline }}
                   </span>
                 </div>
+                <div class="meta-item">
+                  <i class="bi bi-eye"></i>
+                  <span>조회 {{ project.viewCount }}</span>
+                </div>
               </div>
               
               <div class="card-actions">
-                <button class="action-btn secondary">
+                <button class="action-btn secondary" @click="viewProjectDetail(project.id)">
                   <i class="bi bi-eye"></i>
                   상세보기
                 </button>
@@ -80,22 +86,22 @@
         <!-- 포트폴리오 탭 콘텐츠 -->
         <div v-if="activeTab === 'portfolios'" class="tab-content">
           <div v-if="favoritePortfolios.length > 0" class="content-grid">
-            <div v-for="portfolio in favoritePortfolios" :key="portfolio.id" class="content-card portfolio-card">
+            <div v-for="portfolio in favoritePortfolios" :key="portfolio.userId" class="content-card portfolio-card">
               <div class="card-header">
                 <div class="portfolio-profile">
                   <div class="profile-avatar">
-                    <img :src="portfolio.avatar" :alt="portfolio.name" />
+                    <img :src="portfolio.userInfo.avatar" :alt="portfolio.userInfo.name" />
                   </div>
                   <div class="profile-details">
-                    <h3 class="profile-name">{{ portfolio.name }}</h3>
-                    <p class="profile-job">{{ portfolio.jobTitle }}</p>
-                    <div class="profile-location">
-                      <i class="bi bi-geo-alt"></i>
-                      <span>{{ portfolio.location }}</span>
+                    <h3 class="profile-name">{{ portfolio.userInfo.name }}</h3>
+                    <p class="profile-job">{{ portfolio.userInfo.jobTitle }}</p>
+                    <div class="profile-category">
+                      <i class="bi bi-tag"></i>
+                      <span>{{ portfolio.userInfo.category }}</span>
                     </div>
                   </div>
                 </div>
-                <button class="favorite-btn active" @click="removeFavoritePortfolio(portfolio.id)">
+                <button class="favorite-btn active" @click="removeFavoritePortfolio(portfolio.userId)">
                   <i class="bi bi-heart-fill"></i>
                 </button>
               </div>
@@ -109,13 +115,12 @@
                 </span>
               </div>
 
-              <div class="portfolio-experience">
-                <i class="bi bi-briefcase"></i>
-                <span>{{ portfolio.experience }}</span>
+              <div class="portfolio-intro" v-if="portfolio.introduction">
+                <p>{{ truncateText(portfolio.introduction, 80) }}</p>
               </div>
               
               <div class="card-actions">
-                <button class="action-btn secondary">
+                <button class="action-btn secondary" @click="viewPortfolio(portfolio.userId)">
                   <i class="bi bi-eye"></i>
                   포트폴리오 보기
                 </button>
@@ -141,93 +146,112 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { projects } from '@/components/data/projects'
 
 const router = useRouter()
 const activeTab = ref('projects')
 
-// 샘플 데이터
-const favoriteProjects = ref([
-  {
-    id: 1,
-    title: 'React 기반 대시보드 구축',
-    description: 'React와 TypeScript를 활용한 관리자 대시보드 개발 프로젝트입니다.',
-    tags: ['React', 'TypeScript', 'Dashboard'],
-    duration: '3개월',
-    teamSize: '4명',
-    deadline: 'D-5',
-    addedDate: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'AI 챗봇 서비스 개발',
-    description: 'OpenAI API를 활용한 고객 상담 챗봇 서비스 구축',
-    tags: ['AI', 'Node.js', 'ChatGPT'],
-    duration: '6개월',
-    teamSize: '6명',
-    deadline: 'D-12',
-    addedDate: '2024-01-10'
-  },
-  {
-    id: 3,
-    title: '모바일 쇼핑몰 앱',
-    description: 'Flutter를 이용한 크로스플랫폼 쇼핑몰 애플리케이션',
-    tags: ['Flutter', 'Mobile', 'E-commerce'],
-    duration: '4개월',
-    teamSize: '5명',
-    deadline: 'D-20',
-    addedDate: '2024-01-05'
-  }
-])
+// 실제 프로젝트 데이터에서 좋아요한 프로젝트들 (isFavorite: true)
+const favoriteProjects = ref([])
 
-const favoritePortfolios = ref([
-  {
-    id: 1,
-    name: '김개발',
-    jobTitle: 'Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-    skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'CSS', 'HTML'],
-    experience: '3년 경력',
-    location: '서울',
-    addedDate: '2024-01-12'
+// 포트폴리오 데이터베이스 (실제로는 API에서 가져와야 함)
+const portfolioDatabase = {
+  1: {
+    userId: 1,
+    userInfo: {
+      name: '김프론트',
+      jobTitle: 'Frontend Developer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend1',
+      category: 'Frontend'
+    },
+    introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자 김프론트입니다.',
+    skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'GraphQL']
   },
-  {
-    id: 2,
-    name: '박디자인',
-    jobTitle: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    skills: ['Figma', 'Sketch', 'Adobe XD', 'Prototyping'],
-    experience: '5년 경력',
-    location: '부산',
-    addedDate: '2024-01-08'
+  2: {
+    userId: 2,
+    userInfo: {
+      name: '박디자이너',
+      jobTitle: 'UI/UX Designer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=designer1',
+      category: 'Design'
+    },
+    introduction: 'UI/UX 디자이너 박디자이너입니다. 사용자 중심의 디자인 사고를 바탕으로 직관적이고 아름다운 인터페이스를 만들어갑니다.',
+    skills: ['Figma', 'Adobe XD', 'Sketch', 'Prototyping', 'User Research']
   },
-  {
-    id: 3,
-    name: '이백엔드',
-    jobTitle: 'Backend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    skills: ['Node.js', 'Python', 'Docker', 'AWS', 'MySQL'],
-    experience: '4년 경력',
-    location: '대구',
-    addedDate: '2024-01-14'
+  3: {
+    userId: 3,
+    userInfo: {
+      name: '이백엔드',
+      jobTitle: 'Backend Developer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=backend1',
+      category: 'Backend'
+    },
+    introduction: '안정적이고 확장 가능한 서버 아키텍처 구축을 전문으로 하는 백엔드 개발자입니다.',
+    skills: ['Node.js', 'Python', 'Docker', 'AWS', 'PostgreSQL']
+  },
+  4: {
+    userId: 4,
+    userInfo: {
+      name: '정모바일',
+      jobTitle: 'Mobile Developer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mobile1',
+      category: 'Mobile'
+    },
+    introduction: '크로스 플랫폼 모바일 앱 개발을 전문으로 하는 개발자입니다.',
+    skills: ['Flutter', 'React Native', 'iOS', 'Android', 'Firebase']
+  },
+  5: {
+    userId: 5,
+    userInfo: {
+      name: '최AI',
+      jobTitle: 'AI/ML Engineer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ai1',
+      category: 'AI/ML'
+    },
+    introduction: '머신러닝과 딥러닝을 활용한 지능형 시스템 개발을 전문으로 합니다.',
+    skills: ['Python', 'TensorFlow', 'PyTorch', 'OpenCV', 'NLP']
+  },
+  6: {
+    userId: 6,
+    userInfo: {
+      name: '강데브옵스',
+      jobTitle: 'DevOps Engineer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devops1',
+      category: 'DevOps'
+    },
+    introduction: 'CI/CD 파이프라인 구축과 인프라 자동화를 통해 개발팀의 생산성 향상에 기여하는 데브옵스 엔지니어입니다.',
+    skills: ['AWS', 'Docker', 'Kubernetes', 'Jenkins', 'Terraform']
   }
-])
+}
+
+// 좋아요한 포트폴리오들 (임시 데이터 - 실제로는 사용자의 좋아요 목록에서 가져와야 함)
+const favoritePortfolios = ref([])
+
+// 컴포넌트 마운트 시 좋아요 데이터 로드
+onMounted(() => {
+  loadFavoriteData()
+})
+
+// 좋아요 데이터 로드 함수
+const loadFavoriteData = () => {
+  // 실제 프로젝트 데이터에서 isFavorite: true인 것들만 필터링
+  favoriteProjects.value = projects.filter(project => project.isFavorite)
+  
+  // 임시로 일부 포트폴리오를 좋아요 목록에 추가 (실제로는 API에서 가져와야 함)
+  const favoritePortfolioIds = [2, 5, 6] // 예시 좋아요 목록
+  favoritePortfolios.value = favoritePortfolioIds
+    .map(id => portfolioDatabase[id])
+    .filter(Boolean)
+}
 
 // Computed
 const recentFavoritesCount = computed(() => {
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
   
-  const recentProjects = favoriteProjects.value.filter(p => 
-    new Date(p.addedDate) >= oneWeekAgo
-  ).length
-  
-  const recentPortfolios = favoritePortfolios.value.filter(p => 
-    new Date(p.addedDate) >= oneWeekAgo
-  ).length
-  
-  return recentProjects + recentPortfolios
+  return favoriteProjects.value.length + favoritePortfolios.value.length
 })
 
 const urgentDeadlineCount = computed(() => {
@@ -243,22 +267,57 @@ const removeFavoriteProject = (projectId) => {
   const index = favoriteProjects.value.findIndex(p => p.id === projectId)
   if (index > -1) {
     favoriteProjects.value.splice(index, 1)
+    // 실제로는 여기서 API 호출하여 서버에서도 좋아요 해제
+    console.log(`프로젝트 ${projectId} 좋아요 해제`)
   }
 }
 
-const removeFavoritePortfolio = (portfolioId) => {
-  const index = favoritePortfolios.value.findIndex(p => p.id === portfolioId)
+const removeFavoritePortfolio = (userId) => {
+  const index = favoritePortfolios.value.findIndex(p => p.userId === userId)
   if (index > -1) {
     favoritePortfolios.value.splice(index, 1)
+    // 실제로는 여기서 API 호출하여 서버에서도 좋아요 해제
+    console.log(`포트폴리오 ${userId} 좋아요 해제`)
   }
 }
 
 const isUrgent = (deadline) => {
-  if (deadline.includes('D-')) {
+  if (deadline && deadline.includes('D-')) {
     const days = parseInt(deadline.replace('D-', ''))
     return days <= 7
   }
   return false
+}
+
+const formatDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return '기간 미정'
+  
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const diffTime = Math.abs(end - start)
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const diffMonths = Math.round(diffDays / 30)
+  
+  if (diffMonths >= 1) {
+    return `${diffMonths}개월`
+  } else {
+    return `${diffDays}일`
+  }
+}
+
+const truncateText = (text, maxLength) => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength) + '...'
+}
+
+// 페이지 이동 함수들
+const viewProjectDetail = (projectId) => {
+  router.push(`/projects/${projectId}`)
+}
+
+const viewPortfolio = (userId) => {
+  router.push(`/portfolio/${userId}`)
 }
 
 const goToProjects = () => {
@@ -488,7 +547,7 @@ const goToPortfolios = () => {
   margin: 0 0 8px 0;
 }
 
-.profile-location {
+.profile-category {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -496,7 +555,7 @@ const goToPortfolios = () => {
   color: #888;
 }
 
-.profile-location i {
+.profile-category i {
   font-size: 11px;
 }
 
@@ -526,18 +585,15 @@ const goToPortfolios = () => {
   font-weight: 500;
 }
 
-.portfolio-experience {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.portfolio-intro {
   margin-bottom: 20px;
-  font-size: 13px;
-  color: #666;
 }
 
-.portfolio-experience i {
-  color: #2196F3;
-  font-size: 14px;
+.portfolio-intro p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* 카드 액션 */
@@ -654,10 +710,6 @@ const goToPortfolios = () => {
     padding: 15px;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .content-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -686,10 +738,6 @@ const goToPortfolios = () => {
 @media (max-width: 480px) {
   .favorites-page {
     padding: 10px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
   }
 
   .content-card {

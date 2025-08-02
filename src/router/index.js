@@ -7,6 +7,7 @@ import ProjectDetailPage from '@/views/ProjectDetailPage.vue';
 import MyProjectListPage from '@/views/MyProjectListPage.vue';
 import ProjectListPage from '@/views/ProjectListPage.vue';
 import ProjectCreatePage from '@/views/ProjectCreatePage.vue';
+import ProfileEditPage from '@/views/ProfileEditPage.vue';
 import PortfolioPage from '@/views/PortfolioPage.vue';
 import PortfolioUpdatePage from '@/views/PortfolioUpdatePage.vue';
 import PortfolioListPage from '@/views/PortfolioListPage.vue';
@@ -107,9 +108,9 @@ const routes = [
       },
       {
         // 포트폴리오 편집 (대시보드 스타일)
-        path: 'edit-portfolio',
-        name: 'MyPortfolioUpdate',
-        component: PortfolioUpdatePage,
+        path: 'edit-profile',
+        name: 'ProfileEdit',
+        component: ProfileEditPage,
       },
       {
         // 계정 설정 (새로 추가)

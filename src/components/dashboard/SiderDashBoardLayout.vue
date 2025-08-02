@@ -41,7 +41,7 @@
 
             <!-- 내 정보 수정 -->
             <router-link
-              to="/myPage/edit-portfolio"
+              to="/myPage/edit-profile"
               class="nav-item"
               active-class="active"
             >

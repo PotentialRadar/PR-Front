@@ -18,62 +18,20 @@
     </div>
 
     <div v-else class="portfolio-container">
-      <!-- 포트폴리오 헤더 -->
       <div class="portfolio-header">
         <div class="header-content">
           <div class="profile-section">
-            <div class="profile-image" @click="editMode === 'profile' ? null : startEdit('profile')">
+            <div class="profile-image">
               <img :src="portfolioData.userInfo.avatar" :alt="portfolioData.userInfo.name" />
-              <div v-if="editMode !== 'profile'" class="edit-overlay">
-                <i class="bi bi-camera"></i>
-              </div>
             </div>
             
             <div class="profile-info">
-              <!-- 이름 편집 -->
-              <div v-if="editMode === 'name'" class="edit-field">
-                <input 
-                  ref="nameInput"
-                  v-model="editData.name" 
-                  class="edit-input name-input"
-                  @keyup.enter="saveEdit('name')"
-                  @keyup.escape="cancelEdit"
-                />
-                <div class="edit-actions">
-                  <button @click="saveEdit('name')" class="save-btn">
-                    <i class="bi bi-check"></i>
-                  </button>
-                  <button @click="cancelEdit" class="cancel-btn">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-              </div>
-              <h1 v-else class="profile-name" @click="startEdit('name')">
+              <h1 class="profile-name">
                 {{ portfolioData.userInfo.name }}
-                <i class="bi bi-pencil edit-icon"></i>
               </h1>
 
-              <!-- 직책 편집 -->
-              <div v-if="editMode === 'jobTitle'" class="edit-field">
-                <input 
-                  ref="jobTitleInput"
-                  v-model="editData.jobTitle" 
-                  class="edit-input"
-                  @keyup.enter="saveEdit('jobTitle')"
-                  @keyup.escape="cancelEdit"
-                />
-                <div class="edit-actions">
-                  <button @click="saveEdit('jobTitle')" class="save-btn">
-                    <i class="bi bi-check"></i>
-                  </button>
-                  <button @click="cancelEdit" class="cancel-btn">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-              </div>
-              <p v-else class="profile-job" @click="startEdit('jobTitle')">
+              <p class="profile-job">
                 {{ portfolioData.userInfo.jobTitle }}
-                <i class="bi bi-pencil edit-icon"></i>
               </p>
 
               <div class="profile-category">
@@ -91,51 +49,7 @@
         </div>
       </div>
 
-      <!-- 통계 카드 -->
-      <div class="stats-section">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon views">
-              <i class="bi bi-eye"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ portfolioStats.views }}</div>
-              <div class="stat-label">조회수</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon likes">
-              <i class="bi bi-heart"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ portfolioStats.likes }}</div>
-              <div class="stat-label">좋아요</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon contacts">
-              <i class="bi bi-chat-dots"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ portfolioStats.contacts }}</div>
-              <div class="stat-label">연락 받은 수</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon projects">
-              <i class="bi bi-folder"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ portfolioData.projects.length }}</div>
-              <div class="stat-label">프로젝트</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 포트폴리오 콘텐츠 -->
       <div class="portfolio-content">
-        <!-- 자기소개 섹션 -->
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">자기소개</h5>
@@ -182,7 +96,6 @@
           </div>
         </section>
 
-        <!-- 교육 이력 섹션 -->
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">교육 이력</h5>
@@ -242,7 +155,7 @@
                   <input 
                     type="checkbox" 
                     v-model="education.isOngoing"
-                    @change="handleOngoingToggle(index)"
+                    @change="handleOngoingToggle(index, 'education')"
                   />
                   진행중
                 </label>
@@ -295,7 +208,6 @@
           </div>
         </section>
 
-        <!-- 경력 섹션 -->
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">경력</h5>
@@ -313,13 +225,103 @@
             </div>
           </div>
           
-          <!-- 경력 편집 모드와 일반 모드는 교육 이력과 유사한 패턴 -->
           <div v-if="editMode === 'career'" class="edit-mode">
-            <!-- 경력 편집 폼 -->
+            <div class="career-edit-list">
+              <div 
+                v-for="(career, index) in editData.careers" 
+                :key="`edit-career-${index}`"
+                class="career-edit-item"
+              >
+                <div class="edit-item-header">
+                  <span class="item-number">{{ index + 1 }}</span>
+                  <button @click="removeCareer(index)" class="remove-btn">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                
+                <div class="edit-form-grid">
+                  <input 
+                    v-model="career.company" 
+                    placeholder="회사명"
+                    class="edit-input"
+                  />
+                  <input 
+                    v-model="career.position" 
+                    placeholder="직책/부서"
+                    class="edit-input"
+                  />
+                  <input 
+                    v-model="career.startDate" 
+                    type="month"
+                    class="edit-input"
+                    placeholder="시작일"
+                  />
+                  <input 
+                    v-model="career.endDate" 
+                    type="month"
+                    class="edit-input"
+                    placeholder="종료일"
+                    :disabled="career.isCurrent"
+                  />
+                </div>
+                
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    v-model="career.isCurrent"
+                    @change="handleCurrentToggle(index)"
+                  />
+                  현재 재직중
+                </label>
+                
+                <div class="description-section">
+                  <label class="description-label">업무 설명</label>
+                  <textarea
+                    v-model="career.description"
+                    placeholder="담당 업무나 성과를 간략히 설명해주세요"
+                    class="edit-textarea career-description"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <div class="edit-actions">
+              <button @click="addCareer" class="add-item-btn">
+                <i class="bi bi-plus"></i>
+                경력 추가
+              </button>
+              <div class="action-buttons">
+                <button @click="saveEdit('career')" class="save-btn">
+                  <i class="bi bi-check"></i>
+                  저장
+                </button>
+                <button @click="cancelEdit" class="cancel-btn">
+                  <i class="bi bi-x"></i>
+                  취소
+                </button>
+              </div>
+            </div>
           </div>
           
-          <div v-else-if="portfolioData.careers.length > 0" class="section-content">
-            <!-- 경력 표시 -->
+          <div v-else-if="careerData.length > 0" class="section-content">
+            <div class="career-list">
+              <div 
+                v-for="(career, index) in careerData" 
+                :key="index"
+                class="career-item"
+              >
+                <div class="career-info">
+                  <h6 class="career-company">{{ career.company }}</h6>
+                  <p class="career-position">{{ career.position }}</p>
+                  <p v-if="career.description" class="career-description-text">{{ career.description }}</p>
+                </div>
+                <div class="career-period">
+                  <span class="period-text">{{ formatCareerPeriod(career) }}</span>
+                  <span v-if="career.isCurrent" class="ongoing-badge">재직중</span>
+                </div>
+              </div>
+            </div>
           </div>
           
           <div v-else class="empty-section">
@@ -331,7 +333,6 @@
           </div>
         </section>
 
-        <!-- 기술 스택 섹션 -->
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">기술 스택</h5>
@@ -405,7 +406,6 @@
           </div>
         </section>
 
-        <!-- 프로젝트 섹션 -->
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">프로젝트</h5>
@@ -444,7 +444,6 @@
       </div>
     </div>
 
-    <!-- 저장 성공 토스트 -->
     <Transition name="toast">
       <div v-if="showSaveToast" class="save-toast">
         <i class="bi bi-check-circle-fill"></i>
@@ -461,7 +460,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const loading = ref(true)
-const editMode = ref(null) // null, 'name', 'jobTitle', 'introduction', 'education', 'career', 'skills'
+const editMode = ref(null) // null, 'introduction', 'education', 'career', 'skills'
 const showSaveToast = ref(false)
 const newSkill = ref('')
 
@@ -498,7 +497,16 @@ const portfolioData = reactive({
       position: 'Frontend Developer',
       startDate: '2023-09',
       endDate: null,
-      isCurrent: true
+      isCurrent: true,
+      description: 'React 기반 웹 애플리케이션 개발 및 사용자 인터페이스 설계를 담당했습니다.'
+    },
+    {
+      company: '네이버',
+      position: 'Junior Frontend Developer',
+      startDate: '2023-03',
+      endDate: '2023-08',
+      isCurrent: false,
+      description: 'Vue.js를 활용한 사내 관리 시스템 개발 및 유지보수를 담당했습니다.'
     }
   ],
   projects: [
@@ -534,6 +542,20 @@ const educationData = computed(() => {
   })
 })
 
+// 경력을 최신순으로 정렬
+const careerData = computed(() => {
+  if (!portfolioData.careers) return []
+  
+  return [...portfolioData.careers].sort((a, b) => {
+    if (a.isCurrent && !b.isCurrent) return -1
+    if (!a.isCurrent && b.isCurrent) return 1
+    
+    const aDate = new Date(a.startDate)
+    const bDate = new Date(b.startDate)
+    return bDate - aDate
+  })
+})
+
 // 메서드
 const loadPortfolioData = async () => {
   loading.value = true
@@ -551,12 +573,6 @@ const startEdit = async (field) => {
   
   // 편집 데이터 초기화
   switch (field) {
-    case 'name':
-      editData.name = portfolioData.userInfo.name
-      break
-    case 'jobTitle':
-      editData.jobTitle = portfolioData.userInfo.jobTitle
-      break
     case 'introduction':
       editData.introduction = portfolioData.introduction
       break
@@ -573,14 +589,8 @@ const startEdit = async (field) => {
   
   // 포커스 설정
   await nextTick()
-  const inputRef = {
-    name: 'nameInput',
-    jobTitle: 'jobTitleInput',
-    introduction: 'introductionInput'
-  }[field]
-  
-  if (inputRef) {
-    this.$refs[inputRef]?.focus()
+  if (field === 'introduction') {
+    this.$refs.introductionInput?.focus()
   }
 }
 
@@ -591,12 +601,6 @@ const saveEdit = async (field) => {
     
     // 데이터 저장
     switch (field) {
-      case 'name':
-        portfolioData.userInfo.name = editData.name
-        break
-      case 'jobTitle':
-        portfolioData.userInfo.jobTitle = editData.jobTitle
-        break
       case 'introduction':
         portfolioData.introduction = editData.introduction
         break
@@ -645,7 +649,24 @@ const formatEducationPeriod = (education) => {
   return `${startFormatted} ~ ${endFormatted}`
 }
 
-// 교육/경력 관련 메서드
+const formatCareerPeriod = (career) => {
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const [year, month] = dateString.split('-')
+    return `${year}.${month}`
+  }
+
+  const startFormatted = formatDate(career.startDate)
+  
+  if (career.isCurrent) {
+    return `${startFormatted} ~`
+  }
+  
+  const endFormatted = formatDate(career.endDate)
+  return `${startFormatted} ~ ${endFormatted}`
+}
+
+// 교육 이력 관련 메서드
 const addEducation = () => {
   if (!editMode.value) {
     startEdit('education')
@@ -668,12 +689,15 @@ const removeEducation = (index) => {
   editData.educations.splice(index, 1)
 }
 
-const handleOngoingToggle = (index) => {
-  if (editData.educations[index].isOngoing) {
-    editData.educations[index].endDate = ''
+const handleOngoingToggle = (index, type) => {
+  if (type === 'education') {
+    if (editData.educations[index].isOngoing) {
+      editData.educations[index].endDate = ''
+    }
   }
 }
 
+// 경력 관련 메서드
 const addCareer = () => {
   if (!editMode.value) {
     startEdit('career')
@@ -688,8 +712,19 @@ const addCareer = () => {
     position: '',
     startDate: '',
     endDate: '',
-    isCurrent: false
+    isCurrent: false,
+    description: ''
   })
+}
+
+const removeCareer = (index) => {
+  editData.careers.splice(index, 1)
+}
+
+const handleCurrentToggle = (index) => {
+  if (editData.careers[index].isCurrent) {
+    editData.careers[index].endDate = ''
+  }
 }
 
 // 기술 스택 관련 메서드
@@ -734,13 +769,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 기존 스타일들... */
 .my-portfolio-page {
   padding: 20px;
   background: #f8f9fa;
   min-height: calc(100vh - 60px);
 }
 
-/* 기존 스타일들... */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -765,7 +800,6 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* 포트폴리오 헤더 */
 .portfolio-header {
   background: white;
   border-radius: 12px;
@@ -794,50 +828,12 @@ onMounted(() => {
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid #E0E0E0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.profile-image:hover {
-  border-color: #4CAF50;
 }
 
 .profile-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.edit-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  color: white;
-  font-size: 20px;
-}
-
-.profile-image:hover .edit-overlay {
-  opacity: 1;
-}
-
-.profile-name, .profile-job {
-  position: relative;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-.profile-name:hover, .profile-job:hover {
-  background: rgba(76, 175, 80, 0.1);
 }
 
 .profile-name {
@@ -853,19 +849,37 @@ onMounted(() => {
   margin: 0 0 12px 0;
 }
 
-.edit-icon {
-  opacity: 0;
-  margin-left: 8px;
+.category-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.view-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 2px solid #E0E0E0;
+  background: white;
+  color: #666;
+  border-radius: 8px;
   font-size: 14px;
-  transition: opacity 0.2s ease;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.profile-name:hover .edit-icon,
-.profile-job:hover .edit-icon {
-  opacity: 1;
+.view-button:hover {
+  border-color: #2196F3;
+  color: #2196F3;
 }
 
-/* 편집 필드 */
 .edit-field {
   display: flex;
   align-items: center;
@@ -880,20 +894,15 @@ onMounted(() => {
 
 .edit-input {
   padding: 8px 12px;
-  border: 2px solid #4CAF50;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-  background: white;
+  font-size: 14px;
   outline: none;
-  min-width: 200px;
+  transition: border-color 0.2s ease;
 }
 
-.name-input {
-  font-size: 28px;
-  font-weight: 700;
-  min-width: 300px;
+.edit-input:focus {
+  border-color: #4CAF50;
 }
 
 .edit-textarea {
@@ -906,6 +915,15 @@ onMounted(() => {
   min-height: 100px;
   outline: none;
   font-family: inherit;
+}
+
+.career-description {
+  margin-top: 12px;
+  border-color: #ddd;
+}
+
+.career-description:focus {
+  border-color: #4CAF50;
 }
 
 .edit-actions {
@@ -946,93 +964,6 @@ onMounted(() => {
   background: #e9ecef;
 }
 
-.category-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-  border: 1px solid rgba(76, 175, 80, 0.2);
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.view-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 2px solid #E0E0E0;
-  background: white;
-  color: #666;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.view-button:hover {
-  border-color: #2196F3;
-  color: #2196F3;
-}
-
-/* 통계 섹션 */
-.stats-section {
-  margin-bottom: 20px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: white;
-}
-
-.stat-icon.views { background: linear-gradient(135deg, #2196F3, #21CBF3); }
-.stat-icon.likes { background: linear-gradient(135deg, #E91E63, #F06292); }
-.stat-icon.contacts { background: linear-gradient(135deg, #FF9800, #FFB74D); }
-.stat-icon.projects { background: linear-gradient(135deg, #4CAF50, #66BB6A); }
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #262626;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-  margin-top: 4px;
-}
-
-/* 포트폴리오 콘텐츠 */
 .portfolio-content {
   display: flex;
   flex-direction: column;
@@ -1150,7 +1081,6 @@ onMounted(() => {
   border-color: #4CAF50;
 }
 
-/* 자기소개 */
 .introduction-text {
   font-size: 15px;
   line-height: 1.6;
@@ -1158,14 +1088,13 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 교육 이력 */
-.education-list {
+.education-list, .career-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.education-item {
+.education-item, .career-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1175,17 +1104,24 @@ onMounted(() => {
   border-left: 4px solid #4CAF50;
 }
 
-.education-institution {
+.education-institution, .career-company {
   font-size: 16px;
   font-weight: 600;
   color: #262626;
   margin: 0 0 4px 0;
 }
 
-.education-program {
+.education-program, .career-position {
   font-size: 14px;
   color: #666;
   margin: 0;
+}
+
+.career-description-text {
+  font-size: 13px;
+  color: #777;
+  margin: 8px 0 0 0;
+  line-height: 1.4;
 }
 
 .period-text {
@@ -1204,7 +1140,6 @@ onMounted(() => {
   border-radius: 12px;
 }
 
-/* 편집 모드 */
 .edit-mode {
   padding: 20px;
   background: #f8f9fa;
@@ -1212,14 +1147,14 @@ onMounted(() => {
   border: 2px solid rgba(76, 175, 80, 0.2);
 }
 
-.education-edit-list {
+.education-edit-list, .career-edit-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.education-edit-item {
+.education-edit-item, .career-edit-item {
   background: white;
   padding: 20px;
   border-radius: 8px;
@@ -1281,6 +1216,18 @@ onMounted(() => {
   height: 16px;
 }
 
+.description-section {
+  margin-top: 16px;
+}
+
+.description-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
 .add-item-btn {
   display: flex;
   align-items: center;
@@ -1305,7 +1252,6 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* 기술 스택 */
 .skills-list {
   display: flex;
   flex-wrap: wrap;
@@ -1384,7 +1330,6 @@ onMounted(() => {
   background: rgba(76, 175, 80, 0.2);
 }
 
-/* 프로젝트 */
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1445,7 +1390,6 @@ onMounted(() => {
   background: #66BB6A;
 }
 
-/* 저장 토스트 */
 .save-toast {
   position: fixed;
   top: 80px;
@@ -1471,13 +1415,11 @@ onMounted(() => {
   transform: translateX(100%);
 }
 
-/* 애니메이션 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-/* 반응형 */
 @media (max-width: 768px) {
   .my-portfolio-page {
     padding: 15px;
@@ -1491,10 +1433,6 @@ onMounted(() => {
 
   .profile-section {
     width: 100%;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .edit-form-grid {
@@ -1519,15 +1457,6 @@ onMounted(() => {
     flex-direction: column;
     text-align: center;
     gap: 15px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .edit-input.name-input {
-    min-width: auto;
-    font-size: 24px;
   }
 }
 </style>

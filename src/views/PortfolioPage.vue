@@ -119,17 +119,18 @@ const loading = ref(true)
 const portfolioNotFound = ref(false)
 
 // 샘플 포트폴리오 데이터베이스 (실제로는 API에서 가져와야 함)
+// 아바타가 일치하도록 수정된 포트폴리오 데이터베이스
 const portfolioDatabase = {
   1: {
     userId: 1,
     userInfo: {
-      name: '김프론트',
-      jobTitle: 'Frontend Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-      category: 'Frontend'
-    },
-    introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자 김프론트입니다. React와 TypeScript를 주력으로 사용하며, 깔끔하고 직관적인 UI/UX 구현에 열정을 가지고 있습니다.',
-    skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'GraphQL'],
+    name: '김개발자',
+    jobTitle: 'Senior Frontend Developer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+    category: 'Frontend'
+  },
+  introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. React와 Vue.js를 주력으로 사용하며, 깔끔하고 직관적인 UI/UX 구현에 열정을 가지고 있습니다.',
+  skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'Tailwind CSS', 'Node.js', 'GraphQL', 'Figma'],
     educations: [
       {
         institution: '서울대학교',
@@ -155,7 +156,12 @@ const portfolioDatabase = {
         isCurrent: true
       }
     ],
-    projects: [],
+    projects: [
+      { id: 1, title: 'E-commerce 플랫폼', role: 'Frontend Developer' },
+    { id: 2, title: '관리자 대시보드', role: 'Full-stack Developer' },
+    { id: 3, title: '모바일 앱 UI', role: 'UI/UX Designer' },
+    { id: 4, title: 'AI 챗봇 서비스', role: 'Frontend Developer' }
+    ],
     reviews: []
   },
   2: {
@@ -163,7 +169,7 @@ const portfolioDatabase = {
     userInfo: {
       name: '박디자이너',
       jobTitle: 'UI/UX Designer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=designer1', // 프로젝트 데이터와 일치
       category: 'Design'
     },
     introduction: 'UI/UX 디자이너 박디자이너입니다. 사용자 중심의 디자인 사고를 바탕으로 직관적이고 아름다운 인터페이스를 만들어갑니다. 데이터 기반의 디자인 결정을 중요하게 생각합니다.',
@@ -201,7 +207,7 @@ const portfolioDatabase = {
     userInfo: {
       name: '이백엔드',
       jobTitle: 'Backend Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=backend1', // 프로젝트 데이터와 일치
       category: 'Backend'
     },
     introduction: '안정적이고 확장 가능한 서버 아키텍처 구축을 전문으로 하는 백엔드 개발자입니다. 클라우드 환경과 마이크로서비스 아키텍처에 관심이 많습니다.',
@@ -239,7 +245,7 @@ const portfolioDatabase = {
     userInfo: {
       name: '정모바일',
       jobTitle: 'Mobile Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mobile1', // 프로젝트 데이터와 일치
       category: 'Mobile'
     },
     introduction: '크로스 플랫폼 모바일 앱 개발을 전문으로 하는 개발자입니다. Flutter와 React Native를 활용하여 효율적인 앱 개발을 추구합니다.',
@@ -270,7 +276,7 @@ const portfolioDatabase = {
     userInfo: {
       name: '최AI',
       jobTitle: 'AI/ML Engineer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ai1', // 프로젝트 데이터와 일치
       category: 'AI/ML'
     },
     introduction: '머신러닝과 딥러닝을 활용한 지능형 시스템 개발을 전문으로 합니다. 컴퓨터 비전과 자연어 처리 분야에서 다양한 프로젝트 경험을 보유하고 있습니다.',
@@ -308,7 +314,7 @@ const portfolioDatabase = {
     userInfo: {
       name: '강데브옵스',
       jobTitle: 'DevOps Engineer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devops1', // 프로젝트 데이터와 일치
       category: 'DevOps'
     },
     introduction: 'CI/CD 파이프라인 구축과 인프라 자동화를 통해 개발팀의 생산성 향상에 기여하는 데브옵스 엔지니어입니다. 클라우드 네이티브 기술에 특화되어 있습니다.',
@@ -334,6 +340,44 @@ const portfolioDatabase = {
         company: 'Cloud Solutions F',
         position: 'Senior DevOps Engineer',
         startDate: '2020-03',
+        endDate: null,
+        isCurrent: true
+      }
+    ],
+    projects: [],
+    reviews: []
+  },
+  7: {
+    userId: 7,
+    userInfo: {
+      name: '김iOS',
+      jobTitle: 'iOS Developer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ios1', // 프로젝트 데이터와 일치
+      category: 'iOS'
+    },
+    introduction: 'iOS 네이티브 앱 개발을 전문으로 하는 개발자입니다. Swift와 SwiftUI를 활용하여 사용자 친화적인 앱을 만들어갑니다.',
+    skills: ['Swift', 'SwiftUI', 'iOS', 'Core Data', 'Combine'],
+    educations: [
+      {
+        institution: '성균관대학교',
+        program: '소프트웨어학과 학사',
+        startDate: '2017-03',
+        endDate: '2021-02',
+        isOngoing: false
+      },
+      {
+        institution: 'Apple Developer Academy',
+        program: 'iOS Development',
+        startDate: '2021-03',
+        endDate: '2021-09',
+        isOngoing: false
+      }
+    ],
+    careers: [
+      {
+        company: 'Mobile Solutions G',
+        position: 'iOS Developer',
+        startDate: '2021-10',
         endDate: null,
         isCurrent: true
       }
