@@ -201,7 +201,7 @@
                 <div class="applicant-actions">
                   <button 
                     class="portfolio-btn"
-                    @click="viewApplicantPortfolio(applicant.id)"
+                    @click="viewApplicantPortfolio(applicant.userId)"
                   >
                     <span class="btn-icon">👤</span>
                     포트폴리오
@@ -310,6 +310,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 반응형 데이터
 const selectedStatus = ref('all')
@@ -333,121 +336,127 @@ const roleOptions = [
   { value: 'member', label: '팀원만' }
 ]
 
-// 샘플 프로젝트 데이터
+// 내 프로젝트 데이터 (실제 projects 데이터와 연동)
 const projects = ref([
   {
     id: 1,
-    title: 'E-commerce 플랫폼 개발',
-    description: '온라인 쇼핑몰을 위한 풀스택 웹 애플리케이션 개발 프로젝트입니다.',
-    status: 'recruiting',
-    isPM: true,
-    startDate: '2024-02-01',
-    endDate: '2024-06-30',
-    teamSize: 5,
-    applicants: 12,
-    techStack: ['React', 'Node.js', 'MongoDB', 'AWS']
-  },
-  {
-    id: 2,
-    title: '모바일 헬스케어 앱',
-    description: '건강 관리를 위한 모바일 애플리케이션 개발',
-    status: 'in-progress',
-    isPM: false,
-    startDate: '2024-01-15',
-    endDate: '2024-05-15',
-    teamSize: 4,
-    applicants: 0,
-    techStack: ['Flutter', 'Firebase', 'Node.js']
+    title: 'AI 기반 협업툴 백엔드 개발',
+    description: 'AI 추천을 기반으로 한 팀 매칭 서비스의 서버 설계와 구현. Spring Boot와 JWT 기반 인증 시스템, 실시간 AI 추천 엔진과 협업 환경을 구축하며 다양한 클라우드 경험을 쌓을 수 있습니다.',
+    status: 'recruiting', // '모집중' -> 'recruiting'
+    isPM: true, // 김개발자가 PM인 프로젝트
+    startDate: '2024-07-01',
+    endDate: '2024-11-01',
+    teamSize: 3,
+    applicants: 8,
+    techStack: ['Spring Boot', 'JWT', 'PostgreSQL', 'Redis']
   },
   {
     id: 3,
-    title: 'AI 챗봇 서비스',
-    description: '자연어 처리를 활용한 고객 서비스 챗봇 개발',
-    status: 'completed',
-    isPM: true,
-    startDate: '2023-09-01',
-    endDate: '2023-12-31',
+    title: 'Web 프레임워크 및 UI 시스템 고도화',
+    description: '현대적인 웹 프론트엔드 시스템을 구축하는 프로젝트입니다. React, TypeScript, StoryBook을 활용하여 UI 시스템 설계와 성능 최적화까지 실무처럼 경험할 수 있습니다.',
+    status: 'in-progress', // 진행 중
+    isPM: true, // 김개발자가 PM인 프로젝트
+    startDate: '2024-07-10',
+    endDate: '2024-12-31',
+    teamSize: 3,
+    applicants: 0,
+    techStack: ['React', 'TypeScript', 'Vite', 'StoryBook', 'CSS-in-JS']
+  },
+  {
+    id: 8,
+    title: 'B2B 쇼핑몰 프론트 고도화',
+    description: '대규모 B2B 쇼핑몰 프론트엔드 구조 개선. Vue.js와 Pinia로 SPA 구조 전환, 성능 개선 및 코드 리팩토링 경험 제공.',
+    status: 'completed', // 완료된 프로젝트
+    isPM: true, // 김개발자가 PM인 프로젝트
+    startDate: '2024-03-01',
+    endDate: '2024-06-30',
+    teamSize: 4,
+    applicants: 0,
+    techStack: ['Vue.js', 'TypeScript', 'Pinia']
+  },
+  {
+    id: 2,
+    title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
+    description: '안드로이드 앱 개발 및 Google Play 스토어 등록 프로젝트입니다. 기존 락스크린 앱을 최신 Android 버전에 맞게 리팩토링하고, 배포 및 마켓 출시까지 전 과정을 함께합니다.',
+    status: 'in-progress', // 진행 중
+    isPM: false, // 팀원으로 참여
+    startDate: '2024-07-05',
+    endDate: '2024-10-05',
     teamSize: 6,
     applicants: 0,
-    techStack: ['Python', 'TensorFlow', 'React', 'Docker']
+    techStack: ['Android', 'Kotlin', 'Google Play']
   },
   {
     id: 4,
-    title: '데이터 시각화 대시보드',
-    description: '실시간 비즈니스 데이터 분석 및 시각화 도구',
-    status: 'recruiting',
-    isPM: false,
-    startDate: '2024-03-01',
-    endDate: '2024-07-31',
-    teamSize: 3,
-    applicants: 8,
-    techStack: ['Vue.js', 'D3.js', 'Python', 'PostgreSQL']
-  },
-  {
-    id: 5,
-    title: '블록체인 투표 시스템',
-    description: '투명하고 안전한 온라인 투표 플랫폼',
-    status: 'cancelled',
-    isPM: true,
-    startDate: '2023-10-01',
-    endDate: '2024-02-29',
+    title: 'E-commerce 플랫폼 디자인 시스템',
+    description: '사용자 친화적인 온라인 쇼핑몰 UI/UX 디자인 프로젝트. Figma와 Prototyping을 통한 디자인 시스템 설계, 실무 중심의 UI/UX 프로젝트 경험 제공.',
+    status: 'cancelled', // 취소된 프로젝트
+    isPM: false, // 팀원으로 참여
+    startDate: '2024-05-01',
+    endDate: '2024-08-30',
     teamSize: 4,
     applicants: 0,
-    techStack: ['Solidity', 'Web3.js', 'React', 'IPFS']
+    techStack: ['UI/UX', 'Figma', '디자인시스템', 'Prototyping']
   }
 ])
 
-// 지원자 샘플 데이터
+// 지원자 샘플 데이터 (portfolioDatabase와 연결)
 const applicantsList = ref([
   {
     id: 1,
-    name: '김개발',
-    jobTitle: 'Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dev1',
-    skills: ['React', 'TypeScript', 'Next.js'],
-    applicationMessage: '안녕하세요! E-commerce 플랫폼 개발에 참여하고 싶습니다. React와 TypeScript를 활용한 프론트엔드 개발 경험이 3년 있으며, 특히 사용자 경험 최적화에 관심이 많습니다. 이번 프로젝트를 통해 팀과 함께 성장하고 싶습니다.'
+    userId: 2, // 박디자이너
+    name: '박디자이너',
+    jobTitle: 'UI/UX Designer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
+    skills: ['Figma', 'Adobe XD', 'Sketch'],
+    applicationMessage: '안녕하세요! E-commerce 플랫폼 개발에 UI/UX 디자이너로 참여하고 싶습니다. 사용자 중심의 디자인 사고를 바탕으로 직관적이고 아름다운 인터페이스를 만들어드리겠습니다. 이커머스 플랫폼 디자인 경험이 있어 사용자 경험 최적화에 기여할 수 있습니다.'
   },
   {
     id: 2,
-    name: '박백엔드',
+    userId: 3, // 이백엔드
+    name: '이백엔드',
     jobTitle: 'Backend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dev2',
-    skills: ['Node.js', 'MongoDB', 'AWS'],
-    applicationMessage: '백엔드 개발자로 지원합니다. Node.js와 MongoDB를 활용한 API 개발 경험이 풍부하며, AWS 인프라 구축도 가능합니다. 확장 가능한 아키텍처 설계에 자신 있습니다.'
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
+    skills: ['Node.js', 'Python', 'Docker'],
+    applicationMessage: '백엔드 개발자로 지원합니다. 안정적이고 확장 가능한 서버 아키텍처 구축을 전문으로 하며, 클라우드 환경과 마이크로서비스 아키텍처에 관심이 많습니다. E-commerce 플랫폼의 대용량 트래픽 처리 경험이 있어 도움이 될 수 있을 것 같습니다.'
   },
   {
     id: 3,
-    name: '이디자인',
-    jobTitle: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dev3',
-    skills: ['Figma', 'Adobe XD', 'Prototyping'],
-    applicationMessage: 'UI/UX 디자이너로 참여하고 싶습니다. E-commerce 플랫폼의 사용자 경험 설계 경험이 있으며, 사용자 리서치부터 프로토타이핑까지 전 과정을 담당할 수 있습니다.'
+    userId: 4, // 정모바일
+    name: '정모바일',
+    jobTitle: 'Mobile Developer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
+    skills: ['Flutter', 'React Native', 'iOS'],
+    applicationMessage: '모바일 개발자로 참여하고 싶습니다. 크로스 플랫폼 모바일 앱 개발을 전문으로 하며, E-commerce 플랫폼과 연동되는 모바일 앱 개발에 기여하고 싶습니다. Flutter와 React Native를 활용하여 효율적인 앱 개발이 가능합니다.'
   }
 ])
 
-// 팀원 샘플 데이터
+// 팀원 샘플 데이터 (portfolioDatabase와 연결)
 const teamMembers = ref([
   {
     id: 1,
-    name: '김프론트',
-    role: 'Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=team1',
+    userId: 2, // 박디자이너
+    name: '박디자이너',
+    role: 'UI/UX Designer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
     rating: 0,
     reviewComment: ''
   },
   {
     id: 2,
-    name: '박백엔드',
+    userId: 3, // 이백엔드
+    name: '이백엔드',
     role: 'Backend Developer', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=team2',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
     rating: 0,
     reviewComment: ''
   },
   {
     id: 3,
-    name: '최디자이너',
-    role: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=team3',
+    userId: 5, // 최AI
+    name: '최AI',
+    role: 'AI/ML Engineer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
     rating: 0,
     reviewComment: ''
   }
@@ -502,7 +511,9 @@ const formatDateRange = (startDate, endDate) => {
 }
 
 const viewProject = (projectId) => {
+  // 프로젝트 상세 페이지로 이동
   console.log('프로젝트 상세보기:', projectId)
+  router.push(`/projects/${projectId}`)
 }
 
 const showApplicants = (projectId) => {
@@ -530,8 +541,10 @@ const closeTeamReviewModal = () => {
   })
 }
 
-const viewApplicantPortfolio = (applicantId) => {
-  console.log('지원자 포트폴리오 보기:', applicantId)
+const viewApplicantPortfolio = (userId) => {
+  // userId로 직접 포트폴리오 페이지로 이동
+  console.log('포트폴리오 이동:', userId)
+  router.push(`/portfolio/${userId}`)
 }
 
 const acceptApplicant = (applicantId) => {
