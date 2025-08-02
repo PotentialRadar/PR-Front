@@ -1,15 +1,5 @@
 <template>
   <div class="profile-edit-page">
-    <div class="page-header">
-      <div class="header-content">
-        <button @click="goBack" class="back-button">
-          <i class="bi bi-arrow-left"></i>
-          돌아가기
-        </button>
-        <h1 class="page-title">내 정보 수정</h1>
-      </div>
-    </div>
-
     <div class="edit-container">
       <form @submit.prevent="saveProfile" class="profile-form">
         <!-- 프로필 이미지 섹션 -->
@@ -18,22 +8,52 @@
           <div class="profile-image-section">
             <div class="current-avatar">
               <img :src="formData.avatar" :alt="formData.name" />
-              <div class="avatar-overlay">
+              <div class="avatar-overlay" @click="triggerFileUpload">
                 <i class="bi bi-camera"></i>
               </div>
             </div>
             
             <div class="avatar-options">
-              <p class="avatar-description">프로필 이미지를 선택하세요</p>
+              <p class="avatar-description">프로필 이미지를 선택하거나 업로드하세요</p>
+              
+              <!-- 파일 업로드 섹션 추가 -->
+              <div class="upload-section">
+                <button type="button" @click="triggerFileUpload" class="upload-button">
+                  <i class="bi bi-cloud-upload"></i>
+                  사진 업로드
+                </button>
+                <input 
+                  ref="fileInput" 
+                  type="file" 
+                  accept="image/*" 
+                  @change="handleFileUpload" 
+                  class="upload-input"
+                />
+                <p class="upload-help">JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</p>
+                
+                <!-- 업로드된 이미지 미리보기 -->
+                <div v-if="uploadedImage" class="upload-preview">
+                  <img :src="uploadedImage" alt="업로드된 이미지" class="preview-image" />
+                  <div class="preview-actions">
+                    <button type="button" @click="useUploadedImage" class="preview-action">
+                      사용하기
+                    </button>
+                    <button type="button" @click="removeUploadedImage" class="preview-action delete">
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="avatar-grid">
                 <div 
                   v-for="(avatarUrl, index) in avatarOptions" 
                   :key="index"
                   @click="selectAvatar(avatarUrl)"
-                  :class="['avatar-option', { active: formData.avatar === avatarUrl }]"
+                  :class="['avatar-option', { active: formData.avatar === avatarUrl && !isCustomAvatar }]"
                 >
                   <img :src="avatarUrl" :alt="`아바타 ${index + 1}`" />
-                  <div v-if="formData.avatar === avatarUrl" class="selected-indicator">
+                  <div v-if="formData.avatar === avatarUrl && !isCustomAvatar" class="selected-indicator">
                     <i class="bi bi-check-circle-fill"></i>
                   </div>
                 </div>
@@ -208,25 +228,6 @@
           </div>
         </div>
 
-        <!-- 소개 섹션 -->
-        <div class="form-section">
-          <h3 class="section-title">한줄 소개</h3>
-          <div class="form-group">
-            <label class="form-label" for="bio">
-              간단한 소개
-            </label>
-            <textarea
-              id="bio"
-              v-model="formData.bio"
-              class="form-textarea"
-              placeholder="간단한 자기소개를 작성해보세요"
-              rows="3"
-              maxlength="200"
-            ></textarea>
-            <div class="input-helper">{{ formData.bio.length }}/200</div>
-          </div>
-        </div>
-
         <!-- 공개 설정 섹션 -->
         <div class="form-section">
           <h3 class="section-title">공개 설정</h3>
@@ -300,6 +301,10 @@ const router = useRouter()
 const saving = ref(false)
 const showSaveToast = ref(false)
 
+// 사진 업로드 관련 추가
+const uploadedImage = ref(null)
+const isCustomAvatar = ref(false)
+
 // 아바타 옵션들
 const avatarOptions = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
@@ -340,9 +345,55 @@ const formData = reactive({
   ...originalData
 })
 
+// 파일 input ref 추가
+const fileInput = ref(null)
+
 // 메서드
 const selectAvatar = (avatarUrl) => {
   formData.avatar = avatarUrl
+  isCustomAvatar.value = false
+  uploadedImage.value = null
+}
+
+// 파일 업로드 관련 메서드 추가
+const triggerFileUpload = () => {
+  fileInput.value.click()
+}
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 파일 크기 체크 (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('파일 크기가 5MB를 초과합니다.')
+    return
+  }
+
+  // 파일 타입 체크
+  if (!file.type.startsWith('image/')) {
+    alert('이미지 파일만 업로드 가능합니다.')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    uploadedImage.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const useUploadedImage = () => {
+  formData.avatar = uploadedImage.value
+  isCustomAvatar.value = true
+}
+
+const removeUploadedImage = () => {
+  uploadedImage.value = null
+  if (isCustomAvatar.value) {
+    formData.avatar = originalData.avatar
+    isCustomAvatar.value = false
+  }
 }
 
 const saveProfile = async () => {
@@ -369,6 +420,8 @@ const saveProfile = async () => {
 const resetForm = () => {
   if (confirm('모든 변경사항이 초기화됩니다. 계속하시겠습니까?')) {
     Object.assign(formData, originalData)
+    uploadedImage.value = null
+    isCustomAvatar.value = false
   }
 }
 
@@ -383,7 +436,7 @@ const goBack = () => {
 }
 
 const hasChanges = () => {
-  return JSON.stringify(formData) !== JSON.stringify(originalData)
+  return JSON.stringify(formData) !== JSON.stringify(originalData) || uploadedImage.value !== null
 }
 
 // 페이지를 떠날 때 확인
@@ -514,6 +567,7 @@ onUnmounted(() => {
   transition: opacity 0.2s ease;
   color: white;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .current-avatar:hover .avatar-overlay {
@@ -528,6 +582,90 @@ onUnmounted(() => {
   margin: 0 0 16px 0;
   color: #666;
   font-size: 14px;
+}
+
+/* 새로 추가된 업로드 관련 스타일 */
+.upload-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+  text-align: center;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.upload-button:hover {
+  background: #66BB6A;
+}
+
+.upload-input {
+  display: none;
+}
+
+.upload-help {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.upload-preview {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.preview-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #4CAF50;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-action {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.preview-action:hover {
+  background: #f0f0f0;
+}
+
+.preview-action.delete {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.preview-action.delete:hover {
+  background: #dc3545;
+  color: white;
 }
 
 .avatar-grid {

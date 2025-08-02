@@ -52,6 +52,110 @@
           </div>
         </section>
 
+        <!-- Contact Information Section -->
+        <section class="portfolio-section" v-if="portfolioData.contactInfo && portfolioData.contactInfo.showContact">
+          <div class="section-border">
+            <div class="section-header">
+              <h5 class="section-title">연락처 정보</h5>
+              <button class="info-button">
+                <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <clipPath id="clip0_156_977">
+                      <rect width="15" height="15" fill="white" transform="translate(0 0.75)"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+              </button>
+            </div>
+            
+            <div v-if="hasContactInfo" class="contact-content">
+              <div class="contact-grid">
+                <!-- 이메일 -->
+                <div v-if="portfolioData.contactInfo.email" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-envelope-fill"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">이메일</span>
+                    <a :href="`mailto:${portfolioData.contactInfo.email}`" class="contact-value">
+                      {{ portfolioData.contactInfo.email }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- 전화번호 -->
+                <div v-if="portfolioData.contactInfo.phone" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-telephone-fill"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">전화번호</span>
+                    <a :href="`tel:${portfolioData.contactInfo.phone}`" class="contact-value">
+                      {{ portfolioData.contactInfo.phone }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- GitHub -->
+                <div v-if="portfolioData.contactInfo.github" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-github"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">GitHub</span>
+                    <a :href="portfolioData.contactInfo.github" target="_blank" class="contact-value">
+                      {{ getDisplayUrl(portfolioData.contactInfo.github) }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- LinkedIn -->
+                <div v-if="portfolioData.contactInfo.linkedin" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-linkedin"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">LinkedIn</span>
+                    <a :href="portfolioData.contactInfo.linkedin" target="_blank" class="contact-value">
+                      {{ getDisplayUrl(portfolioData.contactInfo.linkedin) }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- 개인 웹사이트 -->
+                <div v-if="portfolioData.contactInfo.website" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-globe"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">웹사이트</span>
+                    <a :href="portfolioData.contactInfo.website" target="_blank" class="contact-value">
+                      {{ getDisplayUrl(portfolioData.contactInfo.website) }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- 지역 -->
+                <div v-if="portfolioData.contactInfo.location" class="contact-item">
+                  <div class="contact-icon">
+                    <i class="bi bi-geo-alt-fill"></i>
+                  </div>
+                  <div class="contact-details">
+                    <span class="contact-label">지역</span>
+                    <span class="contact-value">
+                      {{ portfolioData.contactInfo.location }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="empty-state">
+              <p class="empty-message">연락처 정보가 없습니다.</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Education Section -->
         <section class="portfolio-section">
           <div class="section-border">
@@ -106,6 +210,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getPortfolioById } from '@/components/data/portfolioData.js'
 import PortfolioHeader from '@/components/portfolioComponents/PortfolioHeader.vue'
 import CareerTimeline from '@/components/portfolioComponents/CareerTimeline.vue'
 import SkillsSection from '@/components/portfolioComponents/SkillsSection.vue'
@@ -118,280 +223,12 @@ const router = useRouter()
 const loading = ref(true)
 const portfolioNotFound = ref(false)
 
-// 샘플 포트폴리오 데이터베이스 (실제로는 API에서 가져와야 함)
-// 아바타가 일치하도록 수정된 포트폴리오 데이터베이스
-const portfolioDatabase = {
-  1: {
-    userId: 1,
-    userInfo: {
-    name: '김개발자',
-    jobTitle: 'Senior Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-    category: 'Frontend'
-  },
-  introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. React와 Vue.js를 주력으로 사용하며, 깔끔하고 직관적인 UI/UX 구현에 열정을 가지고 있습니다.',
-  skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'Tailwind CSS', 'Node.js', 'GraphQL', 'Figma'],
-    educations: [
-      {
-        institution: '서울대학교',
-        program: '컴퓨터공학과 학사',
-        startDate: '2019-03',
-        endDate: '2023-02',
-        isOngoing: false
-      },
-      {
-        institution: '패스트캠퍼스',
-        program: 'React 심화 과정',
-        startDate: '2023-06',
-        endDate: '2023-08',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Tech Startup A',
-        position: 'Frontend Developer',
-        startDate: '2023-09',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [
-      { id: 1, title: 'E-commerce 플랫폼', role: 'Frontend Developer' },
-    { id: 2, title: '관리자 대시보드', role: 'Full-stack Developer' },
-    { id: 3, title: '모바일 앱 UI', role: 'UI/UX Designer' },
-    { id: 4, title: 'AI 챗봇 서비스', role: 'Frontend Developer' }
-    ],
-    reviews: []
-  },
-  2: {
-    userId: 2,
-    userInfo: {
-      name: '박디자이너',
-      jobTitle: 'UI/UX Designer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=designer1', // 프로젝트 데이터와 일치
-      category: 'Design'
-    },
-    introduction: 'UI/UX 디자이너 박디자이너입니다. 사용자 중심의 디자인 사고를 바탕으로 직관적이고 아름다운 인터페이스를 만들어갑니다. 데이터 기반의 디자인 결정을 중요하게 생각합니다.',
-    skills: ['Figma', 'Adobe XD', 'Sketch', 'Prototyping', 'User Research'],
-    educations: [
-      {
-        institution: '홍익대학교',
-        program: '시각디자인학과 학사',
-        startDate: '2018-03',
-        endDate: '2022-02',
-        isOngoing: false
-      },
-      {
-        institution: 'Google UX Design',
-        program: 'UX Design Professional Certificate',
-        startDate: '2022-03',
-        endDate: '2022-08',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Design Agency B',
-        position: 'Senior UI/UX Designer',
-        startDate: '2022-09',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  },
-  3: {
-    userId: 3,
-    userInfo: {
-      name: '이백엔드',
-      jobTitle: 'Backend Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=backend1', // 프로젝트 데이터와 일치
-      category: 'Backend'
-    },
-    introduction: '안정적이고 확장 가능한 서버 아키텍처 구축을 전문으로 하는 백엔드 개발자입니다. 클라우드 환경과 마이크로서비스 아키텍처에 관심이 많습니다.',
-    skills: ['Node.js', 'Python', 'Docker', 'AWS', 'PostgreSQL'],
-    educations: [
-      {
-        institution: 'KAIST',
-        program: '전산학부 학사',
-        startDate: '2017-03',
-        endDate: '2021-02',
-        isOngoing: false
-      },
-      {
-        institution: 'AWS',
-        program: 'Solutions Architect Associate',
-        startDate: '2021-06',
-        endDate: '2021-08',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Enterprise Corp C',
-        position: 'Backend Developer',
-        startDate: '2021-03',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  },
-  4: {
-    userId: 4,
-    userInfo: {
-      name: '정모바일',
-      jobTitle: 'Mobile Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mobile1', // 프로젝트 데이터와 일치
-      category: 'Mobile'
-    },
-    introduction: '크로스 플랫폼 모바일 앱 개발을 전문으로 하는 개발자입니다. Flutter와 React Native를 활용하여 효율적인 앱 개발을 추구합니다.',
-    skills: ['Flutter', 'React Native', 'iOS', 'Android', 'Firebase'],
-    educations: [
-      {
-        institution: '연세대학교',
-        program: '컴퓨터과학과 학사',
-        startDate: '2018-03',
-        endDate: '2022-02',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Mobile Startup D',
-        position: 'Mobile App Developer',
-        startDate: '2022-03',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  },
-  5: {
-    userId: 5,
-    userInfo: {
-      name: '최AI',
-      jobTitle: 'AI/ML Engineer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ai1', // 프로젝트 데이터와 일치
-      category: 'AI/ML'
-    },
-    introduction: '머신러닝과 딥러닝을 활용한 지능형 시스템 개발을 전문으로 합니다. 컴퓨터 비전과 자연어 처리 분야에서 다양한 프로젝트 경험을 보유하고 있습니다.',
-    skills: ['Python', 'TensorFlow', 'PyTorch', 'OpenCV', 'NLP'],
-    educations: [
-      {
-        institution: '서울대학교',
-        program: '전기정보공학부 석사',
-        startDate: '2020-03',
-        endDate: '2022-02',
-        isOngoing: false
-      },
-      {
-        institution: 'Coursera',
-        program: 'Deep Learning Specialization',
-        startDate: '2022-03',
-        endDate: '2022-06',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'AI Research Lab E',
-        position: 'ML Engineer',
-        startDate: '2022-07',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  },
-  6: {
-    userId: 6,
-    userInfo: {
-      name: '강데브옵스',
-      jobTitle: 'DevOps Engineer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devops1', // 프로젝트 데이터와 일치
-      category: 'DevOps'
-    },
-    introduction: 'CI/CD 파이프라인 구축과 인프라 자동화를 통해 개발팀의 생산성 향상에 기여하는 데브옵스 엔지니어입니다. 클라우드 네이티브 기술에 특화되어 있습니다.',
-    skills: ['AWS', 'Docker', 'Kubernetes', 'Jenkins', 'Terraform'],
-    educations: [
-      {
-        institution: '부산대학교',
-        program: '정보컴퓨터공학부 학사',
-        startDate: '2016-03',
-        endDate: '2020-02',
-        isOngoing: false
-      },
-      {
-        institution: 'Linux Foundation',
-        program: 'Kubernetes Administrator (CKA)',
-        startDate: '2020-09',
-        endDate: '2020-11',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Cloud Solutions F',
-        position: 'Senior DevOps Engineer',
-        startDate: '2020-03',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  },
-  7: {
-    userId: 7,
-    userInfo: {
-      name: '김iOS',
-      jobTitle: 'iOS Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ios1', // 프로젝트 데이터와 일치
-      category: 'iOS'
-    },
-    introduction: 'iOS 네이티브 앱 개발을 전문으로 하는 개발자입니다. Swift와 SwiftUI를 활용하여 사용자 친화적인 앱을 만들어갑니다.',
-    skills: ['Swift', 'SwiftUI', 'iOS', 'Core Data', 'Combine'],
-    educations: [
-      {
-        institution: '성균관대학교',
-        program: '소프트웨어학과 학사',
-        startDate: '2017-03',
-        endDate: '2021-02',
-        isOngoing: false
-      },
-      {
-        institution: 'Apple Developer Academy',
-        program: 'iOS Development',
-        startDate: '2021-03',
-        endDate: '2021-09',
-        isOngoing: false
-      }
-    ],
-    careers: [
-      {
-        company: 'Mobile Solutions G',
-        position: 'iOS Developer',
-        startDate: '2021-10',
-        endDate: null,
-        isCurrent: true
-      }
-    ],
-    projects: [],
-    reviews: []
-  }
-}
-
 const portfolioData = ref({
   userId: null,
   isOwnProfile: false,
   userInfo: null,
   introduction: '',
+  contactInfo: null,
   skills: [],
   educations: [],
   careers: [],
@@ -404,15 +241,22 @@ const educationData = computed(() => {
   if (!portfolioData.value.educations) return []
   
   return [...portfolioData.value.educations].sort((a, b) => {
-    // 진행중인 교육이 가장 위에 오도록
     if (a.isOngoing && !b.isOngoing) return -1
     if (!a.isOngoing && b.isOngoing) return 1
     
-    // 시작일 기준으로 최신순 정렬
     const aDate = new Date(a.startDate)
     const bDate = new Date(b.startDate)
     return bDate - aDate
   })
+})
+
+// 연락처 정보가 있는지 확인
+const hasContactInfo = computed(() => {
+  const contact = portfolioData.value.contactInfo
+  if (!contact) return false
+  
+  return !!(contact.email || contact.phone || contact.github || 
+           contact.linkedin || contact.website || contact.location)
 })
 
 // 포트폴리오 데이터 로드 함수
@@ -421,22 +265,16 @@ const loadPortfolioData = async (userId) => {
   portfolioNotFound.value = false
 
   try {
-    // 실제로는 여기서 API 호출
-    // const response = await fetch(`/api/portfolio/${userId}`)
-    // const data = await response.json()
-    
-    // 시뮬레이션을 위한 지연
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    const userData = portfolioDatabase[userId]
+    const userData = getPortfolioById(parseInt(userId))
     
     if (!userData) {
       portfolioNotFound.value = true
       return
     }
 
-    // 현재 사용자인지 확인 (실제로는 인증 시스템에서 확인)
-    const currentUserId = 1 // 임시로 현재 사용자 ID를 1로 설정
+    const currentUserId = 1
     
     portfolioData.value = {
       ...userData,
@@ -469,8 +307,18 @@ const formatEducationPeriod = (education) => {
   return `${startFormatted} ~ ${endFormatted}`
 }
 
+// URL 표시용 포맷팅 (도메인만 표시)
+const getDisplayUrl = (url) => {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.replace('www.', '')
+  } catch {
+    return url
+  }
+}
+
 const goBack = () => {
-  router.go(-1) // 이전 페이지로 돌아가기
+  router.go(-1)
 }
 
 // 컴포넌트 마운트 시 데이터 로드
@@ -705,6 +553,86 @@ onMounted(() => {
   margin: 0;
 }
 
+/* 연락처 정보 스타일 */
+.contact-content {
+  display: flex;
+  padding: 20px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #E8E8E8;
+  background: #FAFAFA;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.contact-item:hover {
+  border-color: #4CAF50;
+  background: #FFF;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+  transform: translateY(-2px);
+}
+
+.contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  color: #4CAF50;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #808080;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contact-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  word-break: break-all;
+}
+
+.contact-value:hover {
+  color: #4CAF50;
+}
+
+a.contact-value {
+  cursor: pointer;
+}
+
 /* 교육 이력 스타일 */
 .education-content {
   display: flex;
@@ -800,8 +728,23 @@ onMounted(() => {
     padding: 0 15px;
   }
 
-  .education-content, .introduction-content {
+  .contact-content, .education-content, .introduction-content {
     padding: 15px 20px;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .contact-item {
+    padding: 14px 16px;
+  }
+
+  .contact-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
 
   .education-item {
@@ -835,13 +778,37 @@ onMounted(() => {
     font-size: 16px;
   }
 
-  .empty-state, .introduction-content {
+  .empty-state, .introduction-content, .contact-content {
     padding: 15px 20px;
   }
 
   .empty-message {
     font-size: 14px;
     line-height: 22px;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .contact-item {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .contact-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .contact-label {
+    font-size: 11px;
+  }
+
+  .contact-value {
+    font-size: 13px;
   }
 
   .education-content {
@@ -908,7 +875,7 @@ onMounted(() => {
     font-size: 16px;
   }
 
-  .empty-state, .introduction-content {
+  .empty-state, .introduction-content, .contact-content {
     padding: 12px 16px;
   }
 
@@ -924,6 +891,29 @@ onMounted(() => {
   .info-button svg {
     width: 12px;
     height: 12px;
+  }
+
+  .contact-grid {
+    gap: 10px;
+  }
+
+  .contact-item {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .contact-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .contact-label {
+    font-size: 10px;
+  }
+
+  .contact-value {
+    font-size: 12px;
   }
 
   .education-content {
@@ -979,8 +969,27 @@ onMounted(() => {
     line-height: 18px;
   }
 
-  .education-content, .introduction-content {
+  .contact-content, .education-content, .introduction-content {
     padding: 10px;
+  }
+
+  .contact-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .contact-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .contact-label {
+    font-size: 9px;
+  }
+
+  .contact-value {
+    font-size: 11px;
   }
 
   .education-item {

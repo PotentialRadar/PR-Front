@@ -1,35 +1,5 @@
 <template>
   <div class="my-projects-page">
-    <div class="background-gradient"></div>
-    
-    <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">내 프로젝트</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">참여 중인 프로젝트와 관리 중인 프로젝트를 확인하세요</p>
-        
-        <div class="stats-section">
-          <div class="stat-item">
-            <div class="stat-number">{{ totalProjects }}</div>
-            <div class="stat-label">전체 프로젝트</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ pmProjects }}</div>
-            <div class="stat-label">PM 프로젝트</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ activeProjects }}</div>
-            <div class="stat-label">진행 중</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="container">
       <div class="content-wrapper">
         <!-- 필터 섹션 -->
@@ -44,7 +14,7 @@
                   :class="['status-btn', status.value, { 'active': selectedStatus === status.value }]"
                   @click="setStatus(status.value)"
                 >
-                  <i :class="status.icon"></i>
+                  <span class="status-icon">{{ status.icon }}</span>
                   {{ status.label }}
                 </button>
               </div>
@@ -72,6 +42,22 @@
             <h2 class="section-title">
               {{ filteredProjects.length }}개의 프로젝트
             </h2>
+            <div class="stats-mini">
+              <div class="stat-item">
+                <span class="stat-number">{{ totalProjects }}</span>
+                <span class="stat-label">전체</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-number">{{ pmProjects }}</span>
+                <span class="stat-label">PM</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-number">{{ activeProjects }}</span>
+                <span class="stat-label">진행중</span>
+              </div>
+            </div>
           </div>
           
           <div v-if="filteredProjects.length > 0" class="projects-grid">
@@ -90,7 +76,7 @@
                         {{ getStatusText(project.status) }}
                       </span>
                       <span v-if="project.isPM" class="pm-badge">
-                        <i class="bi bi-star-fill"></i>
+                        <span class="pm-icon">⭐</span>
                         PM
                       </span>
                     </div>
@@ -98,11 +84,11 @@
                   <p class="project-description">{{ project.description }}</p>
                   <div class="project-meta">
                     <div class="meta-item">
-                      <i class="bi bi-calendar"></i>
+                      <span class="meta-icon">📅</span>
                       <span>{{ formatDateRange(project.startDate, project.endDate) }}</span>
                     </div>
                     <div class="meta-item">
-                      <i class="bi bi-people"></i>
+                      <span class="meta-icon">👥</span>
                       <span>{{ project.teamSize }}명</span>
                     </div>
                   </div>
@@ -131,7 +117,7 @@
                     @click="showApplicants(project.id)"
                     :disabled="project.applicants === 0"
                   >
-                    <i class="bi bi-person-lines-fill"></i>
+                    <span class="btn-icon">👤</span>
                     지원자 확인 ({{ project.applicants }})
                   </button>
                 </div>
@@ -139,7 +125,7 @@
                 <!-- 진행 중인 프로젝트 -->
                 <div v-else-if="project.status === 'in-progress'" class="progress-actions">
                   <button class="action-btn view-btn" @click="viewProject(project.id)">
-                    <i class="bi bi-eye"></i>
+                    <span class="btn-icon">👁️</span>
                     프로젝트 보기
                   </button>
                 </div>
@@ -147,11 +133,11 @@
                 <!-- 완료된 프로젝트 -->
                 <div v-else-if="project.status === 'completed'" class="completed-actions">
                   <button class="action-btn review-btn" @click="showTeamReview(project.id)">
-                    <i class="bi bi-star"></i>
+                    <span class="btn-icon">⭐</span>
                     팀원 리뷰 작성
                   </button>
                   <button class="action-btn view-btn" @click="viewProject(project.id)">
-                    <i class="bi bi-eye"></i>
+                    <span class="btn-icon">👁️</span>
                     프로젝트 보기
                   </button>
                 </div>
@@ -159,7 +145,7 @@
                 <!-- 기본 액션 -->
                 <div v-else class="default-actions">
                   <button class="action-btn view-btn" @click="viewProject(project.id)">
-                    <i class="bi bi-eye"></i>
+                    <span class="btn-icon">👁️</span>
                     프로젝트 보기
                   </button>
                 </div>
@@ -169,7 +155,7 @@
           
           <div v-else class="empty-state">
             <div class="empty-icon">
-              <i class="bi bi-folder2-open"></i>
+              <span class="empty-emoji">📁</span>
             </div>
             <h3 class="empty-title">프로젝트가 없습니다</h3>
             <p class="empty-description">새로운 프로젝트에 참여해보세요</p>
@@ -184,7 +170,7 @@
         <div class="modal-header">
           <h3 class="modal-title">{{ selectedProject?.title }} - 지원자 목록</h3>
           <button @click="closeApplicantsModal" class="modal-close-button">
-            <i class="bi bi-x"></i>
+            <span class="close-icon">✕</span>
           </button>
         </div>
         
@@ -217,7 +203,7 @@
                     class="portfolio-btn"
                     @click="viewApplicantPortfolio(applicant.id)"
                   >
-                    <i class="bi bi-person-badge"></i>
+                    <span class="btn-icon">👤</span>
                     포트폴리오
                   </button>
                 </div>
@@ -233,14 +219,14 @@
                   class="accept-btn"
                   @click="acceptApplicant(applicant.id)"
                 >
-                  <i class="bi bi-check-circle"></i>
+                  <span class="btn-icon">✅</span>
                   수락
                 </button>
                 <button 
                   class="reject-btn"
                   @click="rejectApplicant(applicant.id)"
                 >
-                  <i class="bi bi-x-circle"></i>
+                  <span class="btn-icon">❌</span>
                   거절
                 </button>
               </div>
@@ -248,7 +234,7 @@
           </div>
           
           <div v-else class="no-applicants">
-            <i class="bi bi-person-x"></i>
+            <span class="empty-emoji">👤</span>
             <p>아직 지원자가 없습니다</p>
           </div>
         </div>
@@ -261,7 +247,7 @@
         <div class="modal-header">
           <h3 class="modal-title">{{ selectedProject?.title }} - 팀원 리뷰</h3>
           <button @click="closeTeamReviewModal" class="modal-close-button">
-            <i class="bi bi-x"></i>
+            <span class="close-icon">✕</span>
           </button>
         </div>
         
@@ -292,7 +278,7 @@
                       :class="['star-btn', { 'active': member.rating >= star }]"
                       @click="setRating(member.id, star)"
                     >
-                      <i class="bi bi-star-fill"></i>
+                      <span class="star-emoji">⭐</span>
                     </button>
                   </div>
                 </div>
@@ -312,7 +298,7 @@
           
           <div class="review-actions">
             <button class="submit-review-btn" @click="submitReviews">
-              <i class="bi bi-check-lg"></i>
+              <span class="btn-icon">✅</span>
               리뷰 제출
             </button>
           </div>
@@ -334,11 +320,11 @@ const selectedProject = ref(null)
 
 // 필터 옵션
 const statusOptions = [
-  { value: 'all', label: '전체', icon: 'bi bi-grid' },
-  { value: 'recruiting', label: '모집중', icon: 'bi bi-person-plus' },
-  { value: 'in-progress', label: '진행중', icon: 'bi bi-play-circle' },
-  { value: 'completed', label: '완료', icon: 'bi bi-check-circle' },
-  { value: 'cancelled', label: '취소', icon: 'bi bi-x-circle' }
+  { value: 'all', label: '전체', icon: '📋' },
+  { value: 'recruiting', label: '모집중', icon: '📢' },
+  { value: 'in-progress', label: '진행중', icon: '⚡' },
+  { value: 'completed', label: '완료', icon: '✅' },
+  { value: 'cancelled', label: '취소', icon: '❌' }
 ]
 
 const roleOptions = [
@@ -574,159 +560,20 @@ const submitReviews = () => {
 
 <style scoped>
 .my-projects-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fffe 0%, #f0f9ff 50%, #ecfdf5 100%);
-  position: relative;
-  overflow-x: hidden;
-}
-
-.background-gradient {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(76, 175, 80, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 60%, rgba(76, 175, 80, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(76, 175, 80, 0.06) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: -2;
-}
-
-/* 페이지 헤더 */
-.page-header {
-  width: 100%;
-  margin-bottom: 60px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.header-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 30px;
-  padding: 80px 20px 40px 20px;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.page-title {
-  font-size: 48px;
-  font-weight: 900;
-  color: #262626;
-  margin: 0;
-  letter-spacing: -1px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.title-underline {
-  width: 100px;
-  height: 4px;
-  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
-  border-radius: 2px;
-  position: relative;
-  animation: expandLine 1s ease-out;
-}
-
-.title-underline::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  background: #4CAF50;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-.page-subtitle {
-  font-size: 20px;
-  color: #666;
-  margin: 0;
-  font-weight: 400;
-  opacity: 0;
-  animation: fadeInUp 0.8s ease-out 0.3s forwards;
-}
-
-.stats-section {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-  margin-top: 20px;
-  opacity: 0;
-  animation: fadeInUp 0.8s ease-out 0.5s forwards;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 800;
-  color: #4CAF50;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(76, 175, 80, 0.2);
-}
-
-@keyframes expandLine {
-  0% { width: 0; }
-  100% { width: 100px; }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: calc(100vh - 60px);
 }
 
 .container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .content-wrapper {
-  width: 100%;
-  max-width: 1400px;
-  padding: 0 20px 80px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 24px;
 }
 
 /* 필터 섹션 */
@@ -735,15 +582,13 @@ const submitReviews = () => {
 }
 
 .filters-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 10px 40px rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.1);
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 20px;
 }
 
 .filter-group {
@@ -795,6 +640,10 @@ const submitReviews = () => {
   border-color: #4CAF50;
 }
 
+.status-icon {
+  font-size: 14px;
+}
+
 /* 상태별 색상 */
 .status-btn.recruiting.active {
   background: #2196F3;
@@ -821,7 +670,7 @@ const submitReviews = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .section-title {
@@ -831,35 +680,69 @@ const submitReviews = () => {
   margin: 0;
 }
 
+.stats-mini {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.stat-number {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4CAF50;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(76, 175, 80, 0.2);
+}
+
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 프로젝트 카드 */
 .project-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
+  background: white;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(76, 175, 80, 0.08);
-  border: 1px solid rgba(76, 175, 80, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  border-left: 4px solid #4CAF50;
 }
 
 .project-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(76, 175, 80, 0.15);
-  border-color: rgba(76, 175, 80, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* 카드 헤더 */
 .card-header {
   padding: 24px;
-  border-bottom: 1px solid rgba(76, 175, 80, 0.1);
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .project-title-section {
@@ -870,7 +753,7 @@ const submitReviews = () => {
 }
 
 .project-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #262626;
   margin: 0;
@@ -930,6 +813,10 @@ const submitReviews = () => {
   gap: 4px;
 }
 
+.pm-icon {
+  font-size: 10px;
+}
+
 .project-description {
   font-size: 14px;
   color: #666;
@@ -956,8 +843,7 @@ const submitReviews = () => {
   font-weight: 500;
 }
 
-.meta-item i {
-  color: #4CAF50;
+.meta-icon {
   font-size: 14px;
 }
 
@@ -965,7 +851,7 @@ const submitReviews = () => {
 .tech-stack-section {
   padding: 16px 24px;
   background: rgba(76, 175, 80, 0.02);
-  border-bottom: 1px solid rgba(76, 175, 80, 0.1);
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .tech-stack-list {
@@ -1009,6 +895,10 @@ const submitReviews = () => {
   align-items: center;
   gap: 6px;
   border: none;
+}
+
+.btn-icon {
+  font-size: 14px;
 }
 
 .applicants-btn {
@@ -1055,11 +945,10 @@ const submitReviews = () => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 20px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  border: 1px solid rgba(76, 175, 80, 0.1);
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .empty-icon {
@@ -1073,13 +962,12 @@ const submitReviews = () => {
   margin-bottom: 24px;
 }
 
-.empty-icon i {
+.empty-emoji {
   font-size: 36px;
-  color: #4CAF50;
 }
 
 .empty-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #262626;
   margin: 0 0 12px 0;
@@ -1151,7 +1039,7 @@ const submitReviews = () => {
   background: none;
   border: none;
   color: white;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
@@ -1160,6 +1048,11 @@ const submitReviews = () => {
 
 .modal-close-button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.close-icon {
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .modal-body {
@@ -1330,11 +1223,10 @@ const submitReviews = () => {
   color: #666;
 }
 
-.no-applicants i {
+.no-applicants .empty-emoji {
   font-size: 48px;
   margin-bottom: 16px;
   display: block;
-  color: #ccc;
 }
 
 /* 팀원 리뷰 */
@@ -1416,18 +1308,29 @@ const submitReviews = () => {
 .star-btn {
   background: none;
   border: none;
-  font-size: 24px;
-  color: #ddd;
+  font-size: 20px;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  opacity: 0.3;
 }
 
 .star-btn.active {
-  color: #FFD700;
+  opacity: 1;
 }
 
 .star-btn:hover {
-  color: #FFD700;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.star-emoji {
+  filter: grayscale(100%);
+  transition: filter 0.2s ease;
+}
+
+.star-btn.active .star-emoji,
+.star-btn:hover .star-emoji {
+  filter: grayscale(0%);
 }
 
 .review-textarea {
@@ -1483,36 +1386,29 @@ const submitReviews = () => {
 }
 
 @media (max-width: 768px) {
-  .header-content {
-    padding: 60px 15px 30px 15px;
+  .my-projects-page {
+    padding: 15px;
   }
 
-  .page-title {
-    font-size: 36px;
-  }
-
-  .page-subtitle {
-    font-size: 18px;
-  }
-
-  .stats-section {
+  .section-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
+    align-items: flex-start;
   }
 
-  .stat-divider {
-    width: 60px;
-    height: 1px;
+  .stats-mini {
+    align-self: stretch;
+    justify-content: center;
   }
 
   .filters-card {
     padding: 20px;
-    gap: 20px;
+    gap: 16px;
   }
 
   .projects-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
 
   .project-title-section {
@@ -1550,12 +1446,8 @@ const submitReviews = () => {
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 28px;
-  }
-
-  .page-subtitle {
-    font-size: 16px;
+  .my-projects-page {
+    padding: 10px;
   }
 
   .filters-card {
@@ -1581,7 +1473,7 @@ const submitReviews = () => {
   }
 
   .project-title {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .modal-header,
@@ -1592,6 +1484,18 @@ const submitReviews = () => {
   .modal-title {
     font-size: 18px;
   }
-}
 
+  .stats-mini {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .stat-number {
+    font-size: 16px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+}
 </style>

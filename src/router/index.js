@@ -117,13 +117,13 @@ const routes = [
         path: 'settings',
         name: 'AccountSettings',
         component: () => import('@/views/AccountSettingsPage.vue'),
-      }
-      // {
-      //   // 내 프로젝트 관리
-      //   path: 'projects',
-      //   name: 'MyProjects',
-      //   component: () => import('@/views/MyProjectsPage.vue'),
-      // },
+      },
+      {
+        // 내 프로젝트 관리
+        path: 'projects',
+        name: 'MyProjects',
+        component: () => import('@/views/MyProjectListPage.vue'),
+      },
       // {
       //   // 받은 메시지
       //   path: 'messages',
