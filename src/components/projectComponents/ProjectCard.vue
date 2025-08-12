@@ -121,6 +121,12 @@ export default {
       return '마감';
     },
     goToDetail() {
+      console.log('상세보기 클릭됨! project:', this.project)
+      if (typeof this.project.viewCount === 'number') {
+        this.project.viewCount += 1
+      } else {
+        this.project.viewCount = 1
+      }
       this.$router.push({
         name: 'ProjectDetail',
         params: { id: this.project.projectId || this.project.id }
@@ -411,7 +417,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  width: 100%;
+  width: 90%;
   padding: 16px 32px;
   background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
   color: #FFF;

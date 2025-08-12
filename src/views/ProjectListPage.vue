@@ -47,8 +47,6 @@
       </div>
     </section>
 
-    <div class="divider"></div>
-
     <div class="container">
       <div class="content-wrapper">
         <div class="sort-section">
@@ -58,22 +56,35 @@
           </button>
           <SortOptions />
         </div>
-        
+
         <div class="projects-section">
           <div class="projects-container">
             <div class="project-list">
               <ProjectCard
-                v-for="project in filteredProjects"
-                :key="project.id"
-                :project="project"
-                @apply="openApplyModal"
+                  v-for="project in pagedProjects"
+                  :key="project.id"
+                  :project="project"
+                  @apply="openApplyModal"
               />
             </div>
           </div>
-          <PaginationComponent />
+
+          <!-- 페이지네이션 버튼 (아래 직접 구현) -->
+          <div class="pagination-bar">
+            <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">이전</button>
+            <button
+                v-for="page in totalPages"
+                :key="page"
+                :class="{ active: currentPage === page }"
+                @click="goToPage(page)"
+            >{{ page }}</button>
+            <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">다음</button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 지원 모달 및 토스트 -->
     <ApplyModal
         v-if="showApplyModal"
         :visible="showApplyModal"
@@ -83,27 +94,24 @@
         @submit="handleApplicationSubmitted"
         @portfolio-settings="goToPortfolioSettings"
     />
-  </div>
-  <div
-      v-if="showSuccessToast"
-      class="success-toast"
-  >
-    <span class="toast-icon">✅</span>
-    지원이 성공적으로 완료되었습니다!
-  </div>
-  <div v-if="showFailToast" class="fail-toast">
-    <span class="toast-icon">❌</span>
-    지원에 실패했습니다. 다시 시도해주세요.
+    <div v-if="showSuccessToast" class="success-toast">
+      <span class="toast-icon">✅</span>
+      지원이 성공적으로 완료되었습니다!
+    </div>
+    <div v-if="showFailToast" class="fail-toast">
+      <span class="toast-icon">❌</span>
+      지원에 실패했습니다. 다시 시도해주세요.
+    </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios'
 import SearchSection from '@/components/projectComponents/SearchSection.vue'
 import SortOptions from '@/components/projectComponents/SortOptions.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
+import { projects } from '@/components/data/projects'
 
 export default {
   name: 'ProjectListPage',
@@ -116,65 +124,46 @@ export default {
   },
   data() {
     return {
-      projects: [],
       selectedCategory: null,
       showApplyModal: false,
       showSuccessToast: false,
-      showFailToast: false, // 모달 ON/OFF
-      selectedProject: null,         // 모달에 넘길 프로젝트 데이터
-      userPortfolio: {               // 예시. 실제론 유저 데이터 연동!
+      showFailToast: false,
+      selectedProject: null,
+      userPortfolio: {
         isPublic: true,
         lastUpdated: '2024-07-29'
-      }
+      },
+      currentPage: 1,
+      pageSize: 4,
+      projects,
     }
-  },
-  created() {
-    this.fetchProjects();
   },
   computed: {
     filteredProjects() {
-      // 카테고리 필터도 실제 적용시 아래처럼 조건 추가
-      // if (this.selectedCategory) { ... }
-      return this.projects;
+      if (!this.selectedCategory) return this.projects
+      return this.projects.filter(project => project.category === this.selectedCategory)
+    },
+    totalPages() {
+      return Math.ceil(this.filteredProjects.length / this.pageSize)
+    },
+    pagedProjects() {
+      const start = (this.currentPage - 1) * this.pageSize
+      const end = start + this.pageSize
+      return this.filteredProjects.slice(start, end)
     }
   },
   methods: {
-    // 프로젝트 리스트 API 호출
-    async fetchProjects() {
-      try {
-        const response = await axios.get('http://localhost:8080/api/projects');
-        this.projects = response.data
-            .slice() // 데이터 복제
-            .sort((a, b) => new Date(a.recruitDeadline) - new Date(b.recruitDeadline))
-            .map(project => ({
-          id: project.projectId,
-          title: project.title,
-          description: project.description,
-          tags: project.techStacks,
-          status: project.status === 'RECRUITING' ? '모집중' : project.status,
-          recruitCount: project.recruitCount,
-          appliedCount: project.appliedCount,
-          startDate: project.startDate,
-          endDate: project.endDate,
-          viewCount: project.viewCount ?? 0,
-          deadline: project.recruitDeadline ? this.calcDeadline(project.recruitDeadline) : '',
-        }))
-      } catch (error) {
-        alert('프로젝트 목록을 불러오는데 실패했습니다.');
-        console.error(error);
-      }
-    },
-    calcDeadline(recruitDeadline) {
-      const today = new Date();
-      const deadline = new Date(recruitDeadline);
-      const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-      return diff > 0 ? `D-${diff}` : '마감';
-    },
     goToCreateProject() {
-      this.$router.push({name: 'ProjectCreate'})
+      this.$router.push({ name: 'ProjectCreate' })
     },
     filterByCategory(category) {
+      // 카테고리 바뀔 때마다 첫 페이지로 이동
       this.selectedCategory = this.selectedCategory === category ? null : category
+      this.currentPage = 1
+    },
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.currentPage = page
     },
     openApplyModal(project) {
       if (!project) return
@@ -191,46 +180,51 @@ export default {
     },
     goToPortfolioSettings() {
       this.closeApplyModal()
-      this.$router.push({name: 'PortfolioSettings'})
+      this.$router.push({ name: 'PortfolioSettings' })
     },
-    async handleApplicationSubmitted(data) {
+    handleApplicationSubmitted(data) {
       if (!data || !data.applicationForm) return
-
-      const message = data.applicationForm.message || ''
-      const part = data.applicationForm.part || ''
-
-      try {
-        await axios.post(
-            `http://localhost:8080/api/projects/${this.selectedProject.projectId}/apply`,
-            {
-              userId: 3,
-              applicationMessage: message,
-              techStack: part
-            }
-        )
-        this.showSuccessToast = true
-        setTimeout(() => {
-          this.showSuccessToast = false
-        }, 3000)
-        this.closeApplyModal()
-      } catch (e) {
-        if (e.response && e.response.status === 409) {
-          this.showFailToast = true
-        } else {
-          this.showFailToast = true
-          console.error(e)
-        }
-        setTimeout(() => {
-          this.showFailToast = false
-        }, 3000)
-        this.closeApplyModal()
+      const project = this.projects.find(p => p.id === this.selectedProject.projectId)
+      if (project) {
+        project.appliedCount += 1
       }
+      this.showSuccessToast = true
+      setTimeout(() => {
+        this.showSuccessToast = false
+      }, 3000)
+      this.closeApplyModal()
     }
   }
 }
 </script>
 
 <style scoped>
+.pagination-bar {
+  margin: 24px 0 0 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.pagination-bar button {
+  background: #f4f4f4;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.pagination-bar button.active,
+.pagination-bar button:hover {
+  background: #4caf50;
+  color: #fff;
+  border-color: #4caf50;
+}
+.pagination-bar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .success-toast {
   position: fixed;
   top: 50%;

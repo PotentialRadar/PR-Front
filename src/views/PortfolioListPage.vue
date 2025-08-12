@@ -19,17 +19,17 @@
         
         <div class="stats-section">
           <div class="stat-item">
-            <div class="stat-number">{{ portfolios.length }}+</div>
+            <div class="stat-number">{{ overallStats.totalPortfolios }}+</div>
             <div class="stat-label">포트폴리오</div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <div class="stat-number">{{ uniqueSkills.length }}+</div>
+            <div class="stat-number">{{ overallStats.totalSkills }}+</div>
             <div class="stat-label">스킬 카테고리</div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <div class="stat-number">{{ portfolios.length }}</div>
+            <div class="stat-number">{{ overallStats.activeCreators }}</div>
             <div class="stat-label">활성 크리에이터</div>
           </div>
         </div>
@@ -179,6 +179,17 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { 
+  getPortfolioList, 
+  getPopularSkills, 
+  getOverallStats,
+  filterByCategory,
+  filterBySkills,
+  searchPortfolios
+} from '@/components/data/portfolioData.js'
+
+const router = useRouter()
 
 // 반응형 데이터
 const selectedCategory = ref('전체')
@@ -186,74 +197,15 @@ const selectedSkills = ref([])
 const searchQuery = ref('')
 const sortBy = ref('recent')
 
+// 데이터 로드
+const portfolios = ref(getPortfolioList())
+const popularSkills = getPopularSkills(8)
+const overallStats = getOverallStats()
+
 // 카테고리 데이터
 const categories = ['전체', 'Frontend', 'Backend', 'Design', 'Mobile', 'AI/ML', 'DevOps']
-const popularSkills = ['React', 'Vue.js', 'Node.js', 'Python', 'Figma', 'TypeScript', 'AWS', 'Flutter']
-
-// 포트폴리오 샘플 데이터 (단순화된 정보만 포함)
-const portfolios = ref([
-  {
-    id: 1,
-    name: '김프론트',
-    jobTitle: 'Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-    skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'GraphQL'],
-    category: 'Frontend',
-    isLiked: false
-  },
-  {
-    id: 2,
-    name: '박디자이너',
-    jobTitle: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    skills: ['Figma', 'Adobe XD', 'Sketch', 'Prototyping', 'User Research'],
-    category: 'Design',
-    isLiked: false
-  },
-  {
-    id: 3,
-    name: '이백엔드',
-    jobTitle: 'Backend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    skills: ['Node.js', 'Python', 'Docker', 'AWS', 'PostgreSQL'],
-    category: 'Backend',
-    isLiked: false
-  },
-  {
-    id: 4,
-    name: '정모바일',
-    jobTitle: 'Mobile Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-    skills: ['Flutter', 'React Native', 'iOS', 'Android', 'Firebase'],
-    category: 'Mobile',
-    isLiked: false
-  },
-  {
-    id: 5,
-    name: '최AI',
-    jobTitle: 'AI/ML Engineer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-    skills: ['Python', 'TensorFlow', 'PyTorch', 'OpenCV', 'NLP'],
-    category: 'AI/ML',
-    isLiked: false
-  },
-  {
-    id: 6,
-    name: '강데브옵스',
-    jobTitle: 'DevOps Engineer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6',
-    skills: ['AWS', 'Docker', 'Kubernetes', 'Jenkins', 'Terraform'],
-    category: 'DevOps',
-    isLiked: false
-  }
-])
 
 // 계산된 속성들
-const uniqueSkills = computed(() => {
-  const allSkills = portfolios.value.flatMap(p => p.skills)
-  return [...new Set(allSkills)]
-})
-
 const filteredPortfolios = computed(() => {
   let filtered = portfolios.value
 
@@ -325,7 +277,8 @@ const toggleLike = (portfolioId) => {
 }
 
 const viewPortfolio = (portfolioId) => {
-  console.log('포트폴리오 상세보기:', portfolioId)
+  // 포트폴리오 상세 페이지로 이동
+  router.push(`/portfolio/${portfolioId}`)
 }
 
 const getSkillType = (skill) => {

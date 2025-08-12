@@ -6,7 +6,6 @@
       <StatsSection />
       <ProjectSection />
       <PartnerSection />
-      <FreelancerSection />
     </main>
     
     <FloatingActionButton />
@@ -19,7 +18,6 @@ import HeroSection from '@/components/homeComponents/HeroSection.vue'
 import StatsSection from '@/components/homeComponents/StatsSection.vue'
 import ProjectSection from '@/components/homeComponents/ProjectSection.vue'
 import PartnerSection from '@/components/homeComponents/PartnerSection.vue'
-import FreelancerSection from '@/components/homeComponents/FreelancerSection.vue'
 import FloatingActionButton from '@/components/homeComponents/FloatingActionButton.vue'
 </script>
 
