@@ -1,14 +1,17 @@
 <template>
-  <div class="project-header">
+  <div class="project-header" v-if="project">
     <div class="project-tags">
       <div class="tag-container">
-        <span class="tag status-tag">{{ project.status === 'RECRUITING' ? '모집중' : project.status }}</span>
+        <span class="tag status-tag">{{ statusText }}</span>
+
+        <!-- 기술스택 표시 -->
         <span
-            v-for="(stack, i) in project.techStacks"
+            v-for="(stack, i) in techStacksSafe"
             :key="i"
             class="tag self-tag"
         >#{{ stack.techStackName }}</span>
       </div>
+
       <div class="registration-date">
         <span>{{ formatDate(project.startDate) }}</span>
       </div>
@@ -17,21 +20,20 @@
     <div class="project-title">
       <h1>{{ project.title }}</h1>
     </div>
+
     <div class="project-sub-title">
       {{ project.description }}
     </div>
 
-    <hr style="background: #eee; height:1px; border:0; margin: 40px 0">
+    <hr style="background:#eee; height:1px; border:0; margin:40px 0" />
 
-    <div class="tag-title">
-      이런 기술을 사용할 예정이에요
-    </div>
-    <div v-if="project.techStacks && project.techStacks.length" class="technology-tags">
-  <span
-      v-for="(ts, i) in project.techStacks"
-      :key="'ts-'+i"
-      class="tech-tag"
-  >{{ ts.techStackName }}</span>
+    <div class="tag-title">이런 기술을 사용할 예정이에요</div>
+    <div v-if="techStacksSafe.length" class="technology-tags">
+      <span
+          v-for="(ts, i) in techStacksSafe"
+          :key="'ts-'+i"
+          class="tech-tag"
+      >{{ ts.techStackName }}</span>
     </div>
 
     <div class="project-metadata">
@@ -42,12 +44,14 @@
           <span class="unit">일</span>
         </div>
       </div>
+
       <div class="metadata-item">
         <div class="metadata-label">지원자수</div>
         <div class="metadata-value">
           <span class="number">{{ project.appliedCount || 0 }}</span>
         </div>
       </div>
+
       <div class="metadata-item">
         <div class="metadata-label">마감일</div>
         <div class="metadata-value">
@@ -56,33 +60,53 @@
       </div>
     </div>
   </div>
+
+  <!-- 로딩 스켈레톤/플레이스홀더(선택) -->
+  <div v-else class="project-header">
+    로딩 중…
+  </div>
 </template>
 
 <script>
 export default {
+  name: 'ProjectHeader',
   props: {
-    project: { type: Object, required: true }
+    project: { type: Object, default: null } // ✅ null 허용
   },
-  mounted() {
-    // 여기가 중요!
-    console.log('project.techStacks:', this.project.techStacks)
+  computed: {
+    statusText() {
+      const s = this.project?.status
+      return s === 'RECRUITING' ? '모집중' : (s || '진행중')
+    },
+    techStacksSafe() {
+      // 백엔드: project.techStacks = [{ techStackName }]
+      // 혹시 tags(string[])가 남아있다면 호환 처리
+      if (Array.isArray(this.project?.techStacks)) return this.project.techStacks
+      if (Array.isArray(this.project?.tags)) {
+        return this.project.tags.map(t => ({ techStackName: String(t) }))
+      }
+      return []
+    }
   },
   methods: {
     formatDate(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+      if (!dateStr) return ''
+      const d = new Date(dateStr)
+      if (isNaN(d)) return ''
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
     },
     calcDuration(start, end) {
-      if (!start || !end) return '-';
-      const s = new Date(start), e = new Date(end);
-      return Math.max(1, Math.ceil((e-s)/(1000*60*60*24)));
+      if (!start || !end) return '-'
+      const s = new Date(start), e = new Date(end)
+      if (isNaN(s) || isNaN(e)) return '-'
+      return Math.max(1, Math.ceil((e - s) / (1000 * 60 * 60 * 24)))
     },
     calcDeadline(deadline) {
-      if (!deadline) return '-';
-      const today = new Date(), dday = new Date(deadline);
-      const diff = Math.ceil((dday-today)/(1000*60*60*24));
-      return diff > 0 ? `D-${diff}` : '마감';
+      if (!deadline) return '-'
+      const today = new Date(), dday = new Date(deadline)
+      if (isNaN(dday)) return '-'
+      const diff = Math.ceil((dday - today) / (1000 * 60 * 60 * 24))
+      return diff > 0 ? `D-${diff}` : '마감'
     }
   }
 }

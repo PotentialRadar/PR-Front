@@ -18,7 +18,12 @@ onMounted(async () => {
         },
         withCredentials: true,
       });
-      userStore.login(token, res.data);
+      const user = res.data.data || res.data; // 구조 맞게 분기
+      userStore.login({
+        userId: user.userId,
+        email: user.email,
+        accessToken: user.accessToken
+      });
       router.replace('/');
     } catch (e) {
       console.error('❌ 사용자 정보 조회 실패', e);

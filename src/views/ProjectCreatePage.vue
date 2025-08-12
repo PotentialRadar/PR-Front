@@ -9,9 +9,7 @@
 
     <div v-if="showSuccess" class="success-overlay">
       <div class="success-card">
-        <div class="success-icon">
-          <i class="bi bi-check-circle-fill"></i>
-        </div>
+        <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
         <h3 class="success-title">프로젝트가 성공적으로 등록되었습니다!</h3>
         <button @click="resetForm" class="success-button">새 프로젝트 작성</button>
       </div>
@@ -30,15 +28,17 @@
 
     <div class="form-container">
       <div class="form-content">
+
+        <!-- 제목 -->
         <div class="form-section">
           <div class="section-title">프로젝트 제목</div>
           <div class="input-group">
             <input
-              type="text"
-              v-model="formData.projectTitle"
-              :class="['project-title-input', { 'error': getError('projectTitle').value }]"
-              placeholder="프로젝트의 제목을 입력해주세요."
-              @blur="validateField('projectTitle', formData.projectTitle, validationSchema.projectTitle)"
+                type="text"
+                v-model="formData.projectTitle"
+                :class="['project-title-input', { 'error': getError('projectTitle').value }]"
+                placeholder="프로젝트의 제목을 입력해주세요."
+                @blur="validateField('projectTitle', formData.projectTitle, validationSchema.projectTitle)"
             />
             <div v-if="getError('projectTitle').value" class="error-message">
               {{ getError('projectTitle').value }}
@@ -46,8 +46,8 @@
           </div>
         </div>
 
+        <!-- 내용 -->
         <div class="form-section">
-
           <div class="section-title">프로젝트 내용</div>
           <div class="form-inputs">
             <div class="input-group">
@@ -65,22 +65,23 @@
           </div>
         </div>
 
+        <!-- 진행기간 -->
         <div class="duration-personnel-group">
           <div class="form-section duration-section">
             <div class="section-title">진행기간</div>
             <div class="duration-input-group">
               <input
-                type="number"
-                v-model.number="formData.projectDurationValue"
-                :class="['duration-value-input', { 'error': getError('projectDurationValue').value }]"
-                min="0"
-                placeholder="기간"
-                @blur="validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)"
+                  type="number"
+                  v-model.number="formData.projectDurationValue"
+                  :class="['duration-value-input', { 'error': getError('projectDurationValue').value }]"
+                  min="0"
+                  placeholder="기간"
+                  @blur="validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)"
               />
               <select
-                v-model="formData.projectDurationUnit"
-                :class="['duration-unit-select', { 'error': getError('projectDurationUnit').value }]"
-                @blur="validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit)"
+                  v-model="formData.projectDurationUnit"
+                  :class="['duration-unit-select', { 'error': getError('projectDurationUnit').value }]"
+                  @blur="validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit)"
               >
                 <option value="">단위 선택</option>
                 <option value="days">일</option>
@@ -93,35 +94,69 @@
               {{ getError('projectDurationValue').value || getError('projectDurationUnit').value }}
             </div>
           </div>
+        </div>
 
-          <div class="form-section personnel-section">
-             <div class="section-title personnel-title">진행인원</div>
-            <div class="personnel-content">
-              <PersonnelCounter
-                v-model="formData.personnel"
-                :error="getError('personnel').value"
-                @change="validateField('personnel', formData.personnel, validationSchema.personnel)"
-              />
+        <!-- ✅ 파트별 모집 인원 -->
+        <div class="form-section parts-section">
+          <div class="section-title">파트별 모집 인원</div>
+          <div class="parts-card">
+            <div class="part-rows">
+              <div class="part-row" v-for="(row, idx) in partRows" :key="idx">
+                <div class="row-left">
+                  <select v-model="row.part" class="part-select" :class="{ error: getError('parts').value && !row.part }">
+                    <option value="" disabled>파트 선택</option>
+                    <option v-for="opt in PART_OPTIONS" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="row-mid">
+                  <input
+                      class="part-count"
+                      type="number"
+                      min="1"
+                      max="99"
+                      v-model.number="row.count"
+                      :class="{ error: getError('parts').value && (!row.count || row.count < 1) }"
+                      placeholder="인원"
+                  />
+                  <span class="unit">명</span>
+                </div>
+                <div class="row-right">
+                  <button type="button" class="row-remove" @click="removePartRow(idx)" v-if="partRows.length > 1">
+                    삭제
+                  </button>
+                </div>
+              </div>
             </div>
-            <div v-if="getError('personnel').value" class="error-message personnel-error">
-              {{ getError('personnel').value }}
+
+            <div class="parts-actions">
+              <button type="button" class="add-row" @click="addPartRow">+ 파트 추가</button>
+              <div class="total-count">총 모집 인원: <b>{{ totalRecruitCount }}</b>명</div>
+            </div>
+
+            <div v-if="getError('parts').value" class="error-message">
+              {{ getError('parts').value }}
             </div>
           </div>
         </div>
+        <!-- /파트별 모집 -->
 
+        <!-- 기술 스택 -->
         <div class="form-section">
           <div class="section-title">기술 스택</div>
           <p class="upload-note">입력된 기술 스택은 프로젝트 추천 서비스에 이용됩니다.</p>
           <TechStackSelector
-            v-model="formData.techStack"
-            :error="getError('techStack').value"
-            @change="validateField('techStack', formData.techStack, validationSchema.techStack)"
+              v-model="formData.techStack"
+              :error="getError('techStack').value"
+              @change="validateField('techStack', formData.techStack, validationSchema.techStack)"
           />
           <div v-if="getError('techStack').value" class="error-message">
             {{ getError('techStack').value }}
           </div>
         </div>
 
+        <!-- 마감일 -->
         <div class="form-section deadline-section">
           <div class="section-title">모집 마감일</div>
           <div class="input-group">
@@ -137,13 +172,14 @@
           </div>
         </div>
 
+        <!-- 첨부파일 -->
         <div class="form-section">
           <div class="upload-section">
             <div class="section-title">참고 파일</div>
             <FileUploadArea
-              v-model="formData.files"
-              :error="getError('files').value"
-              @change="validateField('files', formData.files, validationSchema.files)"
+                v-model="formData.files"
+                :error="getError('files').value"
+                @change="validateField('files', formData.files, validationSchema.files)"
             />
             <div v-if="getError('files').value" class="error-message">
               {{ getError('files').value }}
@@ -151,11 +187,12 @@
           </div>
         </div>
 
+        <!-- 제출 -->
         <div class="submit-section">
           <button
-            @click="submitForm"
-            :disabled="isSubmitting || hasErrors"
-            :class="['submit-button', { 'loading': isSubmitting, 'disabled': hasErrors }]"
+              @click="submitForm"
+              :disabled="isSubmitting || hasErrors"
+              :class="['submit-button', { 'loading': isSubmitting, 'disabled': hasErrors }]"
           >
             <span v-if="!isSubmitting">작성하기</span>
             <span v-else class="submit-loading">
@@ -169,6 +206,7 @@
             <span>입력 내용을 다시 확인해주세요.</span>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -177,49 +215,48 @@
 <script>
 import { ref, reactive, computed } from 'vue'
 import axios from 'axios'
-import PersonnelCounter from '@/components/projectComponents/PersonnelCounter.vue'
 import TechStackSelector from '@/components/common/TechStackSelector.vue'
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue'
 import { useFormValidation } from '@/composables/useFormValidation.js'
-import {useRouter} from "vue-router";
+import { useUserStore } from '@/stores/userStore'
+import { useRouter } from "vue-router"
+import { PART_OPTIONS } from '@/constants/parts' // 추가
 
 const API_URL = 'http://localhost:8080/api/projects'
 
 export default {
   name: 'ProjectCreatePage',
-  components: {
-    PersonnelCounter,
-    TechStackSelector,
-    FileUploadArea
-  },
+  components: { TechStackSelector, FileUploadArea },
   setup() {
     const {
-      errors,
-      isSubmitting,
-      submitAttempted,
-      validateField,
-      validateForm,
-      clearErrors,
-      hasErrors,
-      hasError,
-      getError
+      errors, isSubmitting, submitAttempted,
+      validateField, validateForm, clearErrors,
+      hasErrors, hasError, getError
     } = useFormValidation()
 
     const router = useRouter()
     const showSuccess = ref(false)
+    const userStore = useUserStore()
 
     const formData = reactive({
       projectTitle: '',
       projectSubtitle: '',
       projectDurationValue: null,
       projectDurationUnit: '',
-      personnel: 1,
       techStack: [],
       projectDescription: '',
       files: [],
       recruitDeadline: '',
       viewCount: 0
     })
+
+    // ✅ 파트별 모집 상태
+    const partRows = ref([{ part: 'FRONTEND', count: 1 }])
+    const addPartRow = () => partRows.value.push({ part: '', count: 1 })
+    const removePartRow = (idx) => partRows.value.splice(idx, 1)
+    const totalRecruitCount = computed(() =>
+        partRows.value.reduce((sum, r) => sum + (Number(r.count) || 0), 0)
+    )
 
     const validationSchema = {
       projectTitle: [
@@ -232,34 +269,33 @@ export default {
       ],
       projectDurationValue: [
         'required',
-        (value) => {
-          if (value === null || value === '' || isNaN(value) || value < 0) return '올바른 진행 기간 숫자를 입력해주세요.'
-          return true
-        }
+        (value) => (value === null || value === '' || isNaN(value) || value < 0)
+            ? '올바른 진행 기간 숫자를 입력해주세요.' : true
       ],
       projectDurationUnit: [
         'required',
-        (value) => {
-          if (!value) return '진행 기간 단위를 선택해주세요.'
-          return true
-        }
+        (value) => (!value ? '진행 기간 단위를 선택해주세요.' : true)
       ],
       recruitDeadline: [
         'required',
         (value) => {
           if (!value) return '모집 마감일을 선택해주세요.'
-          // 오늘 날짜보다 이전일 수 없음
           const today = new Date().toISOString().slice(0, 10)
           if (value < today) return '오늘 이후의 날짜를 선택하세요.'
           return true
         }
       ],
-      personnel: [
-        'required',
-        'personnel'
-      ],
-      techStack: [
-        'techStack'
+      techStack: ['techStack'],
+      // 파트별 모집 검증
+      parts: [
+        (rows) => {
+          if (!rows || !rows.length) return '모집 파트를 최소 1개 추가하세요.'
+          for (const r of rows) {
+            if (!r.part) return '각 행의 파트를 선택하세요.'
+            if (!r.count || r.count < 1) return '각 행의 인원은 1명 이상이어야 합니다.'
+          }
+          return true
+        }
       ],
       projectDescription: [
         'required',
@@ -270,17 +306,11 @@ export default {
         (files) => {
           if (!files || files.length === 0) return true
           const maxSize = 5 * 1024 * 1024
+          for (const file of files) if (file.size > maxSize) return `파일 크기는 5MB 이하여야 합니다: ${file.name}`
+          const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
           for (const file of files) {
-            if (file.size > maxSize) {
-              return `파일 크기는 5MB 이하여야 합니다: ${file.name}`
-            }
-          }
-          const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
-          for (const file of files) {
-            const extension = '.' + file.name.split('.').pop().toLowerCase()
-            if (!allowedExtensions.includes(extension)) {
-              return `지원하지 않는 파일 형식입니다: ${file.name}`
-            }
+            const ext = '.' + file.name.split('.').pop().toLowerCase()
+            if (!allowed.includes(ext)) return `지원하지 않는 파일 형식입니다: ${file.name}`
           }
           return true
         }
@@ -290,71 +320,83 @@ export default {
     // 날짜 유틸
     function addDurationToDate(start, value, unit) {
       const date = new Date(start)
-      if (unit === 'days') date.setDate(date.getDate() + value)
+      if (unit === 'days')  date.setDate(date.getDate() + value)
       if (unit === 'weeks') date.setDate(date.getDate() + value * 7)
-      if (unit === 'months') date.setMonth(date.getMonth() + value)
+      if (unit === 'months')date.setMonth(date.getMonth() + value)
       if (unit === 'years') date.setFullYear(date.getFullYear() + value)
       return date.toISOString().slice(0, 10)
     }
 
-    //구인글 등록 submitForm 실제 동작 코드
+    // 구인글 등록
     const submitForm = async () => {
+      if (!userStore.isLoggedIn || !userStore.userId) {
+        alert('로그인 후에 프로젝트를 등록할 수 있습니다.')
+        router.push('/login')
+        return
+      }
+
       validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)
       validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit)
+      validateField('parts', partRows.value, validationSchema.parts) // ✅
       submitAttempted.value = true
 
-      if (!validateForm(formData, validationSchema)) {
+      if (!validateForm({ ...formData, parts: partRows.value }, validationSchema)) {
         isSubmitting.value = false
         return
       }
 
       isSubmitting.value = true
-
       try {
-        // 1. 파일 업로드(S3)
+        // 1) 파일 업로드
         let fileUrl = null
-        if (formData.files && formData.files.length > 0) {
+        if (formData.files?.length) {
           const uploadData = new FormData()
           uploadData.append('file', formData.files[0])
           const uploadRes = await axios.post(`${API_URL}/upload-file`, uploadData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           })
-          fileUrl = uploadRes.data // S3 URL
+          fileUrl = uploadRes.data
         }
 
-        // 2. 날짜 계산 (시작일: 오늘, 마감일: 오늘+기간)
+        // 2) 날짜 계산
         const today = new Date()
         const startDate = today.toISOString().slice(0, 10)
         const endDate = addDurationToDate(today, formData.projectDurationValue, formData.projectDurationUnit)
 
-        // 3. techStacks DTO 변환
+        // 3) 스택 변환
         const techStacks = formData.techStack.map(ts => ({
-          techStackName: ts.techStackName || ts.name, // 실제 구조에 맞게
-          recruitCount: ts.recruitCount || 1 // 기본값 1
+          techStackName: ts.techStackName || ts.name,
+          recruitCount: ts.recruitCount || 1
         }))
 
-        // 4. 등록 DTO 맞춰서 body 생성
+        // 4) 파트 변환
+        const parts = partRows.value
+            .filter(r => r.part && Number(r.count) > 0)
+            .map(r => ({ part: r.part, recruitCount: Number(r.count) }))
+
+        // 5) 요청 본문
         const body = {
           title: formData.projectTitle,
           description: formData.projectDescription,
           recruitDeadline: formData.recruitDeadline,
-          startDate: startDate,
-          endDate: endDate,
-          fileUrl: fileUrl,
+          startDate,
+          endDate,
+          fileUrl,
           status: 'RECRUITING',
-          techStacks: techStacks,
-          recruitCount: formData.personnel
+          techStacks,
+          parts,                                // ✅ 파트별 모집
+          recruitCount: totalRecruitCount.value // ✅ 총합
         }
 
-        // 5. 실제 구인글 등록 요청 (userId=1는 임시)
-        await axios.post(`${API_URL}?userId=1`, body, {
-          headers: { 'Content-Type': 'application/json' }
-        })
+        await axios.post(
+            `${API_URL}?userId=${userStore.userId}`,
+            body,
+            { headers: { 'Content-Type': 'application/json', ...(userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {}) } }
+        )
 
         showSuccess.value = true
         clearErrors()
         router.push('/projects')
-        // 필요시 resetForm()
       } catch (error) {
         console.error('Submission error:', error)
         alert('등록 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -369,11 +411,11 @@ export default {
         projectSubtitle: '',
         projectDurationValue: null,
         projectDurationUnit: '',
-        personnel: 1,
         techStack: [],
         projectDescription: '',
         files: []
       })
+      partRows.value = [{ part: 'FRONTEND', count: 1 }]
       clearErrors()
       showSuccess.value = false
     }
@@ -383,7 +425,7 @@ export default {
       formData.projectSubtitle,
       formData.projectDurationValue,
       formData.projectDurationUnit,
-      formData.personnel,
+      partRows.value,
       formData.techStack,
       formData.projectDescription,
       formData.files
@@ -391,17 +433,12 @@ export default {
 
     return {
       formData,
+      PART_OPTIONS,
+      partRows, addPartRow, removePartRow, totalRecruitCount,
       validationSchema,
-      errors,
-      isSubmitting,
-      submitAttempted,
-      showSuccess,
-      hasErrors,
-      hasError,
-      getError,
-      validateField,
-      submitForm,
-      resetForm
+      errors, isSubmitting, submitAttempted, showSuccess,
+      hasErrors, hasError, getError,
+      validateField, submitForm, resetForm
     }
   }
 }
@@ -945,4 +982,60 @@ export default {
     transform: translateY(0);
   }
 }
+.parts-section { margin-top: -20px; }
+.parts-card {
+  width: 100%;
+  border: 2px solid rgba(76,175,80,0.12);
+  background: #FFF;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(76,175,80,0.06);
+}
+.part-rows { display: flex; flex-direction: column; gap: 10px; }
+.part-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+.row-left, .row-mid, .row-right { display: flex; align-items: center; gap: 8px; }
+.part-select, .part-count {
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #D9D9D9;
+  background: #FFF;
+  font-size: 14px;
+  outline: none;
+  transition: all .2s;
+}
+.part-select:focus, .part-count:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76,175,80,.1); }
+.part-select.error, .part-count.error { border-color: #dc3545; box-shadow: 0 0 0 3px rgba(220,53,69,.08); }
+.unit { color: #6f6f72; font-size: 14px; }
+.row-remove {
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.row-remove:hover { background: #efefef; }
+.parts-actions {
+  margin-top: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.add-row {
+  padding: 10px 14px;
+  background: #F7F7F8;
+  border: 1px dashed #CFCFCF;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.add-row:hover { background: #f1f1f1; }
+.total-count { color: #262626; font-size: 14px; font-weight: 600; }
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .part-row { grid-template-columns: 1fr 1fr auto; }
+}
+
 </style>
