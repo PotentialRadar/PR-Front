@@ -38,10 +38,28 @@
         
         <div class="search-container">
           <div class="search-form">
+            <!-- 필터 탭 추가 -->
+            <div class="filter-tabs">
+              <div 
+                class="filter-tab" 
+                :class="{ active: activeFilter === 'portfolio' }"
+                @click="activeFilter = 'portfolio'"
+              >
+                포트폴리오
+              </div>
+              <div 
+                class="filter-tab" 
+                :class="{ active: activeFilter === 'project' }"
+                @click="activeFilter = 'project'"
+              >
+                프로젝트
+              </div>
+            </div>
+
             <div class="search-input-container">
               <input 
                 type="text" 
-                placeholder="어떤 기술의 IT포트폴리오를 찾으시나요?"
+                :placeholder="activeFilter === 'portfolio' ? '어떤 기술의 IT포트폴리오를 찾으시나요?' : '어떤 프로젝트를 찾으시나요?'"
                 class="search-input"
               />
               <div class="search-icon">
@@ -108,6 +126,7 @@ const rawPartners = [
 ]
 
 const partners = ref([...rawPartners, ...rawPartners, ...rawPartners])
+const activeFilter = ref('portfolio') // 기본값은 포트폴리오
 
 const techTags = ref(['React', 'Python', 'Node.js', 'Flutter', 'Docker', 'AWS', 'TypeScript', 'Figma'])
 
@@ -125,6 +144,7 @@ const goToPortfolio = (partnerId) => {
 }
 
 onMounted(() => {
+  
   setInterval(() => {
     const el = carouselRef.value
     if (!el) return
@@ -252,6 +272,9 @@ function handleMouseLeave() {
   
   width: 100vw;           /* 💡 화면 전체 너비 */
   max-width: none;        /* 💡 최대 너비 제한 제거 */
+  min-height: 80px;       /* 최소 높이 추가 */
+  padding: 20px 0;        /* 상하 패딩 추가 */
+  background: none; /* 디버깅용 배경색 */
 }
 
 .partners-carousel::-webkit-scrollbar {
@@ -334,6 +357,52 @@ function handleMouseLeave() {
   gap: 25px;
   flex-shrink: 0;
   align-self: stretch;
+}
+
+/* 필터 탭 스타일 */
+.filter-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-self: stretch;
+  gap: 0;
+  border-radius: 100px;
+  border: 1px solid #E3E3E3;
+  background: #FFF;
+  overflow: hidden;
+}
+
+.filter-tab {
+  display: flex;
+  padding: 12px 30px;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  height: 48px;
+  background: #FFF;
+  color: #555;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  box-sizing: border-box;
+}
+
+.filter-tab:first-child {
+  border-right: 1px solid #E3E3E3;
+}
+
+.filter-tab.active {
+  background: #81C784;
+  color: #FFF;
+  font-weight: 500;
+}
+
+.filter-tab:hover:not(.active) {
+  background: #F8F8F8;
+  color: #81C784;
 }
 
 .search-input-container {
