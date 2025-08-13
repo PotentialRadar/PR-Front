@@ -250,7 +250,7 @@ export default {
       viewCount: 0
     })
 
-    // ✅ 파트별 모집 상태
+    // 파트별 모집 상태
     const partRows = ref([{ part: 'FRONTEND', count: 1 }])
     const addPartRow = () => partRows.value.push({ part: '', count: 1 })
     const removePartRow = (idx) => partRows.value.splice(idx, 1)
@@ -384,8 +384,8 @@ export default {
           fileUrl,
           status: 'RECRUITING',
           techStacks,
-          parts,                                // ✅ 파트별 모집
-          recruitCount: totalRecruitCount.value // ✅ 총합
+          parts,                                //  파트별 모집
+          recruitCount: totalRecruitCount.value //  총합
         }
 
         await axios.post(
