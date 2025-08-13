@@ -3,8 +3,8 @@
     
     <main class="main-content">
       <HeroSection />
-      <StatsSection />
       <ProjectSection />
+      <StatsSection />
       <PartnerSection />
     </main>
     
