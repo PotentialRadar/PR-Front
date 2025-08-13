@@ -134,6 +134,7 @@ const activeTab = ref('all')
 const projects = ref([
   {
     id: 1,
+<<<<<<< HEAD
     title: 'AI 기반 협업툴 백엔드 개발',
     description: 'AI 추천을 기반으로 한 팀 매칭 서비스의 서버 설계와 구현. Spring Boot와 JWT 기반 인증 시스템, 실시간 AI 추천 엔진과 협업 환경을 구축하며 다양한 클라우드 경험을 쌓을 수 있습니다.',
     techStacks: [
@@ -150,6 +151,26 @@ const projects = ref([
     deadline: 'D-16',
     category: 'backend',
     viewCount: 142,
+=======
+    category: 'app',
+    title: '사용자간 직거래 몰 React Native 앱 개발',
+    description: '판매자와 구매자 간 직거래를 진행하는 판매자와 구매자 간 직거래를 진행하는 판매자와 구매자 간 직거래를 진행하는 판매자와 구매자 간 직거래를 진행하는 판매자와 구매자 간 직거래를 진행하는',
+    status: '모집중',
+    duration: '6개월',
+    members: '3명',
+    applicants: '25명',
+    isFavorite: true
+  },
+  {
+    id: 2,
+    category: 'app',
+    title: '간단한 병원 지점별 관리 및 정보제공 앱 개발(Android, IOS) 간단한 병원 지점별 관리 및 정보제공 앱 개발(Android, IOS) 간단한 병원 지점별 관리 및 정보제공 앱 개발(Android, IOS)',
+    description: '판매자와 구매자 간 직거래를 진행하는 ...',
+    status: '마감 D-15',
+    duration: '3개월',
+    members: '8명',
+    applicants: '13명',
+>>>>>>> f3cc5e4 (WIP: 로컬 변경사항 저장)
     isFavorite: false
   },
   {
