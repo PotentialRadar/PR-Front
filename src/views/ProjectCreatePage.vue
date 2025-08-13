@@ -376,9 +376,8 @@ export default {
         }
 
         // 2) 날짜 계산
-        const today = new Date()
-        const startDate = today.toISOString().slice(0, 10)
-        const endDate = addDurationToDate(today, formData.projectDurationValue, formData.projectDurationUnit)
+        const startDate = formData.recruitDeadline; // 시작일은 모집 마감일과 동일
+        const endDate = addDurationToDate(new Date(startDate), formData.projectDurationValue, formData.projectDurationUnit); // 종료일은 시작일 + 진행기간
 
         // 3) 기술스택 변환
         const techStacks = formData.techStack.map(ts => ({
