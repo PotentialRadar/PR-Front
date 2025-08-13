@@ -331,12 +331,12 @@ export const getAllSkills = () => {
 export const getCategoryStats = () => {
   const categories = Object.values(portfolioDatabase)
     .map(portfolio => portfolio.userInfo.category)
-  
+
   const stats = {}
   categories.forEach(category => {
     stats[category] = (stats[category] || 0) + 1
   })
-  
+
   return stats
 }
 
@@ -348,7 +348,7 @@ export const getPopularSkills = (limit = 8) => {
       skillCount[skill] = (skillCount[skill] || 0) + 1
     })
   })
-  
+
   return Object.entries(skillCount)
     .sort(([,a], [,b]) => b - a)
     .slice(0, limit)
@@ -358,7 +358,7 @@ export const getPopularSkills = (limit = 8) => {
 // 사용자 검색
 export const searchPortfolios = (query) => {
   const lowercaseQuery = query.toLowerCase()
-  
+
   return Object.values(portfolioDatabase).filter(portfolio => {
     return (
       portfolio.userInfo.name.toLowerCase().includes(lowercaseQuery) ||
@@ -374,7 +374,7 @@ export const filterByCategory = (category) => {
   if (category === '전체') {
     return Object.values(portfolioDatabase)
   }
-  
+
   return Object.values(portfolioDatabase).filter(
     portfolio => portfolio.userInfo.category === category
   )
@@ -385,7 +385,7 @@ export const filterBySkills = (skills) => {
   if (!skills || skills.length === 0) {
     return Object.values(portfolioDatabase)
   }
-  
+
   return Object.values(portfolioDatabase).filter(portfolio =>
     skills.some(skill => portfolio.skills.includes(skill))
   )
@@ -394,7 +394,7 @@ export const filterBySkills = (skills) => {
 // 전체 통계
 export const getOverallStats = () => {
   const portfolios = Object.values(portfolioDatabase)
-  
+
   return {
     totalPortfolios: portfolios.length,
     totalSkills: getAllSkills().length,

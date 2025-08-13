@@ -16,33 +16,23 @@
     <!-- 카테고리 섹션 -->
     <section class="category-icons-section">
       <div class="category-item" @click="filterByCategory('backend')">
-        <div class="category-icon-wrapper">
-          <div class="category-icon">🔧</div>
-        </div>
+        <div class="category-icon-wrapper"><div class="category-icon">🔧</div></div>
         <div class="category-title">백엔드</div>
       </div>
       <div class="category-item" @click="filterByCategory('frontend')">
-        <div class="category-icon-wrapper">
-          <div class="category-icon">🎨</div>
-        </div>
+        <div class="category-icon-wrapper"><div class="category-icon">🎨</div></div>
         <div class="category-title">프론트엔드</div>
       </div>
       <div class="category-item" @click="filterByCategory('app')">
-        <div class="category-icon-wrapper">
-          <div class="category-icon">📱</div>
-        </div>
+        <div class="category-icon-wrapper"><div class="category-icon">📱</div></div>
         <div class="category-title">앱개발</div>
       </div>
       <div class="category-item" @click="filterByCategory('design')">
-        <div class="category-icon-wrapper">
-          <div class="category-icon">🎭</div>
-        </div>
+        <div class="category-icon-wrapper"><div class="category-icon">🎭</div></div>
         <div class="category-title">디자인</div>
       </div>
       <div class="category-item" @click="filterByCategory('infra')">
-        <div class="category-icon-wrapper">
-          <div class="category-icon">☁️</div>
-        </div>
+        <div class="category-icon-wrapper"><div class="category-icon">☁️</div></div>
         <div class="category-title">인프라</div>
       </div>
     </section>
@@ -60,25 +50,33 @@
         <div class="projects-section">
           <div class="projects-container">
             <div class="project-list">
-              <ProjectCard
-                  v-for="project in pagedProjects"
-                  :key="project.id"
-                  :project="project"
-                  @apply="openApplyModal"
-              />
+              <!-- 로딩/에러/빈 상태 처리 -->
+              <div v-if="loading">로딩 중…</div>
+              <div v-else-if="error">오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>
+              <template v-else>
+                <ProjectCard
+                    v-for="project in projects"
+                    :key="project.id"
+                    :project="project"
+                    @apply="openApplyModal"
+                />
+                <div v-if="!projects?.length">표시할 프로젝트가 없습니다.</div>
+              </template>
             </div>
           </div>
 
-          <!-- 페이지네이션 버튼 (아래 직접 구현) -->
+          <!-- 서버 페이징 기반 페이지네이션 -->
           <div class="pagination-bar">
-            <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">이전</button>
+            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
             <button
-                v-for="page in totalPages"
-                :key="page"
-                :class="{ active: currentPage === page }"
-                @click="goToPage(page)"
-            >{{ page }}</button>
-            <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">다음</button>
+                v-for="p in totalPages"
+                :key="p"
+                :class="{ active: page === p }"
+                @click="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
           </div>
         </div>
       </div>
@@ -105,98 +103,88 @@
   </div>
 </template>
 
-<script>
-import SearchSection from '@/components/projectComponents/SearchSection.vue'
-import SortOptions from '@/components/projectComponents/SortOptions.vue'
-import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
-import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
-import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
-import { projects } from '@/components/data/projects'
+<script setup>
+import { ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 
-export default {
-  name: 'ProjectListPage',
-  components: {
-    SearchSection,
-    SortOptions,
-    ProjectCard,
-    PaginationComponent,
-    ApplyModal
-  },
-  data() {
-    return {
-      selectedCategory: null,
-      showApplyModal: false,
-      showSuccessToast: false,
-      showFailToast: false,
-      selectedProject: null,
-      userPortfolio: {
-        isPublic: true,
-        lastUpdated: '2024-07-29'
-      },
-      currentPage: 1,
-      pageSize: 4,
-      projects,
-    }
-  },
-  computed: {
-    filteredProjects() {
-      if (!this.selectedCategory) return this.projects
-      return this.projects.filter(project => project.category === this.selectedCategory)
+import SearchSection from '@/components/projectComponents/SearchSection.vue';
+import SortOptions from '@/components/projectComponents/SortOptions.vue';
+import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
+import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+
+import { useProjects } from '@/composables/useProjects';
+
+// 라우터
+const router = useRouter();
+const route = useRoute();
+
+// 서버 페이징/필터 상태 (URL 쿼리와 동기화)
+const {
+  items: projects,
+  totalPages,
+  page,
+  loading,
+  error,
+  setCategory,
+  goToPage,
+} = useProjects({
+  q: route.query.q ?? '',
+  category: route.query.category ?? null,
+  sort: route.query.sort ?? null,
+  page: Number(route.query.page ?? 1),
+  size: 8,
+});
+
+// URL 쿼리 동기화 (새로고침/공유 시 유리)
+watch([page], () => {
+  router.replace({
+    query: {
+      ...route.query,
+      page: page.value !== 1 ? page.value : undefined,
     },
-    totalPages() {
-      return Math.ceil(this.filteredProjects.length / this.pageSize)
-    },
-    pagedProjects() {
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
-      return this.filteredProjects.slice(start, end)
-    }
-  },
-  methods: {
-    goToCreateProject() {
-      this.$router.push({ name: 'ProjectCreate' })
-    },
-    filterByCategory(category) {
-      // 카테고리 바뀔 때마다 첫 페이지로 이동
-      this.selectedCategory = this.selectedCategory === category ? null : category
-      this.currentPage = 1
-    },
-    goToPage(page) {
-      if (page < 1 || page > this.totalPages) return
-      this.currentPage = page
-    },
-    openApplyModal(project) {
-      if (!project) return
-      this.selectedProject = {
-        title: project.title,
-        description: project.description,
-        projectId: project.id
-      }
-      this.showApplyModal = true
-    },
-    closeApplyModal() {
-      this.showApplyModal = false
-      this.selectedProject = null
-    },
-    goToPortfolioSettings() {
-      this.closeApplyModal()
-      this.$router.push({ name: 'PortfolioSettings' })
-    },
-    handleApplicationSubmitted(data) {
-      if (!data || !data.applicationForm) return
-      const project = this.projects.find(p => p.id === this.selectedProject.projectId)
-      if (project) {
-        project.appliedCount += 1
-      }
-      this.showSuccessToast = true
-      setTimeout(() => {
-        this.showSuccessToast = false
-      }, 3000)
-      this.closeApplyModal()
-    }
-  }
-}
+  });
+});
+
+// 페이지 내 액션들
+const goToCreateProject = () => router.push({ name: 'ProjectCreate' });
+const filterByCategory = (c) => setCategory(c);
+
+// 모달/토스트 상태
+const showApplyModal = ref(false);
+const showSuccessToast = ref(false);
+const showFailToast = ref(false);
+const selectedProject = ref(null);
+const userPortfolio = ref({ isPublic: true, lastUpdated: '2024-07-29' });
+
+const openApplyModal = (project) => {
+  if (!project) return;
+  selectedProject.value = {
+    title: project.title,
+    description: project.description,
+    projectId: project.id,
+  };
+  showApplyModal.value = true;
+};
+
+const closeApplyModal = () => {
+  showApplyModal.value = false;
+  selectedProject.value = null;
+};
+
+const goToPortfolioSettings = () => {
+  closeApplyModal();
+  router.push({ name: 'PortfolioSettings' });
+};
+
+// 실제 지원 API 연결 지점 (지금은 UI 성공 토스트만)
+const handleApplicationSubmitted = async () => {
+  // await applyProject(selectedProject.value.projectId, formData)  ← 연결 예정
+  showSuccessToast.value = true;
+  setTimeout(() => (showSuccessToast.value = false), 3000);
+  closeApplyModal();
+};
 </script>
+
 
 <style scoped>
 .pagination-bar {

@@ -10,7 +10,7 @@
       <div class="content-wrapper">
         <div class="main-content">
           <div class="header-section">
-            <ProjectHeader :project="project" />
+            <ProjectHeader v-if="project" :project="project" />
             <!-- 지원하기 버튼 추가 -->
             <div class="apply-button-container">
               <button
@@ -22,7 +22,7 @@
               </button>
             </div>
           </div>
-          <div class="integrated-content-card">
+          <div class="integrated-content-card"  v-if="project">
             <div class="tab-section">
               <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
             </div>
@@ -66,113 +66,122 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { projects } from '@/components/data/projects'
-import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue'
-import TabNavigation from '@/components/projectComponents/TabNavigation.vue'
-import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue'
-import ProjectComment from '@/components/projectComponents/ProjectComment.vue'
-import ApplyModal from '@/components/projectComponents/ApplyModal.vue'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue';
+import TabNavigation from '@/components/projectComponents/TabNavigation.vue';
+import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue';
+import ProjectComment from '@/components/projectComponents/ProjectComment.vue';
+import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 
-const route = useRoute()
-const router = useRouter()
-const projectId = Number(route.params.id)
-const project = computed(() => projects.find(p => p.id === projectId))
+// 더미 데이터 제거하고 API 사용
+import { getProject } from '@/api/projects';
+
+const route = useRoute();
+const router = useRouter();
+const projectId = ref(Number(route.params.id));
+
+const project = ref(null);
+const loading = ref(false);
+const error = ref(null);
+
+const load = async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const { data } = await getProject(projectId.value);
+    // 백 DTO: ProjectRecruitmentResponse { projectId, title, description, ... }
+    // UI에서 id로도 쓸 수 있게 통일
+    project.value = { id: data.projectId ?? data.id, ...data };
+  } catch (e) {
+    console.error(e);
+    error.value = e;
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(load);
+watch(
+    () => route.params.id,
+    (v) => {
+      projectId.value = Number(v);
+      load();
+    }
+);
 
 // 탭 관리
-const activeTab = ref('content')
+const activeTab = ref('content');
 function handleTabChange(tab) {
-  activeTab.value = tab
-  const sectionMap = { content: 'content-section', comment: 'comment-section' }
-  const targetId = sectionMap[tab]
-  if (!targetId) return
+  activeTab.value = tab;
+  const sectionMap = { content: 'content-section', comment: 'comment-section' };
+  const targetId = sectionMap[tab];
+  if (!targetId) return;
   setTimeout(() => {
-    const el = document.getElementById(targetId)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, 20)
+    const el = document.getElementById(targetId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 20);
 }
 
 // 지원 모달 관련
-const showApplyModal = ref(false)
-const showSuccessToast = ref(false)
+const showApplyModal = ref(false);
+const showSuccessToast = ref(false);
 
-// 모달에 전달할 프로젝트 정보
 const modalProjectInfo = computed(() => ({
   title: project.value?.title || '',
-  description: project.value?.description || ''
-}))
+  description: project.value?.description || '',
+}));
 
-// 사용자 포트폴리오 정보
 const userPortfolio = ref({
   isPublic: true,
-  lastUpdated: '2024-07-20'
-})
+  lastUpdated: '2024-07-20',
+});
 
 function openApplyModal() {
-  showApplyModal.value = true
+  showApplyModal.value = true;
 }
-
 function closeApplyModal() {
-  showApplyModal.value = false
+  showApplyModal.value = false;
 }
 
-// 지원서 제출 처리
+// (연결 보류) 실제 지원 API는 나중에 붙여도 OK — 지금은 상세 연동만
 async function handleApplicationSubmit(applicationData) {
   try {
-    console.log('지원서 데이터:', applicationData)
-    
-    // 여기서 실제 API 호출
-    // await applyToProject(applicationData)
-    
-    // 성공 토스트 표시
-    showSuccessToast.value = true
-    setTimeout(() => { 
-      showSuccessToast.value = false 
-    }, 3000)
-    
+    console.log('지원서 데이터:', applicationData);
+    // 예: await applyProject(projectId.value, payload)
+    showSuccessToast.value = true;
+    setTimeout(() => (showSuccessToast.value = false), 3000);
   } catch (error) {
-    console.error('지원 실패:', error)
-    // 에러 처리
+    console.error('지원 실패:', error);
   }
 }
 
-// 지원 에러 처리
 function handleApplicationError(error) {
-  console.error('지원 처리 중 에러:', error)
-  // 에러 메시지 표시 로직
+  console.error('지원 처리 중 에러:', error);
 }
 
-// 포트폴리오 설정 페이지로 이동
 function goToPortfolioSettings() {
-  router.push('/portfolio/settings')
+  router.push('/portfolio/settings');
 }
 
-// 작성자 연락하기 처리
 function handleContactAuthor(author) {
-  console.log('작성자 연락하기:', author)
-  // 여기서 연락하기 로직 구현 (메시지 모달, 채팅 등)
+  console.log('작성자 연락하기:', author);
 }
 
-// 작성자 포트폴리오 보기 처리
 function handleViewPortfolio(author) {
-  console.log('포트폴리오 보기:', author)
-  
-  // 작성자의 포트폴리오 페이지로 이동 (숫자 userId 사용)
   if (author && author.userId) {
-    router.push(`/portfolio/${author.userId}`)
+    router.push(`/portfolio/${author.userId}`);
   } else {
-    // fallback: 일반 포트폴리오 페이지로 이동
-    router.push('/portfolio')
+    router.push('/portfolio');
   }
 }
 
-// ESC 키로 모달 닫기
+// ESC로 모달 닫기
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && showApplyModal.value) {
-    closeApplyModal()
+    closeApplyModal();
   }
-})
+});
 </script>
 
 <style scoped>
