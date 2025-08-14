@@ -112,7 +112,7 @@
               <!-- 카드 푸터 - 역할별 액션 -->
               <div class="card-footer">
                 <!-- PM 권한이 있고 모집 중인 프로젝트 -->
-                <div v-if="project.status === 'RECRUITING'" class="pm-actions">
+                <div v-if="project.isPM && project.status === 'RECRUITING'" class="pm-actions">
                   <button 
                     class="action-btn applicants-btn"
                     @click="showApplicants(project.projectId)"
@@ -121,33 +121,33 @@
                     <span class="btn-icon">👤</span>
                     지원자 확인 ({{ project.appliedCount }})
                   </button>
-                  <button class="action-btn view-btn" @click="viewProject(project.projectId)">
-                    <span class="btn-icon">👁️</span>
-                    프로젝트 보기
+                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                    <span class="btn-icon">⚙️</span>
+                    관리
                   </button>
                 </div>
 
-                <!-- 진행 중인 프로젝트 -->
-                <div v-else-if="project.status === 'in-progress'" class="progress-actions">
-                  <button class="action-btn view-btn" @click="viewProject(project.projectId)">
-                    <span class="btn-icon">👁️</span>
-                    프로젝트 보기
+                <!-- PM 권한이 있고 진행 중인 프로젝트 -->
+                <div v-else-if="project.isPM && project.status === 'IN_PROGRESS'" class="progress-actions">
+                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                    <span class="btn-icon">⚙️</span>
+                    관리
                   </button>
                 </div>
 
-                <!-- 완료된 프로젝트 -->
-                <div v-else-if="project.status === 'completed'" class="completed-actions">
+                <!-- PM 권한이 있고 완료된 프로젝트 -->
+                <div v-else-if="project.isPM && project.status === 'COMPLETED'" class="completed-actions">
                   <button class="action-btn review-btn" @click="showTeamReview(project.projectId)">
                     <span class="btn-icon">⭐</span>
                     팀원 리뷰 작성
                   </button>
-                  <button class="action-btn view-btn" @click="viewProject(project.projectId)">
-                    <span class="btn-icon">👁️</span>
-                    프로젝트 보기
+                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                    <span class="btn-icon">⚙️</span>
+                    관리
                   </button>
                 </div>
 
-                <!-- 기본 액션 -->
+                <!-- PM 권한이 없는 경우 (기본 액션) -->
                 <div v-else class="default-actions">
                   <button class="action-btn view-btn" @click="viewProject(project.projectId)">
                     <span class="btn-icon">👁️</span>
@@ -366,8 +366,14 @@ const teamMembers = ref([
 // API 호출
 onMounted(async () => {
   try {
-    const response = await listProjects({ userId: 1 });
-    projects.value = response.data; 
+    const response = await listProjects({ userId: 1 }); // Hardcoded userId 1
+    // Assuming the current user's ID for PM check is 1 (as per listProjects call)
+    const currentUserId = 1; 
+
+    projects.value = response.data.map(project => ({
+      ...project,
+      isPM: project.teamLeaderId === currentUserId // Add isPM property
+    }));
   } catch (error) {
     console.error("내 프로젝트 목록을 불러오는데 실패했습니다:", error);
   } finally {
@@ -552,6 +558,10 @@ const submitReviews = () => {
   console.log('리뷰 제출:', teamMembers.value)
   closeTeamReviewModal()
 }
+
+const goToManagePage = (projectId) => {
+  router.push({ name: 'ProjectManage', params: { projectId: projectId } });
+};
 </script>
 
 <style scoped>
