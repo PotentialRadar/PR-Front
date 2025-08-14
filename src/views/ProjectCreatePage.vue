@@ -388,7 +388,7 @@ export default {
         // 4) 파트 변환
         const parts = partRows.value
             .filter(r => r.part && Number(r.count) > 0)
-            .map(r => ({ part: r.part, recruitCount: Number(r.count) }))
+            .map(r => ({ partName: r.part, recruitCount: Number(r.count) }))
 
         // 5) 요청 바디
         const body = {
@@ -400,7 +400,7 @@ export default {
           fileUrl,
           status: 'RECRUITING',
           techStacks,
-          parts,                                // 파트별 모집
+          recruitmentParts: parts,              // 파트별 모집
           recruitCount: totalRecruitCount.value // 총합
         }
 

@@ -336,6 +336,8 @@ export default {
   color: #444;
   margin-bottom: 24px;
   font-size: 15px;
+  white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
+  word-wrap: break-word; /* Break long words */
 }
 
 /* 태그 섹션 */

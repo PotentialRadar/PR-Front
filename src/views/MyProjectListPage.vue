@@ -180,21 +180,23 @@
         </div>
         
         <div class="modal-body">
-          <div v-if="applicantsList && applicantsList.length > 0" class="applicants-list">
+          <div v-if="sortedApplicantsList && sortedApplicantsList.length > 0" class="applicants-list">
             <div
-              v-for="applicant in applicantsList"
+              v-for="applicant in sortedApplicantsList"
               :key="applicant.id"
-              class="applicant-card"
+              :class="['applicant-card', { 'processed': applicant.status !== 'PENDING' }]"
             >
               <div class="applicant-header">
                 <div class="applicant-profile">
                   <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.userId}`" :alt="applicant.userName" class="applicant-avatar" />
                   <div class="applicant-info">
                     <h4 class="applicant-name">{{ applicant.userName }}</h4>
-                    <p class="applicant-title">{{ applicant.techStack }}</p> <!-- 임시로 techStack 표시 -->
+                    <p class="applicant-title">{{ getPartLabel(applicant.techPart) }}</p> <!-- 기술 파트 표시 -->
                   </div>
                 </div>
                 <div class="applicant-actions">
+                  <span v-if="applicant.status === 'ACCEPTED'" class="status-badge accepted">수락됨</span>
+                  <span v-else-if="applicant.status === 'REJECTED'" class="status-badge rejected">거절됨</span>
                   <button 
                     class="portfolio-btn"
                     @click="viewApplicantPortfolio(applicant.userId)"
@@ -212,6 +214,7 @@
               
               <div class="application-actions">
                 <button 
+                  v-if="applicant.status === 'PENDING'"
                   class="accept-btn"
                   @click="acceptApplicant(applicant.id)"
                 >
@@ -219,6 +222,7 @@
                   수락
                 </button>
                 <button 
+                  v-if="applicant.status === 'PENDING'"
                   class="reject-btn"
                   @click="rejectApplicant(applicant.id)"
                 >
@@ -402,7 +406,22 @@ const filteredProjects = computed(() => {
   return filtered
 })
 
+import { PART_OPTIONS } from '@/constants/parts'; // <-- 이 줄을 추가합니다.
+
+const sortedApplicantsList = computed(() => {
+  // PENDING 상태를 먼저, 그 다음 ACCEPTED, REJECTED 순으로 정렬
+  const statusOrder = { PENDING: 1, ACCEPTED: 2, REJECTED: 3 };
+  return [...applicantsList.value].sort((a, b) => {
+    return statusOrder[a.status] - statusOrder[b.status];
+  });
+});
+
 // 메서드
+const getPartLabel = (partValue) => {
+  const part = PART_OPTIONS.find(option => option.value === partValue);
+  return part ? part.label : partValue;
+};
+
 const setStatus = (status) => {
   selectedStatus.value = status
 }
@@ -478,12 +497,48 @@ const viewApplicantPortfolio = (userId) => {
   router.push(`/portfolio/${userId}`)
 }
 
-const acceptApplicant = (applicantId) => {
-  console.log('지원자 수락:', applicantId)
+import { updateMemberStatus } from '@/api/projectMember.js'; // <-- 이 줄을 추가합니다.
+
+// ... (기존 코드) ...
+
+const acceptApplicant = async (applicantId) => {
+  try {
+    const projectId = selectedProject.value?.projectId;
+    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
+    
+    await updateMemberStatus(projectId, applicantId, 1, "ACCEPTED");
+    alert("지원자가 성공적으로 수락되었습니다.");
+    
+    // 로컬 목록 업데이트
+    const applicant = applicantsList.value.find(a => a.id === applicantId);
+    if (applicant) {
+      applicant.status = "ACCEPTED"; // 상태 업데이트
+    }
+    // 목록 정렬은 computed 속성에서 처리
+  } catch (error) {
+    console.error("지원자 수락 실패:", error);
+    alert("지원자 수락에 실패했습니다.");
+  }
 }
 
-const rejectApplicant = (applicantId) => {
-  console.log('지원자 거절:', applicantId)
+const rejectApplicant = async (applicantId) => {
+  try {
+    const projectId = selectedProject.value?.projectId;
+    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
+
+    await updateMemberStatus(projectId, applicantId, 1, "REJECTED");
+    alert("지원자가 성공적으로 거절되었습니다.");
+
+    // 로컬 목록 업데이트
+    const applicant = applicantsList.value.find(a => a.id === applicantId);
+    if (applicant) {
+      applicant.status = "REJECTED"; // 상태 업데이트
+    }
+    // 목록 정렬은 computed 속성에서 처리
+  } catch (error) {
+    console.error("지원자 거절 실패:", error);
+    alert("지원자 거절에 실패했습니다.");
+  }
 }
 
 const setRating = (memberId, rating) => {
