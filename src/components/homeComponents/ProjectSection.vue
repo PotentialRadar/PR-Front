@@ -15,7 +15,7 @@
 
       <div class="filter-tabs">
         <div class="tab" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">전체</div>
-        <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">🤖 AI추천</div>
+        <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">AI 추천</div>
         <div class="tab" :class="{ active: activeTab === 'frontend' }" @click="activeTab = 'frontend'">프론트엔드</div>
         <div class="tab" :class="{ active: activeTab === 'backend' }" @click="activeTab = 'backend'">백엔드</div>
         <div class="tab" :class="{ active: activeTab === 'app' }" @click="activeTab = 'app'">앱 개발</div>
@@ -157,6 +157,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import api from '@/api/axios'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -170,136 +171,17 @@ const hasUserTechStack = computed(() => {
   // TODO: 실제 사용자 기술스택 정보 확인 필요
   // return userStore.user?.techStacks?.length > 0
   
-  // 임시 테스트용 - 로딩 상태 확인을 위해 true로 설정
-  return true // 로딩 테스트를 위해 임시로 true
+  // API 테스트를 위해 임시로 true로 설정
+  return true // 실제로는 사용자 기술스택 설정 여부 확인
 })
 
-const projects = ref([
-  {
-    id: 1,
-    title: 'AI 기반 협업툴 백엔드 개발',
-    description: 'AI 추천을 기반으로 한 팀 매칭 서비스의 서버 설계와 구현. Spring Boot와 JWT 기반 인증 시스템, 실시간 AI 추천 엔진과 협업 환경을 구축하며 다양한 클라우드 경험을 쌓을 수 있습니다.',
-    techStacks: [
-      { techStackName: 'Spring Boot' },
-      { techStackName: 'JWT' },
-      { techStackName: 'PostgreSQL' },
-      { techStackName: 'Redis' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-01',
-    endDate: '2024-11-01',
-    recruitCount: 3,
-    appliedCount: 8,
-    deadline: 'D-16',
-    category: 'backend',
-    viewCount: 142,
-    isFavorite: false
-  },
-  {
-    id: 2,
-    title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
-    description: '안드로이드 앱 개발 및 Google Play 스토어 등록 프로젝트입니다. 기존 락스크린 앱을 최신 Android 버전에 맞게 리팩토링하고, 배포 및 마켓 출시까지 전 과정을 함께합니다.',
-    techStacks: [
-      { techStackName: 'Android' },
-      { techStackName: 'Kotlin' },
-      { techStackName: 'Google Play' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-05',
-    endDate: '2024-10-05',
-    recruitCount: 6,
-    appliedCount: 12,
-    deadline: 'D-13',
-    category: 'app',
-    viewCount: 89,
-    isFavorite: true
-  },
-  {
-    id: 3,
-    title: 'Web 프레임워크 및 UI 시스템 고도화',
-    description: '현대적인 웹 프론트엔드 시스템을 구축하는 프로젝트입니다. React, TypeScript, StoryBook을 활용하여 UI 시스템 설계와 성능 최적화까지 실무처럼 경험할 수 있습니다.',
-    techStacks: [
-      { techStackName: 'React' },
-      { techStackName: 'TypeScript' },
-      { techStackName: 'Vite' },
-      { techStackName: 'StoryBook' },
-      { techStackName: 'CSS-in-JS' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-10',
-    endDate: '2024-12-31',
-    recruitCount: 3,
-    appliedCount: 5,
-    deadline: 'D-16',
-    category: 'frontend',
-    viewCount: 203,
-    isFavorite: false
-  },
-  {
-    id: 4,
-    title: 'E-commerce 플랫폼 디자인 시스템',
-    description: '사용자 친화적인 온라인 쇼핑몰 UI/UX 디자인 프로젝트. Figma와 Prototyping을 통한 디자인 시스템 설계, 실무 중심의 UI/UX 프로젝트 경험 제공.',
-    techStacks: [
-      { techStackName: 'UI/UX' },
-      { techStackName: 'Figma' },
-      { techStackName: '디자인시스템' },
-      { techStackName: 'Prototyping' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-20',
-    endDate: '2024-11-30',
-    recruitCount: 4,
-    appliedCount: 7,
-    deadline: 'D-8',
-    category: 'design',
-    viewCount: 156,
-    isFavorite: false
-  },
-  {
-    id: 5,
-    title: 'MSA 기반 클라우드 인프라 구축',
-    description: '마이크로서비스 아키텍처와 컨테이너 기반 인프라 구축. Docker, Kubernetes, AWS를 활용한 마이크로서비스 배포 및 운영 자동화를 실습합니다.',
-    techStacks: [
-      { techStackName: 'Docker' },
-      { techStackName: 'Kubernetes' },
-      { techStackName: 'AWS' },
-      { techStackName: 'MSA' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-12',
-    endDate: '2024-12-10',
-    recruitCount: 5,
-    appliedCount: 14,
-    deadline: 'D-20',
-    category: 'infra',
-    viewCount: 321,
-    isFavorite: true
-  },
-  {
-    id: 6,
-    title: 'AI 챗봇 개발',
-    description: '자연어 처리 기반 AI 챗봇 개발 프로젝트. TensorFlow, NLP 기반의 대화형 챗봇을 설계하고 실제 서비스 환경에 배포까지 진행합니다.',
-    techStacks: [
-      { techStackName: 'Python' },
-      { techStackName: 'NLP' },
-      { techStackName: 'TensorFlow' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-18',
-    endDate: '2024-09-30',
-    recruitCount: 2,
-    appliedCount: 6,
-    deadline: 'D-7',
-    category: 'backend',
-    viewCount: 98,
-    isFavorite: false
-  }
-])
+// 임시 하드코딩 데이터 제거 - AI 추천 테스트를 위해
+const projects = ref([])
 
 const filteredProjects = computed(() => {
   if (activeTab.value === 'all') return projects.value
   if (activeTab.value === 'ai') {
-    // 임시 테스트용 - 기술스택만 확인 (로그인 체크 제거)
+    // 임시 테스트용 - 로그인 체크 제거하고 기술스택만 확인
     if (!hasUserTechStack.value) {
       return []
     }
@@ -338,23 +220,97 @@ const isUrgent = (deadline) => {
   return false
 }
 
-// AI 추천 API 호출 시뮬레이션
+// AI 추천 API 호출
 const fetchAIRecommendations = async () => {
+  console.log('🚀 AI 추천 API 호출 시작')
   isLoadingAI.value = true
+  
+  // 최소 로딩 시간 보장 (UX 개선)
+  const minLoadingTime = 1500 // 1.5초
+  const startTime = Date.now()
+  
   try {
-    // TODO: 실제 API 호출로 대체
-    // const response = await api.get('/api/projects/ai-recommendations')
-    // return response.data
+    // 실제 AI 추천 API 호출
+    const requestBody = {
+      userId: userStore.userId || 1, // 임시로 사용자 ID 1 사용
+      techStacks: [
+        // TODO: 실제 사용자 기술스택 데이터로 교체
+        // 임시 더미 데이터
+        { name: "JavaScript", level: 4 },
+        { name: "React", level: 3 },
+        { name: "Node.js", level: 3 },
+        { name: "Python", level: 2 }
+      ]
+    }
+
+    console.log('📤 요청 데이터:', requestBody)
+    console.log('🔗 요청 URL: /api/recommend/projects')
     
-    // 임시 로딩 시뮬레이션 (1.5초)
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // 직접 백엔드 호출 (아까 잘 되던 방식)
+    console.log('🔄 직접 백엔드 호출')
     
-    // 임시로 조회수 높은 순으로 정렬하여 반환
-    return [...projects.value].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    const response = await fetch('http://localhost:8082/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    console.log('✅ API 응답:', response)
+    const responseData = await response.json()
+    console.log('📊 응답 데이터:', responseData)
+
+    console.log('📊 응답 데이터 타입:', typeof responseData)
+    console.log('📊 응답 데이터 배열 여부:', Array.isArray(responseData))
+    
+    // 응답이 배열인지 확인 후 처리
+    const projects = Array.isArray(responseData) ? responseData : []
+    console.log('📋 처리할 프로젝트 목록:', projects)
+    
+    if (projects.length === 0) {
+      console.log('⚠️ 추천 프로젝트가 없습니다')
+      return []
+    }
+    
+    // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
+    return projects.map(project => ({
+      id: project.projectId,
+      title: project.title,
+      description: project.description,
+      techStacks: project.projectTechStacks?.map(tech => ({ techStackName: tech })) || [],
+      status: '모집중', // 기본값
+      startDate: '2024-01-01', // 기본값
+      endDate: '2024-12-31', // 기본값
+      recruitCount: 3, // 기본값
+      appliedCount: Math.floor(Math.random() * 10), // 랜덤값
+      deadline: `D-${Math.floor(Math.random() * 30)}`, // 랜덤값
+      category: 'ai', // AI 추천 카테고리
+      viewCount: Math.floor(Math.random() * 200), // 랜덤값
+      isFavorite: false,
+      matchScore: project.matchScore // AI 점수
+    }))
+    
   } catch (error) {
-    console.error('AI 추천 조회 실패:', error)
+    console.error('❌ AI 추천 조회 실패:', error)
+    console.error('❌ 에러 세부사항:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config
+    })
+    // 에러 발생 시 빈 배열 반환 
     return []
   } finally {
+    // 최소 로딩 시간 보장
+    const elapsedTime = Date.now() - startTime
+    const remainingTime = Math.max(0, minLoadingTime - elapsedTime)
+    
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime))
+    }
+    
+    console.log('🔚 AI 추천 API 호출 완료')
     isLoadingAI.value = false
   }
 }
@@ -366,12 +322,20 @@ const goToDetail = (project) => {
 
 // AI 탭 선택 시마다 새로운 추천 데이터 불러오기
 watch(activeTab, async (newTab) => {
-  // 임시 테스트용 - 로그인 체크 제거하고 기술스택만 확인
+  console.log('🔄 탭 변경:', newTab)
+  console.log('🔐 로그인 상태:', userStore.isLoggedIn)
+  console.log('⚙️ 기술스택 설정:', hasUserTechStack.value)
+  
+  // 임시 테스트용 - 로그인 체크 제거 (API 테스트를 위해)
   if (newTab === 'ai' && hasUserTechStack.value) {
+    console.log('✅ AI 추천 조건 만족 - API 호출 시작')
     // 캐싱 제거 - 매번 새로운 추천을 받도록 변경
     const recommendations = await fetchAIRecommendations()
+    console.log('📋 받은 추천 데이터:', recommendations)
     aiRecommendedProjects.value = recommendations
     hasLoadedAIOnce.value = true // 로드 완료 표시
+  } else {
+    console.log('❌ AI 추천 조건 불만족')
   }
 })
 </script>

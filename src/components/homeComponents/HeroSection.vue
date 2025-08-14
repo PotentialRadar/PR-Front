@@ -272,8 +272,8 @@ function handleMouseLeave() {
   gap: 20px;
   scrollbar-width: none; /* Firefox */
   
-  width: 100vw;           /* 💡 화면 전체 너비 */
-  max-width: none;        /* 💡 최대 너비 제한 제거 */
+  width: 100%;           /* 💡 화면 전체 너비 */
+  max-width: 100%;        /* 💡 최대 너비 제한 제거 */
   min-height: 80px;       /* 최소 높이 추가 */
   padding: 20px 0;        /* 상하 패딩 추가 */
   background: none; /* 디버깅용 배경색 */
