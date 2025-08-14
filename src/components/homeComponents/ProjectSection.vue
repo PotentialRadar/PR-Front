@@ -230,24 +230,50 @@ const fetchAIRecommendations = async () => {
   const startTime = Date.now()
   
   try {
-    // 실제 AI 추천 API 호출
-    const requestBody = {
-      userId: userStore.userId || 1, // 임시로 사용자 ID 1 사용
-      techStacks: [
-        // TODO: 실제 사용자 기술스택 데이터로 교체
-        // 임시 더미 데이터
+    // 임시 테스트용 - 다양한 기술스택 조합 중 랜덤 선택
+    const testTechStacks = [
+      // JavaScript + React 사용자 (프로젝트 3, 4와 매칭 예상)
+      [
         { name: "JavaScript", level: 4 },
         { name: "React", level: 3 },
-        { name: "Node.js", level: 3 },
-        { name: "Python", level: 2 }
+        { name: "Node.js", level: 2 }
+      ],
+      // Python 개발자 (프로젝트 6, 11, 20과 매칭 예상)  
+      [
+        { name: "Python", level: 4 },
+        { name: "Django", level: 3 },
+        { name: "PostgreSQL", level: 2 }
+      ],
+      // Vue.js 개발자 (프로젝트 1, 5와 매칭 예상)
+      [
+        { name: "Vue.js", level: 4 },
+        { name: "TypeScript", level: 3 },
+        { name: "Docker", level: 2 }
+      ],
+      // Java + Spring 개발자 (프로젝트 2, 7과 매칭 예상)
+      [
+        { name: "Java", level: 4 },
+        { name: "Spring Boot", level: 4 },
+        { name: "PostgreSQL", level: 3 }
+      ],
+      // 모바일 개발자 (프로젝트 9, 10과 매칭 예상)
+      [
+        { name: "React Native", level: 3 },
+        { name: "TypeScript", level: 3 },
+        { name: "Firebase", level: 2 }
       ]
-    }
-
-    console.log('📤 요청 데이터:', requestBody)
-    console.log('🔗 요청 URL: /api/recommend/projects')
+    ]
     
-    // 직접 백엔드 호출 (아까 잘 되던 방식)
-    console.log('🔄 직접 백엔드 호출')
+    // 랜덤하게 기술스택 선택하여 다양한 추천 결과 확인
+    const randomIndex = Math.floor(Math.random() * testTechStacks.length)
+    const selectedTechStacks = testTechStacks[randomIndex]
+    
+    console.log(`\n🎯 테스트 케이스 ${randomIndex + 1}: ${selectedTechStacks.map(t => t.name).join(', ')}`)
+    
+    const requestBody = {
+      userId: userStore.userId || 1,
+      techStacks: selectedTechStacks
+    }
     
     const response = await fetch('http://localhost:8082/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
       method: 'POST',
@@ -257,21 +283,19 @@ const fetchAIRecommendations = async () => {
       body: JSON.stringify(requestBody)
     })
     
-    console.log('✅ API 응답:', response)
     const responseData = await response.json()
-    console.log('📊 응답 데이터:', responseData)
-
-    console.log('📊 응답 데이터 타입:', typeof responseData)
-    console.log('📊 응답 데이터 배열 여부:', Array.isArray(responseData))
-    
-    // 응답이 배열인지 확인 후 처리
     const projects = Array.isArray(responseData) ? responseData : []
-    console.log('📋 처리할 프로젝트 목록:', projects)
     
     if (projects.length === 0) {
       console.log('⚠️ 추천 프로젝트가 없습니다')
       return []
     }
+    
+    // 📊 추천 결과 요약 출력
+    console.log('📊 추천 결과:')
+    projects.forEach((project, index) => {
+      console.log(`  ${index + 1}. ${project.title} (점수: ${project.matchScore?.toFixed(2) || 'N/A'})`)
+    })
     
     // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
     return projects.map(project => ({
@@ -292,14 +316,7 @@ const fetchAIRecommendations = async () => {
     }))
     
   } catch (error) {
-    console.error('❌ AI 추천 조회 실패:', error)
-    console.error('❌ 에러 세부사항:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: error.config
-    })
-    // 에러 발생 시 빈 배열 반환 
+    console.error('❌ AI 추천 조회 실패:', error.message)
     return []
   } finally {
     // 최소 로딩 시간 보장
@@ -310,7 +327,6 @@ const fetchAIRecommendations = async () => {
       await new Promise(resolve => setTimeout(resolve, remainingTime))
     }
     
-    console.log('🔚 AI 추천 API 호출 완료')
     isLoadingAI.value = false
   }
 }
@@ -322,20 +338,10 @@ const goToDetail = (project) => {
 
 // AI 탭 선택 시마다 새로운 추천 데이터 불러오기
 watch(activeTab, async (newTab) => {
-  console.log('🔄 탭 변경:', newTab)
-  console.log('🔐 로그인 상태:', userStore.isLoggedIn)
-  console.log('⚙️ 기술스택 설정:', hasUserTechStack.value)
-  
-  // 임시 테스트용 - 로그인 체크 제거 (API 테스트를 위해)
   if (newTab === 'ai' && hasUserTechStack.value) {
-    console.log('✅ AI 추천 조건 만족 - API 호출 시작')
-    // 캐싱 제거 - 매번 새로운 추천을 받도록 변경
     const recommendations = await fetchAIRecommendations()
-    console.log('📋 받은 추천 데이터:', recommendations)
     aiRecommendedProjects.value = recommendations
-    hasLoadedAIOnce.value = true // 로드 완료 표시
-  } else {
-    console.log('❌ AI 추천 조건 불만족')
+    hasLoadedAIOnce.value = true
   }
 })
 </script>
