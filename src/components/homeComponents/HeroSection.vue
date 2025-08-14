@@ -128,7 +128,9 @@ const rawPartners = [
 const partners = ref([...rawPartners, ...rawPartners, ...rawPartners])
 const activeFilter = ref('portfolio') // 기본값은 포트폴리오
 
-const techTags = ref(['React', 'Python', 'Node.js', 'Flutter', 'Docker', 'AWS', 'TypeScript', 'Figma'])
+// 실제 검색량 기반 기술스택 순서 API 연결 필요
+// 연결 후 onMounted에서 API 호출하여 techTags.value 업데이트
+const techTags = ref(['JavaScript', 'React', 'Python', 'Java', 'TypeScript', 'Node.js', 'AWS', 'Docker']) // 임시 하드코딩
 
 const carouselRef = ref(null)
 const isHovered = ref(false)
