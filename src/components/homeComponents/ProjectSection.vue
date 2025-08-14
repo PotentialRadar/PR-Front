@@ -295,6 +295,19 @@ const fetchAIRecommendations = async () => {
     console.log('📊 추천 결과:')
     projects.forEach((project, index) => {
       console.log(`  ${index + 1}. ${project.title} (점수: ${project.matchScore?.toFixed(2) || 'N/A'})`)
+      
+      // 🔍 추천 설명 데이터 확인
+      if (project.explanation) {
+        console.log(`    💡 ${project.explanation.simple_explanation || project.explanation.main_reason}`)
+        if (project.explanation.matched_skills?.length > 0) {
+          console.log(`    ✅ 매칭 기술: ${project.explanation.matched_skills.join(', ')}`)
+        }
+        if (project.explanation.growth_opportunities?.length > 0) {
+          console.log(`    🌱 성장 기회: ${project.explanation.growth_opportunities.join(', ')}`)
+        }
+      } else {
+        console.log(`    ❌ explanation 데이터 없음`)
+      }
     })
     
     // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
