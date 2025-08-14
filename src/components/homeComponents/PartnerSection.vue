@@ -107,8 +107,8 @@ const goToPortfolio = (partnerId) => {
 <style scoped>
 .partner-section {
   display: flex;
-  min-height: 447.5px;
-  padding: 50px 0 70px;
+  height: auto;
+  padding: 50px 0 120px;
   justify-content: center;
   align-items: flex-start;
   align-self: stretch;

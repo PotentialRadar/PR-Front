@@ -3,8 +3,8 @@
     
     <main class="main-content">
       <HeroSection />
-      <StatsSection />
       <ProjectSection />
+      <StatsSection />
       <PartnerSection />
     </main>
     
@@ -24,6 +24,7 @@ import FloatingActionButton from '@/components/homeComponents/FloatingActionButt
 <style scoped>
 .home-page {
   min-height: 100vh;
+  margin-bottom: -20px;
   background: #fff;
 }
 

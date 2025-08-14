@@ -101,8 +101,8 @@ function countUp(refVar, target) {
 .stats-section {
   display: flex;
   width: 1320px;
-  height: 462px;
-  padding-top: 90px;
+  height: auto;
+  padding: 100px 0 100px 0;
   justify-content: center;
   align-items: flex-start;
   background: #FFF;

@@ -15,12 +15,14 @@
 
       <div class="filter-tabs">
         <div class="tab" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">전체</div>
+        <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">🤖 AI추천</div>
         <div class="tab" :class="{ active: activeTab === 'frontend' }" @click="activeTab = 'frontend'">프론트엔드</div>
         <div class="tab" :class="{ active: activeTab === 'backend' }" @click="activeTab = 'backend'">백엔드</div>
         <div class="tab" :class="{ active: activeTab === 'app' }" @click="activeTab = 'app'">앱 개발</div>
         <div class="tab" :class="{ active: activeTab === 'design' }" @click="activeTab = 'design'">디자인</div>
         <div class="tab" :class="{ active: activeTab === 'infra' }" @click="activeTab = 'infra'">인프라</div>
       </div>
+
 
       <transition name="slide-fade" mode="out-in">
         <div class="projects-grid" :key="activeTab + '-' + filteredProjects.length">
@@ -33,7 +35,9 @@
                       <span>{{ project.status }}</span>
                     </div>
                     <div class="title-container">
-                      <h3 class="project-title">{{ project.title }}</h3>
+                      <h3 class="project-title">
+                        {{ project.title.length > 40 ? project.title.slice(0, 40) + '...' : project.title }}
+                      </h3>
                     </div>
                   </div>
                 </div>
@@ -50,7 +54,7 @@
 
               <div class="description-section" v-if="project.description">
                 <p class="project-description">
-                  {{ project.description }}
+                  {{ project.description.length > 100 ? project.description.slice(0, 100) + '...' : project.description }}
                 </p>
               </div>
 
@@ -116,7 +120,32 @@
           </template>
           
           <template v-else>
-            <div class="no-projects" key="no-projects">등록된 프로젝트가 없습니다.</div>
+            <div class="no-projects" key="no-projects">
+              <div v-if="activeTab === 'ai' && isLoadingAI" class="ai-loading-message">
+                <div class="loading-spinner"></div>
+                <h3>🤖 AI가 당신에게 맞는 프로젝트를 찾고 있습니다...</h3>
+                <p>사용자의 기술스택과 관심사를 분석하여<br>최적의 프로젝트를 추천해드리고 있어요.</p>
+              </div>
+              <div v-else-if="false" class="ai-setup-message">
+                <div class="ai-setup-icon">🤖</div>
+                <h3>AI 추천을 위해 로그인이 필요합니다</h3>
+                <p>개인 맞춤형 프로젝트 추천을 받으려면 먼저 로그인해주세요.</p>
+                <button class="setup-button" @click="router.push('/login')">
+                  로그인하기
+                </button>
+              </div>
+              <div v-else-if="activeTab === 'ai' && !hasUserTechStack" class="ai-setup-message">
+                <div class="ai-setup-icon">⚙️</div>
+                <h3>기술스택 설정이 필요합니다</h3>
+                <p>AI가 당신에게 맞는 프로젝트를 추천하려면<br>마이페이지에서 관심 기술스택을 설정해주세요.</p>
+                <button class="setup-button" @click="router.push('/myPage/edit-profile')">
+                  기술스택 설정하기
+                </button>
+              </div>
+              <div v-else-if="activeTab !== 'ai' || (!isLoadingAI && hasLoadedAIOnce && aiRecommendedProjects.length === 0)">
+                등록된 프로젝트가 없습니다.
+              </div>
+            </div>
           </template>
         </div>
       </transition>
@@ -125,11 +154,25 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 const activeTab = ref('all')
+const isLoadingAI = ref(false)
+const aiRecommendedProjects = ref([])
+const hasLoadedAIOnce = ref(false) // AI 추천을 한 번이라도 로드했는지 추적
+
+// 사용자 기술스택 설정 여부 확인 (임시 - 실제로는 userStore에서 가져와야 함)
+const hasUserTechStack = computed(() => {
+  // TODO: 실제 사용자 기술스택 정보 확인 필요
+  // return userStore.user?.techStacks?.length > 0
+  
+  // 임시 테스트용 - 로딩 상태 확인을 위해 true로 설정
+  return true // 로딩 테스트를 위해 임시로 true
+})
 
 const projects = ref([
   {
@@ -255,6 +298,18 @@ const projects = ref([
 
 const filteredProjects = computed(() => {
   if (activeTab.value === 'all') return projects.value
+  if (activeTab.value === 'ai') {
+    // 임시 테스트용 - 기술스택만 확인 (로그인 체크 제거)
+    if (!hasUserTechStack.value) {
+      return []
+    }
+    // 로딩 중일 때는 빈 배열 (로딩 메시지가 표시됨)
+    if (isLoadingAI.value) {
+      return []
+    }
+    // 로딩이 끝났고 추천 결과가 있으면 표시
+    return aiRecommendedProjects.value
+  }
   return projects.value.filter(p => p.category === activeTab.value)
 })
 
@@ -283,10 +338,42 @@ const isUrgent = (deadline) => {
   return false
 }
 
+// AI 추천 API 호출 시뮬레이션
+const fetchAIRecommendations = async () => {
+  isLoadingAI.value = true
+  try {
+    // TODO: 실제 API 호출로 대체
+    // const response = await api.get('/api/projects/ai-recommendations')
+    // return response.data
+    
+    // 임시 로딩 시뮬레이션 (1.5초)
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // 임시로 조회수 높은 순으로 정렬하여 반환
+    return [...projects.value].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+  } catch (error) {
+    console.error('AI 추천 조회 실패:', error)
+    return []
+  } finally {
+    isLoadingAI.value = false
+  }
+}
+
 const goToDetail = (project) => {
   project.viewCount = (project.viewCount || 0) + 1
   router.push(`/projects/${project.id}`)
 }
+
+// AI 탭 선택 시마다 새로운 추천 데이터 불러오기
+watch(activeTab, async (newTab) => {
+  // 임시 테스트용 - 로그인 체크 제거하고 기술스택만 확인
+  if (newTab === 'ai' && hasUserTechStack.value) {
+    // 캐싱 제거 - 매번 새로운 추천을 받도록 변경
+    const recommendations = await fetchAIRecommendations()
+    aiRecommendedProjects.value = recommendations
+    hasLoadedAIOnce.value = true // 로드 완료 표시
+  }
+})
 </script>
 
 <style scoped>
@@ -675,5 +762,104 @@ const goToDetail = (project) => {
   color: #999;
   padding: 60px 0;
 }
+
+/* AI 설정 메시지 스타일 */
+.ai-setup-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 60px 40px;
+  background: rgba(76, 175, 80, 0.05);
+  border-radius: 16px;
+  border: 2px dashed rgba(76, 175, 80, 0.2);
+  text-align: center;
+  max-width: 500px;
+}
+
+.ai-setup-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.ai-setup-message h3 {
+  margin: 0;
+  color: #262626;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.ai-setup-message p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.setup-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.setup-button:hover {
+  background: linear-gradient(135deg, #388E3C 0%, #1B5E20 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* AI 로딩 메시지 스타일 */
+.ai-loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 60px 40px;
+  background: rgba(129, 199, 132, 0.05);
+  border-radius: 16px;
+  border: 2px solid rgba(129, 199, 132, 0.2);
+  text-align: center;
+  max-width: 500px;
+}
+
+.ai-loading-message h3 {
+  margin: 0;
+  color: #262626;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ai-loading-message p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(129, 199, 132, 0.2);
+  border-left: 4px solid #81C784;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 
 </style>
