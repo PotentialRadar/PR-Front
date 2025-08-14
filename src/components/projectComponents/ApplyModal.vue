@@ -71,6 +71,20 @@
 
         <form @submit.prevent="submitApplication">
           <div class="form-group">
+            <label for="applicationPart" class="form-label">지원할 기술스택분야</label>
+            <select
+              id="applicationPart"
+              v-model="applicationForm.part"
+              class="form-select"
+            >
+              <option value="" disabled>선택하세요</option>
+              <option v-for="partOption in parts" :key="partOption.value" :value="partOption.value">
+                {{ partOption.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="message" class="form-label">지원 메시지</label>
             <textarea
               id="message"
@@ -109,6 +123,8 @@
 </template>
 
 <script>
+import { PART_OPTIONS } from '@/constants/parts'; // <-- 이 줄을 수정합니다.
+
 export default {
   name: 'ApplyModal',
   props: {
@@ -138,7 +154,8 @@ export default {
       applicationForm: {
         part: '',
         message: ''
-      }
+      },
+      parts: PART_OPTIONS, // <-- Add this line to populate the dropdown
     }
   },
   computed: {
@@ -180,7 +197,10 @@ export default {
         // 부모 컴포넌트에 지원 데이터 전달
         const applicationData = {
           projectInfo: this.projectInfo,
-          applicationForm: this.applicationForm,
+          applicationForm: {
+            ...this.applicationForm,
+            techPart: this.applicationForm.part // applicationForm에 techPart 추가
+          },
           portfolioPublic: this.userPortfolio.isPublic
         }
         

@@ -73,7 +73,7 @@
         </div>
         <div class="info-content">
           <div class="info-label">마감일정</div>
-          <div class="info-value" :class="{ 'urgent': isUrgent(project.deadline) }">{{ project.deadline }}</div>
+          <div class="info-value" :class="{ 'urgent': isUrgent(project.recruitDeadline) }">{{ formatDeadline(project.recruitDeadline) }}</div>
         </div>
       </div>
     </div>

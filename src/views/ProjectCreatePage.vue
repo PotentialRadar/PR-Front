@@ -224,6 +224,13 @@ import { PART_OPTIONS } from '@/constants/parts' // 추가
 
 const API_URL = 'http://localhost:8080/api/projects'
 
+/**
+ * ⚠️ 개발용 하드코딩: 로그인 없이도 userId=1로 생성되게 함
+ * 실제 로그인 연동되면 아래 값을 `null`로 바꾸거나 이 줄을 삭제하세요.
+ * 예) const DEV_FORCE_USER_ID = null;
+ */
+const DEV_FORCE_USER_ID = 1;
+
 export default {
   name: 'ProjectCreatePage',
   components: { TechStackSelector, FileUploadArea },
@@ -329,15 +336,25 @@ export default {
 
     // 구인글 등록
     const submitForm = async () => {
-      if (!userStore.isLoggedIn || !userStore.userId) {
+      /**
+       * ✅ 여기서 유효 userId를 결정
+       * - 개발 중: DEV_FORCE_USER_ID 사용(=1)
+       * - 실제 로그인 연동 후: DEV_FORCE_USER_ID를 null로 바꾸면 userStore.userId 사용
+       */
+      const uid = (DEV_FORCE_USER_ID ?? userStore.userId);
+      const token = userStore.accessToken || null;
+
+      // 로그인 강제 우회: uid가 없으면 로그인 페이지로 유도
+      if (!uid) {
         alert('로그인 후에 프로젝트를 등록할 수 있습니다.')
         router.push('/login')
         return
       }
 
+      // 유효성 검증
       validateField('projectDurationValue', formData.projectDurationValue, validationSchema.projectDurationValue)
       validateField('projectDurationUnit', formData.projectDurationUnit, validationSchema.projectDurationUnit)
-      validateField('parts', partRows.value, validationSchema.parts) // ✅
+      validateField('parts', partRows.value, validationSchema.parts)
       submitAttempted.value = true
 
       if (!validateForm({ ...formData, parts: partRows.value }, validationSchema)) {
@@ -347,23 +364,22 @@ export default {
 
       isSubmitting.value = true
       try {
-        // 1) 파일 업로드
+        // 1) 파일 업로드 (백엔드가 인증 필요하면 Authorization 헤더 추가)
         let fileUrl = null
         if (formData.files?.length) {
           const uploadData = new FormData()
           uploadData.append('file', formData.files[0])
-          const uploadRes = await axios.post(`${API_URL}/upload-file`, uploadData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
+          const uploadHeaders = { 'Content-Type': 'multipart/form-data' }
+          if (token) uploadHeaders.Authorization = `Bearer ${token}` // ← 필요시만 첨부
+          const uploadRes = await axios.post(`${API_URL}/upload-file`, uploadData, { headers: uploadHeaders })
           fileUrl = uploadRes.data
         }
 
         // 2) 날짜 계산
-        const today = new Date()
-        const startDate = today.toISOString().slice(0, 10)
-        const endDate = addDurationToDate(today, formData.projectDurationValue, formData.projectDurationUnit)
+        const startDate = formData.recruitDeadline; // 시작일은 모집 마감일과 동일
+        const endDate = addDurationToDate(new Date(startDate), formData.projectDurationValue, formData.projectDurationUnit); // 종료일은 시작일 + 진행기간
 
-        // 3) 스택 변환
+        // 3) 기술스택 변환
         const techStacks = formData.techStack.map(ts => ({
           techStackName: ts.techStackName || ts.name,
           recruitCount: ts.recruitCount || 1
@@ -372,9 +388,9 @@ export default {
         // 4) 파트 변환
         const parts = partRows.value
             .filter(r => r.part && Number(r.count) > 0)
-            .map(r => ({ part: r.part, recruitCount: Number(r.count) }))
+            .map(r => ({ partName: r.part, recruitCount: Number(r.count) }))
 
-        // 5) 요청 본문
+        // 5) 요청 바디
         const body = {
           title: formData.projectTitle,
           description: formData.projectDescription,
@@ -384,15 +400,15 @@ export default {
           fileUrl,
           status: 'RECRUITING',
           techStacks,
-          parts,                                //  파트별 모집
-          recruitCount: totalRecruitCount.value //  총합
+          recruitmentParts: parts,              // 파트별 모집
+          recruitCount: totalRecruitCount.value // 총합
         }
 
-        await axios.post(
-            `${API_URL}?userId=${userStore.userId}`,
-            body,
-            { headers: { 'Content-Type': 'application/json', ...(userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {}) } }
-        )
+        // 6) 생성 요청 — ✅ 개발 중엔 항상 ?userId=1 로 전송됨
+        const headers = { 'Content-Type': 'application/json' }
+        if (token) headers.Authorization = `Bearer ${token}` // 백엔드가 토큰 요구 시
+
+        await axios.post(`${API_URL}?userId=${uid}`, body, { headers })
 
         showSuccess.value = true
         clearErrors()
