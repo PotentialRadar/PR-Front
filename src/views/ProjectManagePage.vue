@@ -40,7 +40,10 @@
         <!-- 프로젝트 수정 버튼 -->
         <section class="edit-project-section">
           <h2>프로젝트 정보</h2>
-          <button class="edit-btn">프로젝트 수정</button>
+          <div class="project-actions">
+            <button class="edit-btn" @click="goToEditPage">프로젝트 수정</button>
+            <button class="delete-btn" @click="confirmDelete">프로젝트 삭제</button>
+          </div>
         </section>
       </div>
     </div>
@@ -50,12 +53,13 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import { getProject } from '@/api/projects';
+import { useRoute, useRouter } from 'vue-router';
+import { getProject, deleteProject } from '@/api/projects'; // Import deleteProject
 import { getProjectMembers, updateMemberStatus } from '@/api/projectMember';
 import { PART_OPTIONS } from '@/constants/parts';
 
 const route = useRoute();
+const router = useRouter();
 const projectId = ref(route.params.projectId);
 
 const project = ref(null);
@@ -63,24 +67,19 @@ const applicants = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// Computed properties for filtering applicants
 const pendingApplicants = computed(() => applicants.value.filter(a => a.status === 'PENDING'));
 const approvedMembers = computed(() => applicants.value.filter(a => a.status === 'ACCEPTED'));
 
-// Function to get part label from PART_OPTIONS
 const getPartLabel = (partValue) => {
   const part = PART_OPTIONS.find(option => option.value === partValue);
   return part ? part.label : partValue;
 };
 
-// Fetch project details and applicants on component mount
 onMounted(async () => {
   try {
-    // Fetch project details
     const projectResponse = await getProject(projectId.value);
     project.value = projectResponse.data;
 
-    // Fetch applicants (using hardcoded userId 1 for now)
     const applicantsResponse = await getProjectMembers(projectId.value, 1);
     applicants.value = applicantsResponse.data;
 
@@ -92,14 +91,11 @@ onMounted(async () => {
   }
 });
 
-// Handle applicant status update
 const updateApplicantStatus = async (applicantId, status) => {
   try {
-    // Hardcoded userId 1 for the team leader
     await updateMemberStatus(projectId.value, applicantId, 1, status);
     alert(`지원자가 성공적으로 ${status === 'ACCEPTED' ? '수락' : '거절'}되었습니다.`);
 
-    // Update local state
     const index = applicants.value.findIndex(a => a.id === applicantId);
     if (index !== -1) {
       applicants.value[index].status = status;
@@ -112,6 +108,28 @@ const updateApplicantStatus = async (applicantId, status) => {
 
 const acceptApplicant = (applicantId) => updateApplicantStatus(applicantId, 'ACCEPTED');
 const rejectApplicant = (applicantId) => updateApplicantStatus(applicantId, 'REJECTED');
+
+const goToEditPage = () => {
+  router.push(`/myPage/projects/${projectId.value}/edit`);
+};
+
+// Function to handle project deletion
+const confirmDelete = () => {
+  if (window.confirm('정말로 이 프로젝트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    handleDeleteProject();
+  }
+};
+
+const handleDeleteProject = async () => {
+  try {
+    await deleteProject(projectId.value);
+    alert('프로젝트가 성공적으로 삭제되었습니다.');
+    router.push('/projects'); // Redirect to project list page
+  } catch (err) {
+    console.error('프로젝트 삭제 실패:', err);
+    alert('프로젝트 삭제에 실패했습니다. 다시 시도해주세요.');
+  }
+};
 
 </script>
 
@@ -191,8 +209,7 @@ h2 {
   font-size: 14px;
 }
 
-.applicant-actions button,
-.edit-btn {
+.applicant-actions button { /* Apply common styles to all action buttons */
   padding: 8px 15px;
   border: none;
   border-radius: 5px;
@@ -220,13 +237,45 @@ h2 {
   background-color: #d32f2f;
 }
 
+.project-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
+  justify-content: flex-end;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
 .edit-btn {
   background-color: #2196F3;
   color: white;
-  margin-top: 20px;
 }
 
 .edit-btn:hover {
   background-color: #1976D2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 </style>

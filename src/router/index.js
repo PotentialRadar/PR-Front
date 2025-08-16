@@ -132,6 +132,13 @@ const routes = [
         component: ProjectManagePage,
         props: true,
       },
+      {
+        // 프로젝트 수정 페이지
+        path: 'projects/:projectId/edit',
+        name: 'ProjectEdit',
+        component: ProjectCreatePage, // Create page is reused for editing
+        props: true,
+      },
       // {
       //   // 받은 메시지
       //   path: 'messages',
