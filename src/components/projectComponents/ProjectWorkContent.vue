@@ -31,17 +31,7 @@
       {{ description }}
     </div>
 
-    <!-- 사용 기술(태그) 리스트 -->
-    <div v-if="tags && tags.length" class="project-tags-list">
-      <div class="tags-label">사용 기술</div>
-      <div class="tags-container">
-        <span
-          v-for="tag in tags"
-          :key="tag"
-          class="project-tag"
-        >{{ tag }}</span>
-      </div>
-    </div>
+    <!-- 기술스택은 헤더에 표시되므로 중복 제거 -->
 
     <!-- 첨부파일 섹션 -->
     <div v-if="attachments && attachments.length" class="project-attachments">
