@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // Changed to full backend URL
+  baseURL: '/api', // Vite proxy를 사용하도록 수정
   headers: {
     'Content-Type': 'application/json',
   },
