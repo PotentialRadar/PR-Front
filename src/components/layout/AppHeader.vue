@@ -16,7 +16,7 @@
       </div>
 
       <div class="header-right">
-        <template v-if="!userStore.isLoggedIn">
+        <template v-if="userStore.isLoggedIn">
           <!-- 채팅 버튼 -->
           <div class="icon-button-container">
             <button 
@@ -127,7 +127,11 @@
         </template>
         
         <template v-else>
-          <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
+          <div class="user-menu">
+            <router-link to="/login" class="auth-link">로그인</router-link>
+            <span class="separator">|</span>
+            <router-link to="/signup" class="auth-link">회원가입</router-link>
+          </div>
         </template>
       </div>
     </div>
@@ -289,8 +293,17 @@ const handleClickOutside = (event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  
+  // 로그인 상태 확인 및 프로필 정보 가져오기
+  if (userStore.isLoggedIn && !userStore.profile) {
+    try {
+      await userStore.fetchProfile()
+    } catch (error) {
+      console.error('프로필 조회 실패:', error)
+    }
+  }
 })
 
 onUnmounted(() => {

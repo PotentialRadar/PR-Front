@@ -1,16 +1,25 @@
 // src/api/user.js
-import axios from 'axios';
+import api from './axios';
 
-const BASE_URL = '/api/users';
-const AUTH_BASE_URL = '/api';
+export const signUp = payload => api.post('/signup', payload);
+
+export const login = ({ email, password }) => 
+  api.post('/login', { email, password });
+
+export const logout = () => api.post('/logout');
+
+export const getUserProfile = () => api.get('/user/profile');
+
+export const updateUserProfile = (profileData) => 
+  api.put('/user/profile', profileData);
+
+export const deleteUser = () => api.delete('/user');
 
 export const sendVerificationCode = email =>
-  axios.post(`${BASE_URL}/send-code`, { email });
+  api.post('/users/send-code', { email });
 
 export const verifyEmailCode = (email, code) =>
-  axios.post(`${BASE_URL}/verify-code`, { email, code });
+  api.post('/users/verify-code', { email, code });
 
 export const checkNickname = nickname =>
-  axios.get(`${BASE_URL}/check-nickname`, { params: { nickname } });
-
-export const signUp = payload => axios.post(`${AUTH_BASE_URL}/signup`, payload);
+  api.get('/users/check-nickname', { params: { nickname } });
