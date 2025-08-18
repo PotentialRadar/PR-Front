@@ -49,7 +49,7 @@
       :project-info="modalProjectInfo"
       :user-portfolio="userPortfolio"
       @close="closeApplyModal"
-      @submit="handleApplicationSubmit"
+      @apply="handleApplicationSubmit"
       @error="handleApplicationError"
       @portfolio-settings="goToPortfolioSettings"
     />
@@ -61,6 +61,15 @@
     >
       <span class="toast-icon">✅</span>
       지원이 성공적으로 완료되었습니다!
+    </div>
+
+    <!-- 지원 실패 토스트 메시지 -->
+    <div
+      v-if="showFailToast"
+      class="fail-toast"
+    >
+      <span class="toast-icon">❌</span>
+      지원에 실패했습니다. 다시 시도해주세요.
     </div>
   </div>
 </template>
@@ -76,6 +85,7 @@ import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 
 // 더미 데이터 제거하고 API 사용
 import { getProject } from '@/api/projects';
+import { applyProject } from '@/api/projectMember'; // <-- Change this line
 
 const route = useRoute();
 const router = useRouter();
@@ -126,6 +136,7 @@ function handleTabChange(tab) {
 // 지원 모달 관련
 const showApplyModal = ref(false);
 const showSuccessToast = ref(false);
+const showFailToast = ref(false); // Add this line
 
 const modalProjectInfo = computed(() => ({
   title: project.value?.title || '',
@@ -144,15 +155,33 @@ function closeApplyModal() {
   showApplyModal.value = false;
 }
 
-// (연결 보류) 실제 지원 API는 나중에 붙여도 OK — 지금은 상세 연동만
+
+
+// ... (기존 코드) ...
+
+// 실제 지원 API 호출
 async function handleApplicationSubmit(applicationData) {
+  // 임시 토큰 설정 (로그인 구현 전 테스트용)
+  localStorage.setItem('accessToken', 'dummy-token-for-user2');
+
   try {
     console.log('지원서 데이터:', applicationData);
-    // 예: await applyProject(projectId.value, payload)
+
+    const payload = {
+      userId: 2, // applicationForm에서 userId 사용
+      applicationMessage: applicationData.applicationForm.message,
+      techPart: applicationData.applicationForm.techPart // techPart 필드 사용
+    };
+
+    await applyProject(projectId.value, payload); // projectId는 ref로 이미 정의됨
+
     showSuccessToast.value = true;
     setTimeout(() => (showSuccessToast.value = false), 3000);
+    closeApplyModal(); // 지원 성공 후 모달 닫기
   } catch (error) {
     console.error('지원 실패:', error);
+    showFailToast.value = true; // Use showFailToast
+    setTimeout(() => (showFailToast.value = false), 3000); // Hide after 3 seconds
   }
 }
 

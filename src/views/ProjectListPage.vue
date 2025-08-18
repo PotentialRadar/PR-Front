@@ -89,7 +89,7 @@
         :project-info="selectedProject"
         :user-portfolio="userPortfolio"
         @close="closeApplyModal"
-        @submit="handleApplicationSubmitted"
+        @apply="handleApplicationSubmitted"
         @portfolio-settings="goToPortfolioSettings"
     />
     <div v-if="showSuccessToast" class="success-toast">
@@ -113,6 +113,7 @@ import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 
 import { useProjects } from '@/composables/useProjects';
+import { applyProject } from '@/api/projectMember';
 
 // 라우터
 const router = useRouter();
@@ -176,12 +177,31 @@ const goToPortfolioSettings = () => {
   router.push({ name: 'PortfolioSettings' });
 };
 
-// 실제 지원 API 연결 지점 (지금은 UI 성공 토스트만)
-const handleApplicationSubmitted = async () => {
-  // await applyProject(selectedProject.value.projectId, formData)  ← 연결 예정
-  showSuccessToast.value = true;
-  setTimeout(() => (showSuccessToast.value = false), 3000);
-  closeApplyModal();
+// API 연동된 지원 처리 함수 (userId: 2 하드코딩)
+const handleApplicationSubmitted = async (applicationData) => {
+  // 임시 토큰 설정 (로그인 구현 전 테스트용)
+  localStorage.setItem('accessToken', 'dummy-token-for-user2');
+
+  if (!selectedProject.value?.projectId) return;
+
+  const payload = {
+    techPart: applicationData.applicationForm.part, // 백엔드 DTO에 맞게 필드명 변경
+    applicationMessage: applicationData.applicationForm.message, // 백엔드 DTO에 맞게 필드명 변경
+    userId: 2, // userId를 payload에 추가
+  };
+
+  try {
+    // userId를 payload에 포함하여 API 호출
+    await applyProject(selectedProject.value.projectId, payload);
+    showSuccessToast.value = true;
+    setTimeout(() => (showSuccessToast.value = false), 3000);
+  } catch (err) {
+    console.error('지원 처리 중 오류 발생:', err);
+    showFailToast.value = true;
+    setTimeout(() => (showFailToast.value = false), 3000);
+  } finally {
+    closeApplyModal();
+  }
 };
 </script>
 

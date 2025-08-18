@@ -204,7 +204,7 @@ export default {
           portfolioPublic: this.userPortfolio.isPublic
         }
         
-        this.$emit('submit', applicationData)
+        this.$emit('apply', applicationData)
         
         // 실제 API 호출은 부모 컴포넌트에서 처리
         await new Promise(resolve => setTimeout(resolve, 1500))
