@@ -30,7 +30,12 @@
 
     <div class="category-tags-section">
       <div class="project-tags">
-        <div class="self-tag" v-for="tag in project.tags" :key="tag">
+        <!-- 기술스택 표시 (techStacks 배열 사용) -->
+        <div class="self-tag" v-for="tech in project.techStacks" :key="tech.techStackName || tech">
+          {{ tech.techStackName || tech }}
+        </div>
+        <!-- fallback으로 tags도 지원 -->
+        <div class="self-tag" v-for="tag in project.tags" :key="tag" v-if="!project.techStacks || !project.techStacks.length">
           {{ tag }}
         </div>
       </div>
@@ -73,7 +78,9 @@
         </div>
         <div class="info-content">
           <div class="info-label">마감일정</div>
-          <div class="info-value" :class="{ 'urgent': isUrgent(project.deadline) }">{{ project.deadline }}</div>
+          <div class="info-value" :class="{ 'urgent': isUrgent(project.deadline) }">
+            {{ project.deadline }}
+          </div>
         </div>
       </div>
     </div>

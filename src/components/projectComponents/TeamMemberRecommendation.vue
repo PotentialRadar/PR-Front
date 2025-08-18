@@ -289,34 +289,40 @@ const mockMembers = [
 const fetchRecommendations = async () => {
   isLoading.value = true
   
+  // 최소 로딩 시간 보장 (1.5초)
+  const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1500))
+  
   try {
     console.log('🚀 AI 추천 API 호출 시작 - 프로젝트 ID:', props.projectId)
     
-    // 실제 API 호출
-    const response = await fetch('http://localhost:8082/api/recommend/members', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        projectId: props.projectId,
-        requiredSkills: props.requiredSkills,
-        teamSize: RECOMMENDATION_COUNT,
-        experienceLevel: "any"
-      })
-    })
+    // 실제 API 호출과 최소 로딩 시간을 병렬로 실행
+    const [apiResponse] = await Promise.all([
+      fetch('http://localhost:8082/api/recommend/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: props.projectId,
+          requiredSkills: props.requiredSkills,
+          teamSize: RECOMMENDATION_COUNT,
+          experienceLevel: "any"
+        })
+      }),
+      minLoadingTime
+    ])
     
-    if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+    if (!apiResponse.ok) {
+      throw new Error(`API 호출 실패: ${apiResponse.status}`)
     }
     
-    const apiData = await response.json()
+    const apiData = await apiResponse.json()
     console.log('✅ API 응답 받음:', apiData)
     recommendedMembers.value = apiData
     
   } catch (error) {
     console.error('❌ API 호출 실패, 목업 데이터 사용:', error)
     
-    // Fallback: 목업 데이터 사용
-    await new Promise(resolve => setTimeout(resolve, 1000)) // 로딩 시뮬레이션
+    // Fallback: 목업 데이터 사용 (최소 로딩 시간 보장)
+    await minLoadingTime
     const availableMembers = mockMembers.filter(member => member.isAvailable)
     recommendedMembers.value = availableMembers.slice(0, RECOMMENDATION_COUNT)
   } finally {
