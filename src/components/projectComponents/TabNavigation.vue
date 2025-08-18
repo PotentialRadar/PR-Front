@@ -6,6 +6,13 @@
     <div class="tab-item" :class="{ active: activeTab === 'content' }" @click="setActiveTab('content')">
       <span>프로젝트 내용</span>
     </div>
+    <div 
+      class="tab-item" 
+      :class="{ active: activeTab === 'recommendations' }" 
+      @click="setActiveTab('recommendations')"
+    >
+      <span>🤖 팀원 추천</span>
+    </div>
     <div class="tab-item" :class="{ active: activeTab === 'comment' }" @click="setActiveTab('comment')">
       <span>댓글</span>
     </div>
@@ -19,6 +26,10 @@ export default {
     activeTab: {
       type: String,
       default: 'comment'
+    },
+    isProjectOwner: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['tab-change'],

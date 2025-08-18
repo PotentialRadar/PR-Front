@@ -24,19 +24,35 @@
           </div>
           <div class="integrated-content-card"  v-if="project">
             <div class="tab-section">
-              <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
+              <TabNavigation 
+                :activeTab="activeTab" 
+                :isProjectOwner="isProjectOwner"
+                @tab-change="handleTabChange" 
+              />
             </div>
             <div class="tab-content">
-              <ProjectWorkContent
-                  :description="project?.description || ''"
-                  :tags="project?.techStacks?.map(tech => tech.techStackName) || []"
-                  :file-url="project?.fileUrl || ''"
-                  :attachments="project?.attachments || []"
-                  :author="project?.author || null"
-                  @contact-author="handleContactAuthor"
-                  @view-portfolio="handleViewPortfolio"
-              />
-              <ProjectComment :projectId="projectId" />
+              <div v-if="activeTab === 'content'" id="content-section">
+                <ProjectWorkContent
+                    :description="project?.description || ''"
+                    :tags="project?.techStacks?.map(tech => tech.techStackName) || []"
+                    :file-url="project?.fileUrl || ''"
+                    :attachments="project?.attachments || []"
+                    :author="project?.author || null"
+                    @contact-author="handleContactAuthor"
+                    @view-portfolio="handleViewPortfolio"
+                />
+              </div>
+              
+              <div v-if="activeTab === 'recommendations'" id="recommendations-section">
+                <TeamMemberRecommendation 
+                  :projectId="projectId"
+                  :requiredSkills="project?.techStacks?.map(tech => tech.techStackName) || []"
+                />
+              </div>
+              
+              <div v-if="activeTab === 'comment'" id="comment-section">
+                <ProjectComment :projectId="projectId" />
+              </div>
             </div>
           </div>
         </div>
@@ -68,22 +84,35 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue';
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue';
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue';
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberRecommendation.vue';
 
 // 더미 데이터 제거하고 API 사용
 import { getProject } from '@/api/projects';
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 const projectId = ref(Number(route.params.id));
 
 const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
+
+// 프로젝트 소유자 여부 확인
+const isProjectOwner = computed(() => {
+  if (!project.value || !userStore.isLoggedIn || !userStore.userId) {
+    return false;
+  }
+  // 프로젝트의 작성자 ID와 현재 사용자 ID 비교
+  return project.value.author?.userId === userStore.userId || 
+         project.value.createdBy === userStore.userId;
+});
 
 const load = async () => {
   loading.value = true;
@@ -114,7 +143,11 @@ watch(
 const activeTab = ref('content');
 function handleTabChange(tab) {
   activeTab.value = tab;
-  const sectionMap = { content: 'content-section', comment: 'comment-section' };
+  const sectionMap = { 
+    content: 'content-section', 
+    recommendations: 'recommendations-section',
+    comment: 'comment-section' 
+  };
   const targetId = sectionMap[tab];
   if (!targetId) return;
   setTimeout(() => {

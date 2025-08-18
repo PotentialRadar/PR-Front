@@ -58,6 +58,24 @@
                 </p>
               </div>
 
+              <!-- AI 추천 설명 섹션 (AI 탭에서만 표시) -->
+              <div v-if="activeTab === 'ai' && project.explanation" class="ai-explanation-section">
+                <div class="explanation-header">
+                  <span class="ai-badge">🤖 AI 추천 이유</span>
+                </div>
+                <div class="explanation-content">
+                  <p class="main-reason">{{ project.explanation.simple_explanation || project.explanation.main_reason }}</p>
+                  <div v-if="project.explanation.matched_skills?.length > 0" class="skill-match">
+                    <span class="skill-label">✅ 매칭 기술:</span>
+                    <span class="skill-list">{{ project.explanation.matched_skills.join(', ') }}</span>
+                  </div>
+                  <div v-if="project.explanation.growth_opportunities?.length > 0" class="growth-opportunities">
+                    <span class="growth-label">🌱 성장 기회:</span>
+                    <span class="growth-list">{{ project.explanation.growth_opportunities.join(', ') }}</span>
+                  </div>
+                </div>
+              </div>
+
               <div class="category-tags-section">
                 <div class="project-tags">
                   <div class="self-tag" v-for="tag in project.techStacks.slice(0, 4)" :key="tag.techStackName">
@@ -325,7 +343,8 @@ const fetchAIRecommendations = async () => {
       category: 'ai', // AI 추천 카테고리
       viewCount: Math.floor(Math.random() * 200), // 랜덤값
       isFavorite: false,
-      matchScore: project.matchScore // AI 점수
+      matchScore: project.matchScore, // AI 점수
+      explanation: project.explanation // AI 추천 설명 데이터
     }))
     
   } catch (error) {
@@ -842,6 +861,81 @@ watch(activeTab, async (newTab) => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* AI 추천 설명 섹션 스타일 */
+.ai-explanation-section {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.1) 0%, rgba(76, 175, 80, 0.1) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  position: relative;
+}
+
+.explanation-header {
+  margin-bottom: 8px;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #81C784 0%, #4CAF50 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.explanation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.main-reason {
+  margin: 0;
+  color: #2E7D32;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.skill-match,
+.growth-opportunities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.skill-label,
+.growth-label {
+  color: #388E3C;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.skill-list,
+.growth-list {
+  color: #2E7D32;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* AI 탭에서 프로젝트 카드 강조 */
+.tab.active[data-tab="ai"] ~ .projects-grid .project-card {
+  border-color: rgba(129, 199, 132, 0.3);
+}
+
+.tab.active[data-tab="ai"] ~ .projects-grid .project-card:hover {
+  border-color: rgba(129, 199, 132, 0.5);
+  box-shadow: 0 8px 25px rgba(129, 199, 132, 0.2);
 }
 
 
