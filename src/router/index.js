@@ -20,6 +20,7 @@ import SiderDashBoardLayout from '../components/dashboard/SiderDashBoardLayout.v
 
 // 새로운 대시보드 스타일 컴포넌트들
 import MyPortfolioPage from '@/views/MyPortfolioPage.vue';
+import ProjectManagePage from '@/views/ProjectManagePage.vue';
 
 const routes = [
   {
@@ -52,7 +53,7 @@ const routes = [
     component: SignUpPage,
   },
   {
-    // 내 프로젝트 리스트
+    // 내 프로젝트 리스트 (기존 라우트 유지)
     path: '/my-projects',
     name: 'MyProjectList',
     component: MyProjectListPage,
@@ -118,17 +119,25 @@ const routes = [
         name: 'ProfileEdit',
         component: ProfileEditPage,
       },
-      // {
-      //   // 계정 설정 (새로 추가)
-      //   path: 'settings',
-      //   name: 'AccountSettings',
-      //   component: () => import('@/views/AccountSettingsPage.vue'),
-      // },
       {
-        // 내 프로젝트 관리
+        // 내 프로젝트 관리 (단일 페이지)
         path: 'projects',
         name: 'MyProjects',
         component: () => import('@/views/MyProjectListPage.vue'),
+      },
+      {
+        // 프로젝트 관리 상세 페이지
+        path: 'projects/:projectId/manage',
+        name: 'ProjectManage',
+        component: ProjectManagePage,
+        props: true,
+      },
+      {
+        // 프로젝트 수정 페이지
+        path: 'projects/:projectId/edit',
+        name: 'ProjectEdit',
+        component: ProjectCreatePage, // Create page is reused for editing
+        props: true,
       },
       // {
       //   // 받은 메시지

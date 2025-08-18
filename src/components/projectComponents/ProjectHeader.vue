@@ -59,6 +59,21 @@
         </div>
       </div>
     </div>
+
+    <div class="recruitment-parts-section">
+      <div class="section-title">모집인원 (파트별)</div>
+      <div class="parts-container">
+        <div v-if="project.recruitmentParts && project.recruitmentParts.length">
+          <div v-for="(part, index) in project.recruitmentParts" :key="index" class="part-item-card">
+            <span class="part-name">{{ getPartLabel(part.partName) }}</span>
+            <span class="part-count">{{ part.recruitCount }}명</span>
+          </div>
+        </div>
+        <div v-else class="no-recruitment-info">
+          <span class="no-recruitment">파트별 모집 정보 없음</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 로딩 스켈레톤/플레이스홀더(선택) -->
@@ -68,6 +83,8 @@
 </template>
 
 <script>
+import { PART_OPTIONS } from '@/constants/parts'; // <-- 이 줄을 추가합니다.
+
 export default {
   name: 'ProjectHeader',
   props: {
@@ -89,6 +106,10 @@ export default {
     }
   },
   methods: {
+    getPartLabel(partValue) {
+      const part = PART_OPTIONS.find(option => option.value === partValue);
+      return part ? part.label : partValue;
+    },
     formatDate(dateStr) {
       if (!dateStr) return ''
       const d = new Date(dateStr)
@@ -174,6 +195,8 @@ export default {
 
 .project-sub-title {
   font-size: 18px;
+  white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
+  word-wrap: break-word; /* Break long words */
 }
 
 .project-metadata {
@@ -285,6 +308,193 @@ export default {
   padding: 5px 14px;
   font-size: 13px;
   font-weight: 600;
+}
+
+/* New styles for recruitment parts section */
+.recruitment-parts-section {
+  margin-top: 40px; /* Space from metadata */
+  padding: 25px;
+  background: #f8f9fa;
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.recruitment-parts-section .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.parts-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px; /* Space between part items */
+}
+
+.part-item-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e6f7ed; /* Light green background */
+  border: 1px solid #b3e0c9;
+  border-radius: 10px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #219653;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.part-item-card .part-name {
+  font-weight: 600;
+  color: #1e8e3e; /* Darker green for name */
+}
+
+.part-item-card .part-count {
+  font-weight: 700;
+  color: #28a745; /* Brighter green for count */
+}
+
+.no-recruitment-info {
+  font-size: 14px;
+  color: #888;
+  padding: 10px 0;
+}
+
+/* Styles for metadata-item.recruitment-by-part (from previous iteration, now combined) */
+.metadata-item.recruitment-by-part {
+  flex-direction: column; /* Stack label and value parts vertically */
+  align-items: flex-start; /* Align content to the start */
+  padding: 12px 15px; /* Adjust padding */
+}
+
+.metadata-value-parts {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap to the next line */
+  gap: 8px; /* Space between part items */
+  margin-top: 5px; /* Space between label and part items */
+  width: 100%; /* Take full width */
+}
+
+.part-item {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* Space between part name and count */
+  background: #e0ffe0; /* Light green background for each part */
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 13px;
+  white-space: nowrap; /* Prevent part name/count from breaking */
+}
+
+.part-name {
+  font-weight: 600;
+  color: #219653; /* Green color for part name */
+}
+
+.part-count {
+  color: #4CAF50; /* Slightly darker green for count */
+}
+
+.no-recruitment {
+  font-size: 13px;
+  color: #888;
+  padding: 10px 0;
+}
+
+.recruitment-parts-section {
+  margin-top: 40px; /* Space from metadata */
+  padding: 25px;
+  background: #f8f9fa;
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.recruitment-parts-section .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.parts-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px; /* Space between part items */
+}
+
+.part-item-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e6f7ed; /* Light green background */
+  border: 1px solid #b3e0c9;
+  border-radius: 10px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #219653;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.part-item-card .part-name {
+  font-weight: 600;
+  color: #1e8e3e; /* Darker green for name */
+}
+
+.part-item-card .part-count {
+  font-weight: 700;
+  color: #28a745; /* Brighter green for count */
+}
+
+.no-recruitment-info {
+  font-size: 14px;
+  color: #888;
+  padding: 10px 0;
+}
+
+.metadata-item.recruitment-by-part {
+  flex-direction: column; /* Stack label and value parts vertically */
+  align-items: flex-start; /* Align content to the start */
+  padding: 12px 15px; /* Adjust padding */
+}
+
+.metadata-value-parts {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap to the next line */
+  gap: 8px; /* Space between part items */
+  margin-top: 5px; /* Space between label and part items */
+  width: 100%; /* Take full width */
+}
+
+.part-item {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* Space between part name and count */
+  background: #e0ffe0; /* Light green background for each part */
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 13px;
+  white-space: nowrap; /* Prevent part name/count from breaking */
+}
+
+.part-name {
+  font-weight: 600;
+  color: #219653; /* Green color for part name */
+}
+
+.part-count {
+  color: #4CAF50; /* Slightly darker green for count */
+}
+
+.no-recruitment {
+  font-size: 13px;
+  color: #888;
 }
 
 </style>

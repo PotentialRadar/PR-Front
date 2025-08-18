@@ -3,8 +3,8 @@ import api from './axios';
 
 const ROOT = '/projects';
 
-// 전체 목록: 배열로 반환됨 (서버 페이징 없음)
-export const listProjects = () => api.get(ROOT);
+// 전체 목록 또는 사용자별 목록 조회
+export const listProjects = (params) => api.get(ROOT, { params });
 
 // 단건 조회
 export const getProject = (projectId) => api.get(`${ROOT}/${projectId}`);
