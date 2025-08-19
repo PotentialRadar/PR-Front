@@ -1,5 +1,11 @@
 <template>
   <div class="ai-recommendations-page">
+    <!-- 페이지 헤더 -->
+    <PageHeader 
+      title="AI 추천"
+      subtitle="AI가 당신의 기술스택과 관심사를 분석하여 맞춤형 프로젝트를 추천해드립니다"
+    />
+
     <!-- 기술스택 설정 상태 -->
     <div class="container">
       <div class="tech-stack-status" v-if="userTechStacks.length > 0">
@@ -38,6 +44,43 @@
           <p>AI가 당신에게 맞는 프로젝트를 분석하고 있습니다...</p>
         </div>
 
+        <!-- 로그인 안된 상태 -->
+        <div v-else-if="!userStore.isLoggedIn" class="empty-state">
+          <div class="empty-icon">🔐</div>
+          <h3>AI 추천을 위해 로그인이 필요합니다</h3>
+          <p>개인 맞춤형 프로젝트 추천을 받으려면 먼저 로그인해주세요.</p>
+          <div class="popular-preview">
+            <h4>🔥 지금은 인기 프로젝트를 확인해보세요!</h4>
+            <div class="popular-projects-grid">
+              <div 
+                v-for="project in popularProjects.slice(0, 6)" 
+                :key="project.id"
+                class="popular-project-card"
+                @click="goToProject(project.id)"
+              >
+                <h4 class="popular-project-title">{{ project.title }}</h4>
+                <p class="popular-project-description">{{ project.description?.slice(0, 80) }}...</p>
+                <div class="popular-project-stats">
+                  <span class="popular-stat">👀 {{ project.viewCount || 0 }}</span>
+                  <span class="popular-stat">❤️ {{ project.appliedCount || 0 }}</span>
+                </div>
+                <div class="popular-tech-stacks">
+                  <span 
+                    v-for="tech in project.techStacks?.slice(0, 3)" 
+                    :key="tech.techStackName"
+                    class="popular-tech-tag"
+                  >
+                    {{ tech.techStackName }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button @click="router.push('/login')" class="primary-button">
+            로그인하기
+          </button>
+        </div>
+
         <!-- 기술스택 미설정 상태 -->
         <div v-else-if="userTechStacks.length === 0" class="empty-state">
           <div class="empty-icon">🔧</div>
@@ -48,8 +91,8 @@
           </button>
         </div>
 
-        <!-- 추천 결과 없음 -->
-        <div v-else-if="!isLoading && recommendations.length === 0" class="empty-state">
+        <!-- 추천 결과 없음 (로그인 되어 있고 기술스택도 설정됨) -->
+        <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && !isLoading && recommendations.length === 0" class="empty-state">
           <div class="empty-icon">🔍</div>
           <h3>추천 가능한 프로젝트가 없습니다</h3>
           <p>다른 기술스택이나 경험 수준으로 다시 시도해보세요.</p>
@@ -58,8 +101,8 @@
           </button>
         </div>
 
-        <!-- 추천 프로젝트 리스트 -->
-        <div v-else class="projects-grid">
+        <!-- 추천 프로젝트 리스트 (로그인 되어 있고 기술스택 설정되고 추천 결과가 있음) -->
+        <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="projects-grid">
           <div 
             v-for="project in recommendations" 
             :key="project.projectId"
@@ -170,6 +213,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
+import PageHeader from '@/components/common/PageHeader.vue'
 import TechStackModal from '@/components/common/TechStackModal.vue'
 
 const router = useRouter()
@@ -181,6 +225,7 @@ const isLoading = ref(false)
 const showTechStackModal = ref(false)
 const userTechStacks = ref([])
 const recommendations = ref([])
+const popularProjects = ref([])
 
 // 계산된 속성
 const userTechNames = computed(() => userTechStacks.value.map(tech => tech.name.toLowerCase()))
@@ -290,14 +335,50 @@ const goToProject = (projectId) => {
   router.push(`/projects/${projectId}`)
 }
 
+// 인기 프로젝트 조회 함수
+const loadPopularProjects = async () => {
+  try {
+    const response = await fetch('http://localhost:8082/api/projects')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('📊 전체 프로젝트 데이터:', data)
+    
+    // viewCount 기준으로 정렬하여 인기 프로젝트 선별
+    const sortedProjects = [...data]
+      .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    
+    popularProjects.value = sortedProjects.slice(0, 12) // 상위 12개
+    console.log('🔥 인기 프로젝트:', popularProjects.value.length, '개')
+    
+  } catch (error) {
+    console.error('❌ 인기 프로젝트 로드 실패:', error)
+    toast.error('인기 프로젝트를 불러오는 중 오류가 발생했습니다.', {
+      position: 'top-center',
+      timeout: 3000
+    })
+  }
+}
+
 // 라이프사이클
 onMounted(() => {
+  // 로그인 상태 체크
+  userStore.checkLogin()
+  
+  // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
+  loadPopularProjects()
+  
   // 저장된 기술스택 불러오기
   const savedTechStacks = localStorage.getItem('userTechStacks')
   if (savedTechStacks) {
     try {
       userTechStacks.value = JSON.parse(savedTechStacks)
-      loadRecommendations()
+      // 로그인된 상태에서만 AI 추천 로드
+      if (userStore.isLoggedIn) {
+        loadRecommendations()
+      }
     } catch (error) {
       console.error('기술스택 데이터 파싱 오류:', error)
     }
@@ -308,8 +389,8 @@ onMounted(() => {
 <style scoped>
 .ai-recommendations-page {
   min-height: 100vh;
-  background: #f8f9fa;
-  padding-top: 100px; /* 헤더 높이만큼 패딩 */
+  background: #FFF;
+  padding-top: 68px; /* 헤더 높이만큼 패딩 */
 }
 
 .container {
@@ -718,16 +799,102 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
+/* 인기 프로젝트 그리드 스타일 */
+.popular-preview {
+  width: 100%;
+  margin: 32px 0;
+}
+
+.popular-preview h4 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.popular-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.popular-project-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.popular-project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.popular-project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.popular-project-title {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.popular-project-description {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.popular-project-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.popular-stat {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.popular-tech-stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.popular-tech-tag {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 24px;
+  .page-title {
+    font-size: 32px;
   }
   
-  .page-title {
-    font-size: 2rem;
+  .page-subtitle {
+    font-size: 16px;
   }
   
   .projects-grid {
@@ -746,6 +913,20 @@ onMounted(() => {
   
   .info-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .popular-projects-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 28px;
+  }
+  
+  .page-subtitle {
+    font-size: 14px;
   }
 }
 </style>

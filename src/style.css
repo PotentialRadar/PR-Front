@@ -22,6 +22,18 @@
   --font-family-freesentation: 'Freesentation';
   --font-weight-300: 300;
 
+  /* 페이지 헤더 통일 스타일 변수 */
+  --page-title-font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --page-title-font-weight: 900;
+  --page-title-font-size: 42px;
+  --page-title-font-size-tablet: 32px;
+  --page-title-font-size-mobile: 28px;
+  --page-title-color: #262626;
+  --page-subtitle-font-size: 18px;
+  --page-subtitle-font-size-tablet: 16px;
+  --page-subtitle-font-size-mobile: 14px;
+  --page-subtitle-color: #999;
+
   /* ProjectInquiry specific variables */
   --item-spacing-25: 25px;
   --item-spacing-30: 30px;

@@ -16,15 +16,10 @@
     </div>
 
     <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">{{ isEditMode ? '프로젝트 수정' : '새로운 프로젝트' }}</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">{{ isEditMode ? '프로젝트 정보를 수정합니다.' : '프로젝트 정보를 입력하여 맞춤형 개발자를 찾아보세요' }}</p>
-      </div>
-    </div>
+    <PageHeader 
+      :title="isEditMode ? '프로젝트 수정' : '새로운 프로젝트'"
+      :subtitle="isEditMode ? '프로젝트 정보를 수정합니다.' : '프로젝트 정보를 입력하여 맞춤형 개발자를 찾아보세요'"
+    />
 
     <div class="form-container">
       <div class="form-content">
@@ -217,6 +212,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import PageHeader from '@/components/common/PageHeader.vue';
 import { useFormValidation } from '@/composables/useFormValidation.js';
 import { getProject, createProject, updateProject, uploadProjectFile } from '@/api/projects';
 import { PART_OPTIONS } from '@/constants/parts';
@@ -227,7 +223,7 @@ const DEV_FORCE_USER_ID = 1;
 
 export default {
   name: 'ProjectFormPage', // Renamed for clarity
-  components: { TechStackSelector, FileUploadArea },
+  components: { TechStackSelector, FileUploadArea, PageHeader },
   props: {
     projectId: { // Accept projectId as a prop
       type: String,
@@ -369,7 +365,7 @@ export default {
   display: flex;
   width: 100%;
   min-height: 100vh;
-  padding: 100px 20px 100px 20px;
+  padding: 68px 20px 100px 20px;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
