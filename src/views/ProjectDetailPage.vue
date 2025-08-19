@@ -9,36 +9,72 @@
     <div class="page-container">
       <div class="content-wrapper">
         <div class="main-content">
-          <div class="header-section">
-            <ProjectHeader v-if="project" :project="project" />
-            <!-- 지원하기 버튼 추가 -->
-            <div class="apply-button-container">
-              <button
-                class="apply-button"
-                @click="openApplyModal"
-              >
-                <span class="apply-icon">🚀</span>
-                프로젝트 지원하기
-              </button>
-            </div>
+          <!-- 로딩 중 -->
+          <div v-if="loading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>프로젝트 정보를 불러오는 중...</p>
           </div>
-          <div class="integrated-content-card"  v-if="project">
+          
+          <!-- 프로젝트를 찾을 수 없음 -->
+          <div v-else-if="!project" class="not-found-state">
+            <div class="not-found-icon">🔍</div>
+            <h2>프로젝트를 찾을 수 없습니다</h2>
+            <p>요청하신 프로젝트가 존재하지 않거나 삭제되었습니다.</p>
+            <p class="available-info">사용 가능한 프로젝트 ID: 1~8</p>
+            <button @click="$router.push('/projects')" class="back-button">
+              프로젝트 목록으로 돌아가기
+            </button>
+          </div>
+          
+          <!-- 프로젝트 정보 -->
+          <template v-else>
+            <div class="header-section">
+              <ProjectHeader :project="project" />
+              <!-- 지원하기 버튼 추가 -->
+              <div class="apply-button-container">
+                <button
+                  class="apply-button"
+                  @click="openApplyModal"
+                >
+                  <span class="apply-icon">🚀</span>
+                  프로젝트 지원하기
+                </button>
+              </div>
+            </div>
+            <div class="integrated-content-card">
             <div class="tab-section">
-              <TabNavigation :activeTab="activeTab" @tab-change="handleTabChange" />
+              <TabNavigation 
+                :activeTab="activeTab" 
+                :isProjectOwner="isProjectOwner"
+                @tab-change="handleTabChange" 
+              />
             </div>
             <div class="tab-content">
-              <ProjectWorkContent
-                  :description="project?.description || ''"
-                  :tags="project?.techStacks?.map(tech => tech.techStackName) || []"
-                  :file-url="project?.fileUrl || ''"
-                  :attachments="project?.attachments || []"
-                  :author="project?.author || null"
-                  @contact-author="handleContactAuthor"
-                  @view-portfolio="handleViewPortfolio"
-              />
-              <ProjectComment :projectId="projectId" />
+              <div v-if="activeTab === 'content'" id="content-section">
+                <ProjectWorkContent
+                    :description="project?.description || ''"
+                    :tags="project?.techStacks?.map(tech => tech.techStackName) || []"
+                    :file-url="project?.fileUrl || ''"
+                    :attachments="project?.attachments || []"
+                    :author="project?.author || null"
+                    @contact-author="handleContactAuthor"
+                    @view-portfolio="handleViewPortfolio"
+                />
+              </div>
+              
+              <div v-if="activeTab === 'recommendations'" id="recommendations-section">
+                <TeamMemberRecommendation 
+                  :projectId="projectId"
+                  :requiredSkills="project?.techStacks?.map(tech => tech.techStackName) || []"
+                />
+              </div>
+              
+              <div v-if="activeTab === 'comment'" id="comment-section">
+                <ProjectComment :projectId="projectId" />
+              </div>
             </div>
           </div>
+          </template>
         </div>
       </div>
     </div>
@@ -77,34 +113,61 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue';
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue';
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue';
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberRecommendation.vue';
 
-// 더미 데이터 제거하고 API 사용
+// API와 fallback 데이터 import
 import { getProject } from '@/api/projects';
-import { applyProject } from '@/api/projectMember'; // <-- Change this line
+import { projects } from '@/components/data/projects';
+import { applyProject } from '@/api/projectMember';
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 const projectId = ref(Number(route.params.id));
 
 const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
 
+// 프로젝트 소유자 여부 확인
+const isProjectOwner = computed(() => {
+  if (!project.value || !userStore.isLoggedIn || !userStore.userId) {
+    return false;
+  }
+  // 프로젝트의 작성자 ID와 현재 사용자 ID 비교
+  return project.value.author?.userId === userStore.userId || 
+         project.value.createdBy === userStore.userId;
+});
+
 const load = async () => {
   loading.value = true;
   error.value = null;
+  
+  // 먼저 fallback 데이터로 시작 (개발용)
+  const fallbackProject = projects.find(p => p.id === projectId.value);
+  if (fallbackProject) {
+    project.value = fallbackProject;
+    console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+    loading.value = false;
+    return;
+  }
+  
+  // 프로젝트를 찾을 수 없는 경우
+  console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
+  
   try {
     const { data } = await getProject(projectId.value);
     // 백 DTO: ProjectRecruitmentResponse { projectId, title, description, ... }
     // UI에서 id로도 쓸 수 있게 통일
     project.value = { id: data.projectId ?? data.id, ...data };
   } catch (e) {
-    console.error(e);
+    console.error('API 호출 실패:', e);
     error.value = e;
   } finally {
     loading.value = false;
@@ -124,7 +187,11 @@ watch(
 const activeTab = ref('content');
 function handleTabChange(tab) {
   activeTab.value = tab;
-  const sectionMap = { content: 'content-section', comment: 'comment-section' };
+  const sectionMap = { 
+    content: 'content-section', 
+    recommendations: 'recommendations-section',
+    comment: 'comment-section' 
+  };
   const targetId = sectionMap[tab];
   if (!targetId) return;
   setTimeout(() => {
@@ -541,6 +608,76 @@ document.addEventListener('keydown', (e) => {
     font-size: 14px;
     padding: 14px 28px;
   }
+}
+
+/* 로딩 상태 */
+.loading-state {
+  text-align: center;
+  padding: 100px 20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 프로젝트 찾을 수 없음 */
+.not-found-state {
+  text-align: center;
+  padding: 100px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(76, 175, 80, 0.1);
+}
+
+.not-found-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.not-found-state h2 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 28px;
+}
+
+.not-found-state p {
+  color: #666;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.available-info {
+  color: #4CAF50 !important;
+  font-weight: 600;
+  margin-bottom: 24px !important;
+}
+
+.back-button {
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
 
 /* 기존 애니메이션들 */

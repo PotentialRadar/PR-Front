@@ -15,7 +15,7 @@
 
       <div class="filter-tabs">
         <div class="tab" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">전체</div>
-        <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">🤖 AI추천</div>
+        <div class="tab" :class="{ active: activeTab === 'ai' }" @click="activeTab = 'ai'">AI 추천</div>
         <div class="tab" :class="{ active: activeTab === 'frontend' }" @click="activeTab = 'frontend'">프론트엔드</div>
         <div class="tab" :class="{ active: activeTab === 'backend' }" @click="activeTab = 'backend'">백엔드</div>
         <div class="tab" :class="{ active: activeTab === 'app' }" @click="activeTab = 'app'">앱 개발</div>
@@ -56,6 +56,24 @@
                 <p class="project-description">
                   {{ project.description.length > 100 ? project.description.slice(0, 100) + '...' : project.description }}
                 </p>
+              </div>
+
+              <!-- AI 추천 설명 섹션 (AI 탭에서만 표시) -->
+              <div v-if="activeTab === 'ai' && project.explanation" class="ai-explanation-section">
+                <div class="explanation-header">
+                  <span class="ai-badge">🤖 AI 추천 이유</span>
+                </div>
+                <div class="explanation-content">
+                  <p class="main-reason">{{ project.explanation.simple_explanation || project.explanation.main_reason }}</p>
+                  <div v-if="project.explanation.matched_skills?.length > 0" class="skill-match">
+                    <span class="skill-label">✅ 매칭 기술:</span>
+                    <span class="skill-list">{{ project.explanation.matched_skills.join(', ') }}</span>
+                  </div>
+                  <div v-if="project.explanation.growth_opportunities?.length > 0" class="growth-opportunities">
+                    <span class="growth-label">🌱 성장 기회:</span>
+                    <span class="growth-list">{{ project.explanation.growth_opportunities.join(', ') }}</span>
+                  </div>
+                </div>
               </div>
 
               <div class="category-tags-section">
@@ -157,6 +175,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import api from '@/api/axios'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -170,136 +189,17 @@ const hasUserTechStack = computed(() => {
   // TODO: 실제 사용자 기술스택 정보 확인 필요
   // return userStore.user?.techStacks?.length > 0
   
-  // 임시 테스트용 - 로딩 상태 확인을 위해 true로 설정
-  return true // 로딩 테스트를 위해 임시로 true
+  // API 테스트를 위해 임시로 true로 설정
+  return true // 실제로는 사용자 기술스택 설정 여부 확인
 })
 
-const projects = ref([
-  {
-    id: 1,
-    title: 'AI 기반 협업툴 백엔드 개발',
-    description: 'AI 추천을 기반으로 한 팀 매칭 서비스의 서버 설계와 구현. Spring Boot와 JWT 기반 인증 시스템, 실시간 AI 추천 엔진과 협업 환경을 구축하며 다양한 클라우드 경험을 쌓을 수 있습니다.',
-    techStacks: [
-      { techStackName: 'Spring Boot' },
-      { techStackName: 'JWT' },
-      { techStackName: 'PostgreSQL' },
-      { techStackName: 'Redis' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-01',
-    endDate: '2024-11-01',
-    recruitCount: 3,
-    appliedCount: 8,
-    deadline: 'D-16',
-    category: 'backend',
-    viewCount: 142,
-    isFavorite: false
-  },
-  {
-    id: 2,
-    title: 'Lock Screen 앱 5종 AOS 최신화 및 마켓 등록',
-    description: '안드로이드 앱 개발 및 Google Play 스토어 등록 프로젝트입니다. 기존 락스크린 앱을 최신 Android 버전에 맞게 리팩토링하고, 배포 및 마켓 출시까지 전 과정을 함께합니다.',
-    techStacks: [
-      { techStackName: 'Android' },
-      { techStackName: 'Kotlin' },
-      { techStackName: 'Google Play' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-05',
-    endDate: '2024-10-05',
-    recruitCount: 6,
-    appliedCount: 12,
-    deadline: 'D-13',
-    category: 'app',
-    viewCount: 89,
-    isFavorite: true
-  },
-  {
-    id: 3,
-    title: 'Web 프레임워크 및 UI 시스템 고도화',
-    description: '현대적인 웹 프론트엔드 시스템을 구축하는 프로젝트입니다. React, TypeScript, StoryBook을 활용하여 UI 시스템 설계와 성능 최적화까지 실무처럼 경험할 수 있습니다.',
-    techStacks: [
-      { techStackName: 'React' },
-      { techStackName: 'TypeScript' },
-      { techStackName: 'Vite' },
-      { techStackName: 'StoryBook' },
-      { techStackName: 'CSS-in-JS' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-10',
-    endDate: '2024-12-31',
-    recruitCount: 3,
-    appliedCount: 5,
-    deadline: 'D-16',
-    category: 'frontend',
-    viewCount: 203,
-    isFavorite: false
-  },
-  {
-    id: 4,
-    title: 'E-commerce 플랫폼 디자인 시스템',
-    description: '사용자 친화적인 온라인 쇼핑몰 UI/UX 디자인 프로젝트. Figma와 Prototyping을 통한 디자인 시스템 설계, 실무 중심의 UI/UX 프로젝트 경험 제공.',
-    techStacks: [
-      { techStackName: 'UI/UX' },
-      { techStackName: 'Figma' },
-      { techStackName: '디자인시스템' },
-      { techStackName: 'Prototyping' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-20',
-    endDate: '2024-11-30',
-    recruitCount: 4,
-    appliedCount: 7,
-    deadline: 'D-8',
-    category: 'design',
-    viewCount: 156,
-    isFavorite: false
-  },
-  {
-    id: 5,
-    title: 'MSA 기반 클라우드 인프라 구축',
-    description: '마이크로서비스 아키텍처와 컨테이너 기반 인프라 구축. Docker, Kubernetes, AWS를 활용한 마이크로서비스 배포 및 운영 자동화를 실습합니다.',
-    techStacks: [
-      { techStackName: 'Docker' },
-      { techStackName: 'Kubernetes' },
-      { techStackName: 'AWS' },
-      { techStackName: 'MSA' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-12',
-    endDate: '2024-12-10',
-    recruitCount: 5,
-    appliedCount: 14,
-    deadline: 'D-20',
-    category: 'infra',
-    viewCount: 321,
-    isFavorite: true
-  },
-  {
-    id: 6,
-    title: 'AI 챗봇 개발',
-    description: '자연어 처리 기반 AI 챗봇 개발 프로젝트. TensorFlow, NLP 기반의 대화형 챗봇을 설계하고 실제 서비스 환경에 배포까지 진행합니다.',
-    techStacks: [
-      { techStackName: 'Python' },
-      { techStackName: 'NLP' },
-      { techStackName: 'TensorFlow' }
-    ],
-    status: '모집중',
-    startDate: '2024-07-18',
-    endDate: '2024-09-30',
-    recruitCount: 2,
-    appliedCount: 6,
-    deadline: 'D-7',
-    category: 'backend',
-    viewCount: 98,
-    isFavorite: false
-  }
-])
+// 임시 하드코딩 데이터 제거 - AI 추천 테스트를 위해
+const projects = ref([])
 
 const filteredProjects = computed(() => {
   if (activeTab.value === 'all') return projects.value
   if (activeTab.value === 'ai') {
-    // 임시 테스트용 - 기술스택만 확인 (로그인 체크 제거)
+    // 임시 테스트용 - 로그인 체크 제거하고 기술스택만 확인
     if (!hasUserTechStack.value) {
       return []
     }
@@ -338,23 +238,127 @@ const isUrgent = (deadline) => {
   return false
 }
 
-// AI 추천 API 호출 시뮬레이션
+// AI 추천 API 호출
 const fetchAIRecommendations = async () => {
+  console.log('🚀 AI 추천 API 호출 시작')
   isLoadingAI.value = true
+  
+  // 최소 로딩 시간 보장 (UX 개선)
+  const minLoadingTime = 1500 // 1.5초
+  const startTime = Date.now()
+  
   try {
-    // TODO: 실제 API 호출로 대체
-    // const response = await api.get('/api/projects/ai-recommendations')
-    // return response.data
+    // 임시 테스트용 - 다양한 기술스택 조합 중 랜덤 선택
+    const testTechStacks = [
+      // JavaScript + React 사용자 (프로젝트 3, 4와 매칭 예상)
+      [
+        { name: "JavaScript", level: 4 },
+        { name: "React", level: 3 },
+        { name: "Node.js", level: 2 }
+      ],
+      // Python 개발자 (프로젝트 6, 11, 20과 매칭 예상)  
+      [
+        { name: "Python", level: 4 },
+        { name: "Django", level: 3 },
+        { name: "PostgreSQL", level: 2 }
+      ],
+      // Vue.js 개발자 (프로젝트 1, 5와 매칭 예상)
+      [
+        { name: "Vue.js", level: 4 },
+        { name: "TypeScript", level: 3 },
+        { name: "Docker", level: 2 }
+      ],
+      // Java + Spring 개발자 (프로젝트 2, 7과 매칭 예상)
+      [
+        { name: "Java", level: 4 },
+        { name: "Spring Boot", level: 4 },
+        { name: "PostgreSQL", level: 3 }
+      ],
+      // 모바일 개발자 (프로젝트 9, 10과 매칭 예상)
+      [
+        { name: "React Native", level: 3 },
+        { name: "TypeScript", level: 3 },
+        { name: "Firebase", level: 2 }
+      ]
+    ]
     
-    // 임시 로딩 시뮬레이션 (1.5초)
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // 랜덤하게 기술스택 선택하여 다양한 추천 결과 확인
+    const randomIndex = Math.floor(Math.random() * testTechStacks.length)
+    const selectedTechStacks = testTechStacks[randomIndex]
     
-    // 임시로 조회수 높은 순으로 정렬하여 반환
-    return [...projects.value].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    console.log(`\n🎯 테스트 케이스 ${randomIndex + 1}: ${selectedTechStacks.map(t => t.name).join(', ')}`)
+    
+    const requestBody = {
+      userId: userStore.userId || 1,
+      techStacks: selectedTechStacks
+    }
+    
+    const response = await fetch('http://localhost:8082/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    const responseData = await response.json()
+    const projects = Array.isArray(responseData) ? responseData : []
+    
+    if (projects.length === 0) {
+      console.log('⚠️ 추천 프로젝트가 없습니다')
+      return []
+    }
+    
+    // 📊 추천 결과 요약 출력
+    console.log('📊 추천 결과:')
+    projects.forEach((project, index) => {
+      console.log(`  ${index + 1}. ${project.title} (점수: ${project.matchScore?.toFixed(2) || 'N/A'})`)
+      
+      // 🔍 추천 설명 데이터 확인
+      if (project.explanation) {
+        console.log(`    💡 ${project.explanation.simple_explanation || project.explanation.main_reason}`)
+        if (project.explanation.matched_skills?.length > 0) {
+          console.log(`    ✅ 매칭 기술: ${project.explanation.matched_skills.join(', ')}`)
+        }
+        if (project.explanation.growth_opportunities?.length > 0) {
+          console.log(`    🌱 성장 기회: ${project.explanation.growth_opportunities.join(', ')}`)
+        }
+      } else {
+        console.log(`    ❌ explanation 데이터 없음`)
+      }
+    })
+    
+    // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
+    return projects.map(project => ({
+      id: project.projectId,
+      title: project.title,
+      description: project.description,
+      techStacks: project.projectTechStacks?.map(tech => ({ techStackName: tech })) || [],
+      status: '모집중', // 기본값
+      startDate: '2024-01-01', // 기본값
+      endDate: '2024-12-31', // 기본값
+      recruitCount: 3, // 기본값
+      appliedCount: Math.floor(Math.random() * 10), // 랜덤값
+      deadline: `D-${Math.floor(Math.random() * 30)}`, // 랜덤값
+      category: 'ai', // AI 추천 카테고리
+      viewCount: Math.floor(Math.random() * 200), // 랜덤값
+      isFavorite: false,
+      matchScore: project.matchScore, // AI 점수
+      explanation: project.explanation // AI 추천 설명 데이터
+    }))
+    
   } catch (error) {
-    console.error('AI 추천 조회 실패:', error)
+    console.error('❌ AI 추천 조회 실패:', error.message)
     return []
   } finally {
+    // 최소 로딩 시간 보장
+    const elapsedTime = Date.now() - startTime
+    const remainingTime = Math.max(0, minLoadingTime - elapsedTime)
+    
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime))
+    }
+    
     isLoadingAI.value = false
   }
 }
@@ -366,12 +370,10 @@ const goToDetail = (project) => {
 
 // AI 탭 선택 시마다 새로운 추천 데이터 불러오기
 watch(activeTab, async (newTab) => {
-  // 임시 테스트용 - 로그인 체크 제거하고 기술스택만 확인
   if (newTab === 'ai' && hasUserTechStack.value) {
-    // 캐싱 제거 - 매번 새로운 추천을 받도록 변경
     const recommendations = await fetchAIRecommendations()
     aiRecommendedProjects.value = recommendations
-    hasLoadedAIOnce.value = true // 로드 완료 표시
+    hasLoadedAIOnce.value = true
   }
 })
 </script>
@@ -859,6 +861,81 @@ watch(activeTab, async (newTab) => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* AI 추천 설명 섹션 스타일 */
+.ai-explanation-section {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.1) 0%, rgba(76, 175, 80, 0.1) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  position: relative;
+}
+
+.explanation-header {
+  margin-bottom: 8px;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #81C784 0%, #4CAF50 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.explanation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.main-reason {
+  margin: 0;
+  color: #2E7D32;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.skill-match,
+.growth-opportunities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.skill-label,
+.growth-label {
+  color: #388E3C;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.skill-list,
+.growth-list {
+  color: #2E7D32;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* AI 탭에서 프로젝트 카드 강조 */
+.tab.active[data-tab="ai"] ~ .projects-grid .project-card {
+  border-color: rgba(129, 199, 132, 0.3);
+}
+
+.tab.active[data-tab="ai"] ~ .projects-grid .project-card:hover {
+  border-color: rgba(129, 199, 132, 0.5);
+  box-shadow: 0 8px 25px rgba(129, 199, 132, 0.2);
 }
 
 
