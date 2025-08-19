@@ -286,7 +286,14 @@ export default {
     });
 
     const validationSchema = {
-      // ... (validation schema remains the same)
+      projectTitle: ['required', { minLength: 5 }, { maxLength: 100 }],
+      projectDescription: ['required', { minLength: 10 }],
+      startDate: ['required'],
+      endDate: ['required'],
+      parts: ['parts'],
+      techStack: ['techStack'],
+      recruitDeadline: ['required'],
+      files: []
     };
 
     
@@ -314,8 +321,19 @@ export default {
 
         
 
-        const techStacks = formData.techStack.map(ts => ({ techStackName: ts.techStackName || ts.name, recruitCount: 1 }));
-        const parts = partRows.value.filter(r => r.part && Number(r.count) > 0).map(r => ({ partName: r.part, recruitCount: Number(r.count) }));
+        const techStacks = formData.techStack
+          .filter(s => s.techStackName && s.techStackName.trim())
+          .map(s => ({
+            techStackName: s.techStackName.trim(),
+            recruitCount: Number(s.recruitCount ?? 0)
+          }));
+
+        const parts = partRows.value
+          .filter(r => r.part && r.part.trim() && Number(r.count) > 0)
+          .map(r => ({
+            partName: r.part.trim(),
+            recruitCount: Number(r.count ?? 0)
+          }));
 
         const projectData = {
           title: formData.projectTitle,

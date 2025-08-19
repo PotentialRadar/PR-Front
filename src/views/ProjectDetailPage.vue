@@ -150,13 +150,13 @@ const load = async () => {
   error.value = null;
   
   // 먼저 fallback 데이터로 시작 (개발용)
-  const fallbackProject = projects.find(p => p.id === projectId.value);
-  if (fallbackProject) {
-    project.value = fallbackProject;
-    console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-    loading.value = false;
-    return;
-  }
+  // const fallbackProject = projects.find(p => p.id === projectId.value);
+  // if (fallbackProject) {
+  //   project.value = fallbackProject;
+  //   console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+  //   loading.value = false;
+  //   return;
+  // }
   
   // 프로젝트를 찾을 수 없는 경우
   console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
