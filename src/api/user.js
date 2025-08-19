@@ -8,7 +8,7 @@ export const login = ({ email, password }) =>
 
 export const logout = () => api.post('/logout');
 
-export const getUserProfile = () => api.get('/user/profile');
+export const getUserProfile = () => api.get('/users/me');
 
 export const updateUserProfile = (profileData) => 
   api.put('/user/profile', profileData);

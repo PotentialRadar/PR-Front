@@ -61,6 +61,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { loginByEmail } from '../api/login'
+import api from '@/api/axios'
 
 const email = ref('')
 const password = ref('')
@@ -77,15 +78,28 @@ const handleEmailLogin = async () => {
       email: email.value,
       password: password.value,
     });
+    
+    // 토큰 저장
     localStorage.setItem('accessToken', result.accessToken);
     localStorage.setItem('refreshToken', result.refreshToken);
 
-    // Pinia 상태 갱신
-    userStore.login(email.value);
+    // 사용자 정보 가져오기
+    const userProfileResponse = await api.get('/users/me');
+    const userProfile = userProfileResponse.data;
+    
+    // Pinia 상태 갱신 (OAuth와 동일한 형식)
+    userStore.login({
+      userId: userProfile.id,
+      email: userProfile.email,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken
+    });
 
+    console.log('로그인 성공!', { userId: userProfile.id, email: userProfile.email });
     router.push('/');
   } catch (error) {
-    alert('로그인 실패: ' + (error?.response?.data || '서버 오류'));
+    console.error('로그인 실패:', error);
+    alert('로그인 실패: ' + (error?.response?.data?.message || '서버 오류'));
   }
 };
 </script>

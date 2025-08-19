@@ -70,7 +70,7 @@ export const useUserStore = defineStore('user', {
         const response = await getUserProfile();
         this.profile = response.data;
         this.email = response.data.email;
-        this.userId = response.data.userId;
+        this.userId = response.data.id;
         this.nickname = response.data.nickname;
         return response.data;
       } catch (error) {

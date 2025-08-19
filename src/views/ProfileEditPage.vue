@@ -12,33 +12,53 @@
                 <i class="bi bi-camera"></i>
               </div>
             </div>
-            
+
             <div class="avatar-options">
-              <p class="avatar-description">프로필 이미지를 선택하거나 업로드하세요</p>
-              
+              <p class="avatar-description">
+                프로필 이미지를 선택하거나 업로드하세요
+              </p>
+
               <!-- 파일 업로드 섹션 추가 -->
               <div class="upload-section">
-                <button type="button" @click="triggerFileUpload" class="upload-button">
+                <button
+                  type="button"
+                  @click="triggerFileUpload"
+                  class="upload-button"
+                >
                   <i class="bi bi-cloud-upload"></i>
                   사진 업로드
                 </button>
-                <input 
-                  ref="fileInput" 
-                  type="file" 
-                  accept="image/*" 
-                  @change="handleFileUpload" 
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  @change="handleFileUpload"
                   class="upload-input"
                 />
-                <p class="upload-help">JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</p>
-                
+                <p class="upload-help">
+                  JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)
+                </p>
+
                 <!-- 업로드된 이미지 미리보기 -->
                 <div v-if="uploadedImage" class="upload-preview">
-                  <img :src="uploadedImage" alt="업로드된 이미지" class="preview-image" />
+                  <img
+                    :src="uploadedImage"
+                    alt="업로드된 이미지"
+                    class="preview-image"
+                  />
                   <div class="preview-actions">
-                    <button type="button" @click="useUploadedImage" class="preview-action">
+                    <button
+                      type="button"
+                      @click="useUploadedImage"
+                      class="preview-action"
+                    >
                       사용하기
                     </button>
-                    <button type="button" @click="removeUploadedImage" class="preview-action delete">
+                    <button
+                      type="button"
+                      @click="removeUploadedImage"
+                      class="preview-action delete"
+                    >
                       삭제
                     </button>
                   </div>
@@ -46,14 +66,22 @@
               </div>
 
               <div class="avatar-grid">
-                <div 
-                  v-for="(avatarUrl, index) in avatarOptions" 
+                <div
+                  v-for="(avatarUrl, index) in avatarOptions"
                   :key="index"
                   @click="selectAvatar(avatarUrl)"
-                  :class="['avatar-option', { active: formData.avatar === avatarUrl && !isCustomAvatar }]"
+                  :class="[
+                    'avatar-option',
+                    {
+                      active: formData.avatar === avatarUrl && !isCustomAvatar,
+                    },
+                  ]"
                 >
                   <img :src="avatarUrl" :alt="`아바타 ${index + 1}`" />
-                  <div v-if="formData.avatar === avatarUrl && !isCustomAvatar" class="selected-indicator">
+                  <div
+                    v-if="formData.avatar === avatarUrl && !isCustomAvatar"
+                    class="selected-indicator"
+                  >
                     <i class="bi bi-check-circle-fill"></i>
                   </div>
                 </div>
@@ -68,18 +96,32 @@
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label" for="name">
-                이름 <span class="required">*</span>
+                닉네임 <span class="required">*</span>
               </label>
-              <input
-                id="name"
-                v-model="formData.name"
-                type="text"
-                class="form-input"
-                placeholder="이름을 입력하세요"
-                required
-                maxlength="20"
-              />
+              <div class="nickname-input-group">
+                <input
+                  id="name"
+                  v-model="formData.name"
+                  type="text"
+                  class="form-input nickname-input"
+                  placeholder="닉네임을 입력하세요"
+                  required
+                  maxlength="20"
+                  @input="onNicknameChange"
+                />
+                <button
+                  type="button"
+                  class="nickname-check-button"
+                  @click="checkNicknameAvailability"
+                  :disabled="!isNicknameValid || isCheckingNickname"
+                >
+                  {{ isCheckingNickname ? "확인 중..." : "중복 확인" }}
+                </button>
+              </div>
               <div class="input-helper">{{ formData.name.length }}/20</div>
+              <p v-if="nicknameMessage" :class="nicknameMessageClass">
+                {{ nicknameMessage }}
+              </p>
             </div>
 
             <div class="form-group">
@@ -124,9 +166,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="experience">
-                경력
-              </label>
+              <label class="form-label" for="experience"> 경력 </label>
               <select
                 id="experience"
                 v-model="formData.experience"
@@ -139,6 +179,7 @@
                 <option value="3-5년">3-5년</option>
                 <option value="5-10년">5-10년</option>
                 <option value="10년 이상">10년 이상</option>
+                <option value="기타">기타</option>
               </select>
             </div>
           </div>
@@ -149,22 +190,21 @@
           <h3 class="section-title">연락처 정보</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label class="form-label" for="email">
-                이메일
-              </label>
+              <label class="form-label" for="email"> 이메일 </label>
               <input
                 id="email"
                 v-model="formData.email"
                 type="email"
-                class="form-input"
+                class="form-input readonly-input"
                 placeholder="example@email.com"
+                readonly
+                disabled
               />
+              <div class="input-helper">이메일은 변경할 수 없습니다</div>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="phone">
-                전화번호
-              </label>
+              <label class="form-label" for="phone"> 전화번호 </label>
               <input
                 id="phone"
                 v-model="formData.phone"
@@ -175,9 +215,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="github">
-                GitHub
-              </label>
+              <label class="form-label" for="github"> GitHub </label>
               <input
                 id="github"
                 v-model="formData.github"
@@ -188,9 +226,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="linkedin">
-                LinkedIn
-              </label>
+              <label class="form-label" for="linkedin"> LinkedIn </label>
               <input
                 id="linkedin"
                 v-model="formData.linkedin"
@@ -201,9 +237,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="website">
-                개인 웹사이트
-              </label>
+              <label class="form-label" for="website"> 개인 웹사이트 </label>
               <input
                 id="website"
                 v-model="formData.website"
@@ -213,18 +247,6 @@
               />
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="location">
-                지역
-              </label>
-              <input
-                id="location"
-                v-model="formData.location"
-                type="text"
-                class="form-input"
-                placeholder="서울, 대한민국"
-              />
-            </div>
           </div>
         </div>
 
@@ -276,7 +298,7 @@
           <button type="submit" :disabled="saving" class="save-button">
             <i v-if="saving" class="bi bi-hourglass-split spinning"></i>
             <i v-else class="bi bi-check"></i>
-            {{ saving ? '저장 중...' : '저장하기' }}
+            {{ saving ? "저장 중..." : "저장하기" }}
           </button>
         </div>
       </form>
@@ -293,169 +315,294 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/userStore";
+import { updateUserProfile, checkNickname } from "@/api/user";
 
-const router = useRouter()
+const router = useRouter();
 
-const saving = ref(false)
-const showSaveToast = ref(false)
+const saving = ref(false);
+const showSaveToast = ref(false);
+const loading = ref(true);
 
 // 사진 업로드 관련 추가
-const uploadedImage = ref(null)
-const isCustomAvatar = ref(false)
+const uploadedImage = ref(null);
+const isCustomAvatar = ref(false);
+
+// 닉네임 중복 확인 관련
+const isCheckingNickname = ref(false);
+const nicknameAvailable = ref(null); // null: 확인 전, true: 사용 가능, false: 중복
+const originalNickname = ref("");
 
 // 아바타 옵션들
 const avatarOptions = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=6',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=7',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=8',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=9',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=10',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=11',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=12'
-]
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=2",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=3",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=4",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=5",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=6",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=7",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=8",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=9",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=10",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=11",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=12",
+];
 
-// 기본 데이터 (현재 사용자 정보)
-const originalData = {
-  name: '김개발자',
-  jobTitle: 'Senior Frontend Developer',
-  category: 'Frontend',
-  experience: '3-5년',
-  email: 'kim.developer@example.com',
-  phone: '010-1234-5678',
-  github: 'https://github.com/kimdev',
-  linkedin: 'https://linkedin.com/in/kimdev',
-  website: 'https://kimdev.portfolio.com',
-  location: '서울, 대한민국',
-  bio: '사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다.',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+// 기본 데이터(초기값). 실제 값은 로그인 유저 프로필로 대체됨
+let originalData = {
+  name: "",
+  jobTitle: "",
+  category: "",
+  experience: "",
+  email: "",
+  phone: "",
+  github: "",
+  linkedin: "",
+  website: "",
+  location: "",
+  bio: "",
+  avatar: "",
   isPublic: true,
   showContact: true,
-  allowSearch: true
-}
+  allowSearch: true,
+};
 
 // 폼 데이터
-const formData = reactive({
-  ...originalData
-})
+const formData = reactive({ ...originalData });
+
+// 유저 스토어
+const userStore = useUserStore();
 
 // 파일 input ref 추가
-const fileInput = ref(null)
+const fileInput = ref(null);
+
+// 닉네임 유효성 검사
+const isNicknameValid = computed(() => {
+  const regex = /^[a-zA-Z0-9가-힣]+$/;
+  const len = formData.name.length;
+  return len >= 2 && len <= 20 && regex.test(formData.name);
+});
+
+// 닉네임 상태 메시지
+const nicknameMessage = computed(() => {
+  if (!formData.name) return "";
+  
+  if (!isNicknameValid.value) {
+    return "닉네임은 2~20자, 한글/영문/숫자만 가능합니다.";
+  }
+  
+  if (formData.name === originalNickname.value) {
+    return "현재 사용 중인 닉네임입니다.";
+  }
+  
+  if (nicknameAvailable.value === false) {
+    return "이미 사용 중인 닉네임입니다.";
+  }
+  
+  if (nicknameAvailable.value === true) {
+    return "사용 가능한 닉네임입니다.";
+  }
+  
+  return "";
+});
+
+// 닉네임 메시지 스타일 클래스
+const nicknameMessageClass = computed(() => {
+  if (!formData.name) return "";
+  
+  if (!isNicknameValid.value || nicknameAvailable.value === false) {
+    return "validation-message error";
+  }
+  
+  if (formData.name === originalNickname.value) {
+    return "validation-message info";
+  }
+  
+  if (nicknameAvailable.value === true) {
+    return "validation-message success";
+  }
+  
+  return "";
+});
 
 // 메서드
 const selectAvatar = (avatarUrl) => {
-  formData.avatar = avatarUrl
-  isCustomAvatar.value = false
-  uploadedImage.value = null
-}
+  formData.avatar = avatarUrl;
+  isCustomAvatar.value = false;
+  uploadedImage.value = null;
+};
 
 // 파일 업로드 관련 메서드 추가
 const triggerFileUpload = () => {
-  fileInput.value.click()
-}
+  fileInput.value.click();
+};
 
 const handleFileUpload = (event) => {
-  const file = event.target.files[0]
-  if (!file) return
+  const file = event.target.files[0];
+  if (!file) return;
 
   // 파일 크기 체크 (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('파일 크기가 5MB를 초과합니다.')
-    return
+    alert("파일 크기가 5MB를 초과합니다.");
+    return;
   }
 
   // 파일 타입 체크
-  if (!file.type.startsWith('image/')) {
-    alert('이미지 파일만 업로드 가능합니다.')
-    return
+  if (!file.type.startsWith("image/")) {
+    alert("이미지 파일만 업로드 가능합니다.");
+    return;
   }
 
-  const reader = new FileReader()
+  const reader = new FileReader();
   reader.onload = (e) => {
-    uploadedImage.value = e.target.result
-  }
-  reader.readAsDataURL(file)
-}
+    uploadedImage.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 
 const useUploadedImage = () => {
-  formData.avatar = uploadedImage.value
-  isCustomAvatar.value = true
-}
+  formData.avatar = uploadedImage.value;
+  isCustomAvatar.value = true;
+};
 
 const removeUploadedImage = () => {
-  uploadedImage.value = null
+  uploadedImage.value = null;
   if (isCustomAvatar.value) {
-    formData.avatar = originalData.avatar
-    isCustomAvatar.value = false
+    formData.avatar = originalData.avatar;
+    isCustomAvatar.value = false;
   }
-}
+};
 
-const saveProfile = async () => {
-  saving.value = true
+// 닉네임 변경 감지
+const onNicknameChange = () => {
+  nicknameAvailable.value = null;
+};
+
+// 닉네임 중복 확인
+const checkNicknameAvailability = async () => {
+  if (!isNicknameValid.value || formData.name === originalNickname.value) return;
+  
+  isCheckingNickname.value = true;
   
   try {
-    // API 호출 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 실제로는 API 호출
-    console.log('저장할 데이터:', formData)
-    
-    showSaveToast.value = true
-    setTimeout(() => showSaveToast.value = false, 3000)
-    
+    const response = await checkNickname(formData.name);
+    nicknameAvailable.value = !response.data.duplicate;
   } catch (error) {
-    console.error('프로필 저장 실패:', error)
-    alert('프로필 저장에 실패했습니다. 다시 시도해주세요.')
+    console.error("닉네임 중복 확인 실패:", error);
+    nicknameAvailable.value = null;
+    alert("닉네임 중복 확인 중 오류가 발생했습니다.");
   } finally {
-    saving.value = false
+    isCheckingNickname.value = false;
   }
-}
+};
+
+const saveProfile = async () => {
+  saving.value = true;
+
+  try {
+    const payload = { ...formData };
+    await updateUserProfile(payload);
+
+    // 스토어 상태도 업데이트
+    userStore.updateProfile(payload);
+
+    showSaveToast.value = true;
+    setTimeout(() => (showSaveToast.value = false), 3000);
+  } catch (error) {
+    console.error("프로필 저장 실패:", error);
+    alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+  } finally {
+    saving.value = false;
+  }
+};
 
 const resetForm = () => {
-  if (confirm('모든 변경사항이 초기화됩니다. 계속하시겠습니까?')) {
-    Object.assign(formData, originalData)
-    uploadedImage.value = null
-    isCustomAvatar.value = false
+  if (confirm("모든 변경사항이 초기화됩니다. 계속하시겠습니까?")) {
+    Object.assign(formData, originalData);
+    uploadedImage.value = null;
+    isCustomAvatar.value = false;
   }
-}
+};
 
 const goBack = () => {
   if (hasChanges()) {
-    if (confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) {
-      router.back()
+    if (confirm("저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?")) {
+      router.back();
     }
   } else {
-    router.back()
+    router.back();
   }
-}
+};
 
 const hasChanges = () => {
-  return JSON.stringify(formData) !== JSON.stringify(originalData) || uploadedImage.value !== null
-}
+  return (
+    JSON.stringify(formData) !== JSON.stringify(originalData) ||
+    uploadedImage.value !== null
+  );
+};
 
 // 페이지를 떠날 때 확인
 const handleBeforeUnload = (event) => {
   if (hasChanges()) {
-    event.preventDefault()
-    event.returnValue = ''
+    event.preventDefault();
+    event.returnValue = "";
   }
-}
+};
 
-onMounted(() => {
-  window.addEventListener('beforeunload', handleBeforeUnload)
-})
+onMounted(async () => {
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  try {
+    // 로그인 및 프로필 확보
+    if (!userStore.isLoggedIn) {
+      await userStore.checkLogin();
+    }
+    if (!userStore.profile) {
+      await userStore.fetchProfile();
+    }
+
+    const profile = userStore.profile || {};
+    // 백엔드 필드명을 안전하게 매핑
+    const hydrated = {
+      name: profile.name || profile.nickname || "",
+      jobTitle: profile.jobTitle || "",
+      category: profile.category || "",
+      experience: profile.experience || "",
+      email: profile.email || "",
+      phone: profile.phone || "",
+      github: profile.github || "",
+      linkedin: profile.linkedin || "",
+      website: profile.website || "",
+      location: profile.location || "",
+      bio: profile.bio || "",
+      avatar:
+        profile.avatar ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${
+          userStore.userId || "user"
+        }`,
+      isPublic: profile.isPublic ?? true,
+      showContact: profile.showContact ?? true,
+      allowSearch: profile.allowSearch ?? true,
+    };
+
+    originalData = JSON.parse(JSON.stringify(hydrated));
+    Object.assign(formData, hydrated);
+    originalNickname.value = hydrated.name;
+  } catch (e) {
+    console.error("프로필 로드 실패:", e);
+  } finally {
+    loading.value = false;
+  }
+});
 
 // 컴포넌트 언마운트 시 이벤트 리스너 제거
-import { onUnmounted } from 'vue'
+import { onUnmounted } from "vue";
 onUnmounted(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload)
-})
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+});
 </script>
 
 <style scoped>
@@ -493,8 +640,8 @@ onUnmounted(() => {
 
 .back-button:hover {
   background: #f8f9fa;
-  border-color: #4CAF50;
-  color: #4CAF50;
+  border-color: #4caf50;
+  color: #4caf50;
 }
 
 .page-title {
@@ -528,7 +675,7 @@ onUnmounted(() => {
 .section-title {
   font-size: 20px;
   font-weight: 600;
-  color: #4CAF50;
+  color: #4caf50;
   margin: 0 0 24px 0;
   padding-bottom: 8px;
   border-bottom: 2px solid rgba(76, 175, 80, 0.1);
@@ -546,7 +693,7 @@ onUnmounted(() => {
   height: 120px;
   border-radius: 50%;
   overflow: hidden;
-  border: 4px solid #E0E0E0;
+  border: 4px solid #e0e0e0;
   flex-shrink: 0;
 }
 
@@ -599,7 +746,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 6px;
@@ -610,7 +757,7 @@ onUnmounted(() => {
 }
 
 .upload-button:hover {
-  background: #66BB6A;
+  background: #66bb6a;
 }
 
 .upload-input {
@@ -636,7 +783,7 @@ onUnmounted(() => {
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #4CAF50;
+  border: 2px solid #4caf50;
 }
 
 .preview-actions {
@@ -686,12 +833,12 @@ onUnmounted(() => {
 }
 
 .avatar-option:hover {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   transform: scale(1.05);
 }
 
 .avatar-option.active {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
@@ -705,7 +852,7 @@ onUnmounted(() => {
   position: absolute;
   top: -2px;
   right: -2px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border-radius: 50%;
   width: 20px;
@@ -741,7 +888,9 @@ onUnmounted(() => {
   color: #dc3545;
 }
 
-.form-input, .form-select, .form-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   padding: 12px 16px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -750,8 +899,10 @@ onUnmounted(() => {
   outline: none;
 }
 
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: #4CAF50;
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: #4caf50;
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
@@ -767,6 +918,66 @@ onUnmounted(() => {
   color: #999;
   margin-top: 4px;
   text-align: right;
+}
+
+.nickname-input-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nickname-input {
+  flex: 1;
+}
+
+.nickname-check-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  background: #4caf50;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.nickname-check-button:hover:not(:disabled) {
+  background: #66bb6a;
+}
+
+.nickname-check-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.readonly-input {
+  background-color: #f8f9fa !important;
+  cursor: not-allowed;
+  color: #6c757d;
+}
+
+.validation-message {
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.validation-message.error {
+  color: #dc3545;
+}
+
+.validation-message.success {
+  color: #28a745;
+}
+
+.validation-message.info {
+  color: #6c757d;
 }
 
 .privacy-settings {
@@ -837,7 +1048,7 @@ onUnmounted(() => {
 }
 
 input:checked + .toggle-slider {
-  background-color: #4CAF50;
+  background-color: #4caf50;
 }
 
 input:checked + .toggle-slider:before {
@@ -852,7 +1063,8 @@ input:checked + .toggle-slider:before {
   gap: 16px;
 }
 
-.reset-button, .save-button {
+.reset-button,
+.save-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -877,13 +1089,13 @@ input:checked + .toggle-slider:before {
 }
 
 .save-button {
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   min-width: 140px;
 }
 
 .save-button:hover:not(:disabled) {
-  background: #66BB6A;
+  background: #66bb6a;
 }
 
 .save-button:disabled {
@@ -899,7 +1111,7 @@ input:checked + .toggle-slider:before {
   position: fixed;
   top: 80px;
   right: 20px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
@@ -911,18 +1123,24 @@ input:checked + .toggle-slider:before {
   z-index: 1000;
 }
 
-.toast-enter-active, .toast-leave-active {
+.toast-enter-active,
+.toast-leave-active {
   transition: all 0.3s ease;
 }
 
-.toast-enter-from, .toast-leave-to {
+.toast-enter-from,
+.toast-leave-to {
   opacity: 0;
   transform: translateX(100%);
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
