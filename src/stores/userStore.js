@@ -40,6 +40,9 @@ export const useUserStore = defineStore('user', {
         
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        
+        // 메인페이지로 리다이렉트
+        window.location.href = '/';
       }
     },
     
@@ -70,7 +73,7 @@ export const useUserStore = defineStore('user', {
         const response = await getUserProfile();
         this.profile = response.data;
         this.email = response.data.email;
-        this.userId = response.data.id;
+        this.userId = response.data.userId;
         this.nickname = response.data.nickname;
         return response.data;
       } catch (error) {

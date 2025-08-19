@@ -125,16 +125,13 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="jobTitle">
-                직책 <span class="required">*</span>
-              </label>
+              <label class="form-label" for="jobTitle"> 직책 </label>
               <input
                 id="jobTitle"
                 v-model="formData.jobTitle"
                 type="text"
                 class="form-input"
                 placeholder="예: Senior Frontend Developer"
-                required
                 maxlength="50"
               />
               <div class="input-helper">{{ formData.jobTitle.length }}/50</div>
@@ -211,6 +208,9 @@
                 type="tel"
                 class="form-input"
                 placeholder="010-1234-5678"
+                @input="formatPhoneNumber"
+                @keypress="onlyNumbers"
+                maxlength="13"
               />
             </div>
 
@@ -246,7 +246,6 @@
                 placeholder="https://mywebsite.com"
               />
             </div>
-
           </div>
         </div>
 
@@ -389,42 +388,42 @@ const isNicknameValid = computed(() => {
 // 닉네임 상태 메시지
 const nicknameMessage = computed(() => {
   if (!formData.name) return "";
-  
+
   if (!isNicknameValid.value) {
     return "닉네임은 2~20자, 한글/영문/숫자만 가능합니다.";
   }
-  
+
   if (formData.name === originalNickname.value) {
     return "현재 사용 중인 닉네임입니다.";
   }
-  
+
   if (nicknameAvailable.value === false) {
     return "이미 사용 중인 닉네임입니다.";
   }
-  
+
   if (nicknameAvailable.value === true) {
     return "사용 가능한 닉네임입니다.";
   }
-  
+
   return "";
 });
 
 // 닉네임 메시지 스타일 클래스
 const nicknameMessageClass = computed(() => {
   if (!formData.name) return "";
-  
+
   if (!isNicknameValid.value || nicknameAvailable.value === false) {
     return "validation-message error";
   }
-  
+
   if (formData.name === originalNickname.value) {
     return "validation-message info";
   }
-  
+
   if (nicknameAvailable.value === true) {
     return "validation-message success";
   }
-  
+
   return "";
 });
 
@@ -483,10 +482,11 @@ const onNicknameChange = () => {
 
 // 닉네임 중복 확인
 const checkNicknameAvailability = async () => {
-  if (!isNicknameValid.value || formData.name === originalNickname.value) return;
-  
+  if (!isNicknameValid.value || formData.name === originalNickname.value)
+    return;
+
   isCheckingNickname.value = true;
-  
+
   try {
     const response = await checkNickname(formData.name);
     nicknameAvailable.value = !response.data.duplicate;
@@ -499,21 +499,143 @@ const checkNicknameAvailability = async () => {
   }
 };
 
+// 숫자만 입력 허용
+const onlyNumbers = (event) => {
+  const char = String.fromCharCode(event.which);
+  if (!/[0-9]/.test(char)) {
+    event.preventDefault();
+  }
+};
+
+// 전화번호 포맷팅
+const formatPhoneNumber = (event) => {
+  let value = event.target.value.replace(/\D/g, ""); // 숫자만 남기기
+
+  if (value.length <= 3) {
+    formData.phone = value;
+  } else if (value.length <= 7) {
+    formData.phone = value.slice(0, 3) + "-" + value.slice(3);
+  } else if (value.length <= 11) {
+    formData.phone =
+      value.slice(0, 3) + "-" + value.slice(3, 7) + "-" + value.slice(7);
+  } else {
+    formData.phone =
+      value.slice(0, 3) + "-" + value.slice(3, 7) + "-" + value.slice(7, 11);
+  }
+};
+
 const saveProfile = async () => {
   saving.value = true;
 
   try {
-    const payload = { ...formData };
-    await updateUserProfile(payload);
+    // 분야를 techPartId로 매핑
+    const techPartMapping = {
+      Frontend: 1,
+      Backend: 2,
+      Fullstack: 3,
+      Mobile: 4,
+      DevOps: 5,
+      Data: 6,
+      "AI/ML": 7,
+      Design: 8,
+      PM: 9,
+      QA: 10,
+      Other: 11,
+    };
 
-    // 스토어 상태도 업데이트
-    userStore.updateProfile(payload);
+    // 경력을 ExperienceRange enum으로 매핑
+    const experienceMapping = {
+      신입: "FRESHER",
+      "1년 미만": "LT_1",
+      "1-3년": "Y1_3",
+      "3-5년": "Y3_5",
+      "5-10년": "Y5_10",
+      "10년 이상": "GE_10",
+      기타: "ETC",
+    };
+
+    // 닉네임 필수 검증
+    if (!formData.name || formData.name.trim().length === 0) {
+      alert("닉네임을 입력해주세요.");
+      return;
+    }
+
+    // 전화번호 처리 (빈 값이면 null, 있으면 하이픈 제거)
+    const processedPhone = formData.phone && formData.phone.trim() 
+      ? formData.phone.replace(/-/g, "") 
+      : null;
+    
+    // 전화번호 validation (값이 있을 때만)
+    if (processedPhone && !/^\d{10,11}$/.test(processedPhone)) {
+      alert("전화번호는 10-11자리 숫자만 입력해주세요.");
+      return;
+    }
+
+    // 백엔드 API에 맞게 데이터 변환
+    const payload = {
+      nickname: formData.name.trim(),
+      jobTitle: formData.jobTitle && formData.jobTitle.trim() ? formData.jobTitle.trim() : null,
+      profileImage: formData.avatar || null,
+      bio: formData.bio && formData.bio.trim() ? formData.bio.trim() : null,
+      phone: processedPhone,
+      githubUrl: formData.github && formData.github.trim() ? formData.github.trim() : null,
+      linkedinUrl: formData.linkedin && formData.linkedin.trim() ? formData.linkedin.trim() : null,
+      websiteUrl: formData.website && formData.website.trim() ? formData.website.trim() : null,
+      isPortfolioOpen: formData.isPublic ?? true,
+      isContactOpen: formData.showContact ?? true,
+      isSearchOpen: formData.allowSearch ?? true,
+      techPartId: techPartMapping[formData.category] || null,
+      experienceRange: experienceMapping[formData.experience] || null,
+    };
+
+    console.log("프로필 저장 데이터:", payload);
+    console.log("전화번호 처리 결과:", {
+      original: formData.phone,
+      processed: formData.phone ? formData.phone.replace(/-/g, "") : null,
+    });
+
+    const response = await updateUserProfile(payload);
+    console.log("프로필 저장 성공:", response);
+
+    // 백엔드에서 최신 프로필 정보 다시 가져오기
+    await userStore.fetchProfile();
+    
+    // 폼 데이터도 최신 정보로 업데이트
+    const updatedProfile = userStore.profile;
+    const refreshedData = {
+      name: updatedProfile.nickname || "",
+      jobTitle: updatedProfile.jobTitle || "",
+      category: updatedProfile.techPartName || "",
+      experience: updatedProfile.experienceRange || "",
+      email: updatedProfile.email || "",
+      phone: updatedProfile.phone || "",
+      github: updatedProfile.githubUrl || "",
+      linkedin: updatedProfile.linkedinUrl || "",
+      website: updatedProfile.websiteUrl || "",
+      location: updatedProfile.location || "",
+      bio: updatedProfile.bio || "",
+      avatar: updatedProfile.profileImage ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${
+          userStore.userId || "user"
+        }`,
+      isPublic: updatedProfile.isPortfolioOpen ?? true,
+      showContact: updatedProfile.isContactOpen ?? true,
+      allowSearch: updatedProfile.isSearchOpen ?? true,
+    };
+    
+    // originalData와 formData 모두 업데이트
+    originalData = JSON.parse(JSON.stringify(refreshedData));
+    Object.assign(formData, refreshedData);
+    originalNickname.value = refreshedData.name;
 
     showSaveToast.value = true;
     setTimeout(() => (showSaveToast.value = false), 3000);
   } catch (error) {
     console.error("프로필 저장 실패:", error);
-    alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+    const errorMessage =
+      error.response?.data?.message ||
+      "프로필 저장에 실패했습니다. 다시 시도해주세요.";
+    alert(errorMessage);
   } finally {
     saving.value = false;
   }
@@ -567,25 +689,25 @@ onMounted(async () => {
     const profile = userStore.profile || {};
     // 백엔드 필드명을 안전하게 매핑
     const hydrated = {
-      name: profile.name || profile.nickname || "",
+      name: profile.nickname || "",
       jobTitle: profile.jobTitle || "",
-      category: profile.category || "",
-      experience: profile.experience || "",
+      category: profile.techPartName || "",
+      experience: profile.experienceRange || "",
       email: profile.email || "",
       phone: profile.phone || "",
-      github: profile.github || "",
-      linkedin: profile.linkedin || "",
-      website: profile.website || "",
+      github: profile.githubUrl || "",
+      linkedin: profile.linkedinUrl || "",
+      website: profile.websiteUrl || "",
       location: profile.location || "",
       bio: profile.bio || "",
       avatar:
-        profile.avatar ||
+        profile.profileImage ||
         `https://api.dicebear.com/7.x/avataaars/svg?seed=${
           userStore.userId || "user"
         }`,
-      isPublic: profile.isPublic ?? true,
-      showContact: profile.showContact ?? true,
-      allowSearch: profile.allowSearch ?? true,
+      isPublic: profile.isPortfolioOpen ?? true,
+      showContact: profile.isContactOpen ?? true,
+      allowSearch: profile.isSearchOpen ?? true,
     };
 
     originalData = JSON.parse(JSON.stringify(hydrated));
