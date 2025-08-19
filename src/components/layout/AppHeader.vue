@@ -17,7 +17,7 @@
       </div>
 
       <div class="header-right">
-        <template v-if="!userStore.isLoggedIn">
+        <template v-if="userStore.isLoggedIn">
           <!-- 채팅 버튼 -->
           <div class="icon-button-container">
             <button 

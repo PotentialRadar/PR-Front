@@ -22,6 +22,7 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('refreshToken');
     },
     checkLogin() {
+      // 실제 토큰 확인 로직 활성화
       const token = localStorage.getItem('accessToken');
       this.isLoggedIn = !!token;
     },

@@ -204,9 +204,8 @@ const hasLoadedAIOnce = ref(false) // AI 추천을 한 번이라도 로드했는
 
 // 테스트용 로그인 상태 (개발 중 확인용)
 const isUserLoggedIn = computed(() => {
-  // 실제: return userStore.isLoggedIn
-  // 테스트: AI 추천 기능 테스트용
-  return true // 로그인된 상태로 테스트
+  // 실제 userStore 사용
+  return userStore.isLoggedIn
 })
 
 // 사용자 기술스택 설정 여부 확인 (임시 - 실제로는 userStore에서 가져와야 함)
@@ -289,7 +288,7 @@ const mapCategoryFromTechStacks = (techStacks) => {
 const filteredProjects = computed(() => {
   if (activeTab.value === 'all') return projects.value
   if (activeTab.value === 'ai') {
-    // 로그인 안된 사용자
+    // 로그인 안된 사용자 - 빈 배열 반환 (로그인 메시지가 표시됨)
     if (!isUserLoggedIn.value) {
       return []
     }
@@ -367,6 +366,10 @@ const fetchPopularProjects = async (limit = 5) => {
 
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
 onMounted(() => {
+  // 테스트: 로그아웃 상태로 만들기
+  localStorage.removeItem('accessToken')
+  // 로그인 상태 체크
+  userStore.checkLogin()
   fetchProjects()
 })
 
