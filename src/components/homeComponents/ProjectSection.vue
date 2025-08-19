@@ -205,8 +205,8 @@ const hasLoadedAIOnce = ref(false) // AI 추천을 한 번이라도 로드했는
 // 테스트용 로그인 상태 (개발 중 확인용)
 const isUserLoggedIn = computed(() => {
   // 실제: return userStore.isLoggedIn
-  // 테스트: 로그인 안된 상태 확인용
-  return true // true로 바꾸면 로그인된 상태 테스트
+  // 테스트: AI 추천 기능 테스트용
+  return true // 로그인된 상태로 테스트
 })
 
 // 사용자 기술스택 설정 여부 확인 (임시 - 실제로는 userStore에서 가져와야 함)
@@ -214,12 +214,32 @@ const hasUserTechStack = computed(() => {
   // TODO: 실제 사용자 기술스택 정보 확인 필요
   // return userStore.user?.techStacks?.length > 0
   
-  // API 테스트를 위해 임시로 true로 설정
-  return false // 실제로는 사용자 기술스택 설정 여부 확인
+  // AI 추천 테스트를 위해 true로 설정
+  return true // AI 추천 기능 테스트용
 })
 
 // 프로젝트 데이터 로드
 const projects = ref([])
+
+// 마감일을 D-N 형식으로 변환하는 공통 함수
+const formatDeadline = (deadline) => {
+  if (!deadline) return '-'
+  
+  let deadlineDate = new Date(deadline)
+  const today = new Date()
+  
+  // 과거 날짜인 경우 2025년으로 조정 (임시 해결책)
+  if (deadlineDate < today) {
+    deadlineDate.setFullYear(2025)
+  }
+  
+  const diffTime = deadlineDate - today
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays < 0) return '마감'
+  if (diffDays === 0) return 'D-Day'
+  return `D-${diffDays}`
+}
 
 // 프로젝트 목록 API 호출
 const fetchProjects = async () => {
@@ -238,7 +258,7 @@ const fetchProjects = async () => {
       endDate: project.endDate,
       recruitCount: project.recruitCount,
       appliedCount: project.appliedCount,
-      deadline: project.recruitDeadline,
+      deadline: formatDeadline(project.recruitDeadline), // 👈 formatDeadline 함수 사용
       category: mapCategoryFromTechStacks(project.techStacks),
       viewCount: project.viewCount,
       isFavorite: false
@@ -314,8 +334,35 @@ const isUrgent = (deadline) => {
 
 // 인기 프로젝트 조회 (viewCount 기준)
 const getPopularProjects = () => {
+  // 로컬 데이터에서 인기순 정렬
   return [...projects.value]
     .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+}
+
+// 백엔드 API에서 인기 프로젝트 조회
+const fetchPopularProjects = async (limit = 5) => {
+  try {
+    const response = await fetch(`http://localhost:8082/api/recommend/projects-for-user/popular?limit=${limit}`)
+    const data = await response.json()
+    
+    return data.map(project => ({
+      id: project.project_id || project.projectId,
+      title: project.title,
+      description: project.description,
+      techStacks: project.project_tech_stacks?.map(tech => ({ techStackName: tech })) || [],
+      status: project.status === 'RECRUITING' ? '모집중' : project.status,
+      startDate: project.start_date,
+      endDate: project.end_date,
+      recruitCount: project.recruit_count,
+      appliedCount: project.applied_count,
+      deadline: project.recruit_deadline,
+      viewCount: project.view_count,
+      isFavorite: false
+    }))
+  } catch (error) {
+    console.error('❌ 인기 프로젝트 조회 실패:', error)
+    return getPopularProjects() // fallback으로 로컬 데이터 사용
+  }
 }
 
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
@@ -375,10 +422,13 @@ const fetchAIRecommendations = async () => {
     
     const requestBody = {
       userId: userStore.userId || 1,
-      techStacks: selectedTechStacks
+      techStacks: selectedTechStacks,
+      experienceLevel: "intermediate",
+      preferredCategories: [],
+      maxResults: 5
     }
     
-    const response = await fetch('http://localhost:8082/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
+    const response = await fetch('http://localhost:8082/api/recommend/projects-for-user?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -414,23 +464,35 @@ const fetchAIRecommendations = async () => {
     })
     
     // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
-    return projects.map(project => ({
-      id: project.projectId,
-      title: project.title,
-      description: project.description,
-      techStacks: project.projectTechStacks?.map(tech => ({ techStackName: tech })) || [],
-      status: '모집중', // 기본값
-      startDate: '2024-01-01', // 기본값
-      endDate: '2024-12-31', // 기본값
-      recruitCount: 3, // 기본값
-      appliedCount: Math.floor(Math.random() * 10), // 랜덤값
-      deadline: `D-${Math.floor(Math.random() * 30)}`, // 랜덤값
-      category: 'ai', // AI 추천 카테고리
-      viewCount: Math.floor(Math.random() * 200), // 랜덤값
-      isFavorite: false,
-      matchScore: project.matchScore, // AI 점수
-      explanation: project.explanation // AI 추천 설명 데이터
-    }))
+    return projects.map(project => {
+      console.log('🔍 변환 중인 프로젝트:', project.title)
+      console.log('  - recruitCount (camelCase):', project.recruitCount)
+      console.log('  - appliedCount (camelCase):', project.appliedCount) 
+      console.log('  - recruitDeadline (camelCase):', project.recruitDeadline)
+      console.log('  - startDate (camelCase):', project.startDate)
+      console.log('  - endDate (camelCase):', project.endDate)
+      console.log('  - projectTechStacks:', project.projectTechStacks)
+      
+      const recruitDeadline = project.recruitDeadline || project.recruit_deadline
+      
+      return {
+        id: project.projectId || project.project_id,
+        title: project.title,
+        description: project.description,
+        techStacks: project.projectTechStacks?.map(tech => ({ techStackName: tech })) || project.project_tech_stacks?.map(tech => ({ techStackName: tech })) || [],
+        status: project.status === 'RECRUITING' ? '모집중' : project.status,
+        startDate: project.startDate || project.start_date,
+        endDate: project.endDate || project.end_date,
+        recruitCount: project.recruitCount || project.recruit_count,
+        appliedCount: project.appliedCount || project.applied_count,
+        deadline: formatDeadline(recruitDeadline), // 👈 공통 함수 사용
+        category: 'ai', // AI 추천 카테고리
+        viewCount: project.viewCount || project.view_count,
+        isFavorite: false,
+        matchScore: project.matchScore || project.match_score, // AI 점수
+        explanation: project.explanation // AI 추천 설명 데이터
+      }
+    })
     
   } catch (error) {
     console.error('❌ AI 추천 조회 실패:', error.message)

@@ -10,6 +10,7 @@
 
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
+          <router-link to="/ai-recommendations" class="nav-item ai-nav-item">AI 추천</router-link>
           <router-link to="/portfolios" class="nav-item">포트폴리오</router-link>
           <router-link to="/new-project" class="nav-item">프로젝트 생성</router-link>
         </nav>
@@ -347,15 +348,49 @@ onUnmounted(() => {
   line-height: 27px;
   text-decoration: none;
   padding: 20px 5px;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #28a745;
+  opacity: 0;
+  transform: scaleX(0);
+  transition: all 0.3s ease;
 }
 
 .nav-item:hover {
-  color: #333;
+  color: #28a745;
+}
+
+.nav-item:hover::before,
+.nav-item.router-link-active::before {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .nav-item.router-link-active {
-  color: #333;
+  color: #28a745;
+  font-weight: 700;
+}
+
+.ai-nav-item {
+  color: #424953;
+  font-weight: 400;
+}
+
+.ai-nav-item:hover {
+  color: #28a745;
+}
+
+.ai-nav-item.router-link-active {
+  color: #28a745;
   font-weight: 700;
 }
 
