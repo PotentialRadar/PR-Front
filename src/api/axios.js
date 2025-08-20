@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -31,7 +31,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const response = await axios.post(
-            'http://localhost:8080/api/auth/refresh',
+            `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/auth/refresh`,
             { refreshToken }
           );
           
