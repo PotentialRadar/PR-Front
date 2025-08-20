@@ -202,19 +202,16 @@ const isLoadingAI = ref(false)
 const aiRecommendedProjects = ref([])
 const hasLoadedAIOnce = ref(false) // AI 추천을 한 번이라도 로드했는지 추적
 
-// 테스트용 로그인 상태 (개발 중 확인용)
 const isUserLoggedIn = computed(() => {
-  // 실제 userStore 사용
   return userStore.isLoggedIn
 })
 
-// 사용자 기술스택 설정 여부 확인 (임시 - 실제로는 userStore에서 가져와야 함)
 const hasUserTechStack = computed(() => {
   // TODO: 실제 사용자 기술스택 정보 확인 필요
   // return userStore.user?.techStacks?.length > 0
   
-  // AI 추천 테스트를 위해 true로 설정
-  return true // AI 추천 기능 테스트용
+  // 기술스택 미설정 테스트를 위해 false로 설정
+  return false // 기술스택 설정 유도 메시지 테스트용
 })
 
 // 프로젝트 데이터 로드
@@ -341,7 +338,7 @@ const getPopularProjects = () => {
 // 백엔드 API에서 인기 프로젝트 조회
 const fetchPopularProjects = async (limit = 5) => {
   try {
-    const response = await fetch(`http://localhost:8082/api/recommend/projects-for-user/popular?limit=${limit}`)
+    const response = await fetch(`http://localhost:8000/api/projects/popular?limit=${limit}`)
     const data = await response.json()
     
     return data.map(project => ({
@@ -431,7 +428,7 @@ const fetchAIRecommendations = async () => {
       maxResults: 5
     }
     
-    const response = await fetch('http://localhost:8082/api/recommend/projects-for-user?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
+    const response = await fetch('http://localhost:8000/api/recommend/projects?top_n=5&min_score=0.3&min_overlap=0.1&strict=false', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -86,6 +86,33 @@
           <div class="empty-icon">🔧</div>
           <h3>기술스택을 설정해주세요</h3>
           <p>기술스택과 경험 수준을 설정하시면 AI가 맞춤형 프로젝트를 추천해드립니다.</p>
+          <div class="popular-preview">
+            <h4>🔥 지금은 인기 프로젝트를 확인해보세요!</h4>
+            <div class="popular-projects-grid">
+              <div 
+                v-for="project in popularProjects.slice(0, 6)" 
+                :key="project.id"
+                class="popular-project-card"
+                @click="goToProject(project.id)"
+              >
+                <h4 class="popular-project-title">{{ project.title }}</h4>
+                <p class="popular-project-description">{{ project.description?.slice(0, 80) }}...</p>
+                <div class="popular-project-stats">
+                  <span class="popular-stat">👀 {{ project.viewCount || 0 }}</span>
+                  <span class="popular-stat">❤️ {{ project.appliedCount || 0 }}</span>
+                </div>
+                <div class="popular-tech-stacks">
+                  <span 
+                    v-for="tech in project.techStacks?.slice(0, 3)" 
+                    :key="tech.techStackName"
+                    class="popular-tech-tag"
+                  >
+                    {{ tech.techStackName }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
           <button @click="showTechStackModal = true" class="primary-button">
             기술스택 설정하기
           </button>
@@ -338,7 +365,7 @@ const goToProject = (projectId) => {
 // 인기 프로젝트 조회 함수
 const loadPopularProjects = async () => {
   try {
-    const response = await fetch('http://localhost:8082/api/projects')
+    const response = await fetch('http://localhost:8080/api/projects')
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
