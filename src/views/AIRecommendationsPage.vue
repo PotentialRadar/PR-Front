@@ -128,6 +128,41 @@
           </button>
         </div>
 
+        <!-- 피드백 통계 (추천 결과가 있을 때만 표시) -->
+        <div v-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="feedback-stats">
+          <h4 class="stats-title">📊 추천 평가 현황</h4>
+          <div class="stats-grid">
+            <div class="stat-card positive">
+              <div class="stat-icon">👍</div>
+              <div class="stat-content">
+                <div class="stat-number">{{ feedbackStats.likes }}</div>
+                <div class="stat-label">좋아요</div>
+              </div>
+            </div>
+            <div class="stat-card negative">
+              <div class="stat-icon">👎</div>
+              <div class="stat-content">
+                <div class="stat-number">{{ feedbackStats.dislikes }}</div>
+                <div class="stat-label">별로예요</div>
+              </div>
+            </div>
+            <div class="stat-card neutral">
+              <div class="stat-icon">📈</div>
+              <div class="stat-content">
+                <div class="stat-number">{{ feedbackStats.total }}</div>
+                <div class="stat-label">총 평가</div>
+              </div>
+            </div>
+            <div class="stat-card accuracy">
+              <div class="stat-icon">🎯</div>
+              <div class="stat-content">
+                <div class="stat-number">{{ feedbackStats.accuracy }}%</div>
+                <div class="stat-label">만족도</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 추천 프로젝트 리스트 (로그인 되어 있고 기술스택 설정되고 추천 결과가 있음) -->
         <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="projects-grid">
           <div 
@@ -209,6 +244,31 @@
               </div>
             </div>
 
+            <!-- 추천 평가 -->
+            <div class="recommendation-feedback">
+              <span class="feedback-label">이 추천이 도움이 되셨나요?</span>
+              <div class="feedback-buttons">
+                <button 
+                  class="feedback-btn thumbs-up"
+                  :class="{ active: getFeedback(project.projectId) === 'like' }"
+                  @click.stop="handleFeedback(project.projectId, 'like')"
+                  title="좋아요"
+                >
+                  <i class="bi bi-hand-thumbs-up-fill"></i>
+                  <span>좋아요</span>
+                </button>
+                <button 
+                  class="feedback-btn thumbs-down"
+                  :class="{ active: getFeedback(project.projectId) === 'dislike' }"
+                  @click.stop="handleFeedback(project.projectId, 'dislike')"
+                  title="별로예요"
+                >
+                  <i class="bi bi-hand-thumbs-down-fill"></i>
+                  <span>별로예요</span>
+                </button>
+              </div>
+            </div>
+
             <!-- 프로젝트 상태 -->
             <div class="project-footer">
               <div class="project-status">
@@ -253,9 +313,26 @@ const showTechStackModal = ref(false)
 const userTechStacks = ref([])
 const recommendations = ref([])
 const popularProjects = ref([])
+const projectFeedbacks = ref(new Map()) // 프로젝트별 피드백 저장
 
 // 계산된 속성
 const userTechNames = computed(() => userTechStacks.value.map(tech => tech.name.toLowerCase()))
+
+// 피드백 통계 계산
+const feedbackStats = computed(() => {
+  const feedbacks = Array.from(projectFeedbacks.value.values())
+  const likes = feedbacks.filter(f => f === 'like').length
+  const dislikes = feedbacks.filter(f => f === 'dislike').length
+  const total = feedbacks.length
+  const accuracy = total > 0 ? Math.round((likes / total) * 100) : 0
+  
+  return {
+    likes,
+    dislikes,
+    total,
+    accuracy
+  }
+})
 
 // 메서드
 const loadRecommendations = async () => {
@@ -389,6 +466,51 @@ const loadPopularProjects = async () => {
   }
 }
 
+// 피드백 관련 함수
+const handleFeedback = (projectId, type) => {
+  const currentFeedback = projectFeedbacks.value.get(projectId)
+  
+  // 같은 피드백이면 취소, 다른 피드백이면 변경
+  if (currentFeedback === type) {
+    projectFeedbacks.value.delete(projectId)
+  } else {
+    projectFeedbacks.value.set(projectId, type)
+  }
+  
+  // LocalStorage에 저장
+  saveFeedbacksToStorage()
+  
+  // 사용자에게 피드백 완료 알림
+  const message = type === 'like' ? '좋은 추천이었다니 기뻐요! 🎉' : '피드백 감사합니다. 더 나은 추천을 위해 노력할게요! 🔄'
+  if (projectFeedbacks.value.has(projectId)) {
+    toast.success(message, {
+      position: 'top-center',
+      timeout: 2000
+    })
+  }
+}
+
+const getFeedback = (projectId) => {
+  return projectFeedbacks.value.get(projectId)
+}
+
+const saveFeedbacksToStorage = () => {
+  const feedbackData = Object.fromEntries(projectFeedbacks.value)
+  localStorage.setItem('projectFeedbacks', JSON.stringify(feedbackData))
+}
+
+const loadFeedbacksFromStorage = () => {
+  try {
+    const saved = localStorage.getItem('projectFeedbacks')
+    if (saved) {
+      const feedbackData = JSON.parse(saved)
+      projectFeedbacks.value = new Map(Object.entries(feedbackData))
+    }
+  } catch (error) {
+    console.error('피드백 데이터 로드 실패:', error)
+  }
+}
+
 // 라이프사이클
 onMounted(async () => {
   try {
@@ -414,6 +536,9 @@ onMounted(async () => {
       }
     }
     
+    // 저장된 피드백 데이터 불러오기
+    loadFeedbacksFromStorage()
+    
     console.log('📋 AI 추천 페이지 로드 완료:', {
       isLoggedIn: userStore.isLoggedIn,
       userId: userStore.userId,
@@ -430,7 +555,7 @@ onMounted(async () => {
 .ai-recommendations-page {
   min-height: 100vh;
   background: #FFF;
-  padding-top: 68px; /* 헤더 높이만큼 패딩 */
+  padding: 68px 0 60px 0; /* 헤더 높이만큼 패딩 */
 }
 
 .container {
@@ -925,6 +1050,162 @@ onMounted(async () => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+/* 추천 평가 스타일 */
+.recommendation-feedback {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #e9ecef;
+}
+
+.feedback-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.feedback-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.feedback-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.feedback-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+.feedback-btn.thumbs-up.active {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.feedback-btn.thumbs-down.active {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.feedback-btn i {
+  font-size: 1rem;
+}
+
+.feedback-btn.thumbs-up:hover:not(.active) {
+  background: #e8f5e8;
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.feedback-btn.thumbs-down:hover:not(.active) {
+  background: #fde8e8;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+/* 피드백 통계 스타일 */
+.feedback-stats {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 24px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stats-title {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.stat-card.positive {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+}
+
+.stat-card.negative {
+  border-color: #dc3545;
+  background: linear-gradient(135deg, #fff8f8 0%, #fde8e8 100%);
+}
+
+.stat-card.neutral {
+  border-color: #6c757d;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.stat-card.accuracy {
+  border-color: #007bff;
+  background: linear-gradient(135deg, #f8fcff 0%, #e8f4ff 100%);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.stat-content {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 /* 반응형 디자인 */
