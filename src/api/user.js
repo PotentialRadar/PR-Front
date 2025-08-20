@@ -1,19 +1,30 @@
 // src/api/user.js
-import axios from './axios';
+import api from "./axios";
 
+export const signUp = (payload) => api.post("/signup", payload);
+
+export const login = ({ email, password }) =>
+  api.post("/login", { email, password });
 const BASE_URL = '/users';
 const AUTH_BASE_URL = '';
 
-export const sendVerificationCode = email =>
-  axios.post(`${BASE_URL}/send-code`, { email });
+export const logout = () => api.post("/logout");
+
+export const getUserProfile = () => api.get("/user/profile");
+
+export const updateUserProfile = (profileData) =>
+  api.put("/user/profile", profileData);
+
+export const deleteUser = () => api.delete("/user");
+
+export const sendVerificationCode = (email) =>
+  api.post("/user/send-code", { email });
 
 export const verifyEmailCode = (email, code) =>
-  axios.post(`${BASE_URL}/verify-code`, { email, code });
+  api.post("/user/verify-code", { email, code });
 
-export const checkNickname = nickname =>
-  axios.get(`${BASE_URL}/check-nickname`, { params: { nickname } });
-
-export const signUp = payload => axios.post(`${AUTH_BASE_URL}/signup`, payload);
+export const checkNickname = (nickname) =>
+  api.get("/user/check-nickname", { params: { nickname } });
 
 export const getFavoriteProjects = userId =>
   axios.get(`${BASE_URL}/${userId}/likes/projects`);

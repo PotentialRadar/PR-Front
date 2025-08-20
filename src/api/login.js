@@ -1,9 +1,15 @@
 // src/api/login.js
-import api from './axios'; // ✅ axios가 아니라 api 임포트
+import api from './axios';
 
 export const loginByEmail = async ({ email, password }) => {
   try {
-    const response = await api.post('/login', { email, password }); // ✅ 한 줄만
+    const response = await api.post('/login', { email, password });
+    
+    if (response.data.accessToken) {
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+    }
+    
     console.log('로그인 성공');
     return response.data;
   } catch (error) {
@@ -11,5 +17,6 @@ export const loginByEmail = async ({ email, password }) => {
     if (process.env.NODE_ENV === 'development') {
       console.error('에러 상세:', error.response);
     }
+    throw error;
   }
 };

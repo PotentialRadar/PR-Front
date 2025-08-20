@@ -289,7 +289,8 @@ router.beforeEach((to, from, next) => {
 // 인증 확인 함수 (실제 구현 필요)
 function checkAuth() {
   // 실제로는 토큰 검증, 세션 확인 등을 수행
-  const token = localStorage.getItem('authToken');
+  // 저장 키를 전역에서 사용하는 'accessToken'으로 통일
+  const token = localStorage.getItem('accessToken');
   return !!token;
 }
 
