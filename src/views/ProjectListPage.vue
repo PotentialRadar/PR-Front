@@ -99,8 +99,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onActivated } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/userStore'; // NEW IMPORT
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import SearchSection from '@/components/projectComponents/SearchSection.vue';
@@ -114,6 +115,7 @@ import { applyProject } from '@/api/projectMember';
 // 라우터
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore(); // NEW INITIALIZATION
 
 // 서버 페이징/필터 상태 (URL 쿼리와 동기화)
 const {
@@ -124,12 +126,18 @@ const {
   error,
   setCategory,
   goToPage,
+  load, // load 함수 추가
 } = useProjects({
   q: route.query.q ?? '',
   category: route.query.category ?? null,
   sort: route.query.sort ?? null,
   page: Number(route.query.page ?? 1),
   size: 8,
+});
+
+// 컴포넌트가 활성화될 때마다 데이터를 새로고침
+onActivated(() => {
+  load();
 });
 
 // URL 쿼리 동기화 (새로고침/공유 시 유리)
@@ -183,7 +191,7 @@ const handleApplicationSubmitted = async (applicationData) => {
   const payload = {
     techPart: applicationData.applicationForm.part, // 백엔드 DTO에 맞게 필드명 변경
     applicationMessage: applicationData.applicationForm.message, // 백엔드 DTO에 맞게 필드명 변경
-    userId: 2, // userId를 payload에 추가
+    userId: userStore.userId, // userId를 payload에 추가
   };
 
   try {

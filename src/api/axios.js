@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // Spring Boot 서버 포트 8080
+  baseURL: `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -26,18 +26,18 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
           const response = await axios.post(
-            'http://localhost:8080/api/auth/refresh',
+            `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/auth/refresh`,
             { refreshToken }
           );
-          
+
           const { accessToken } = response.data;
           localStorage.setItem('accessToken', accessToken);
-          
+
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         } catch (refreshError) {

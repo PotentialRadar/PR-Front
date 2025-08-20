@@ -425,7 +425,7 @@ const fetchAIRecommendations = async () => {
       maxResults: 5
     }
     
-    const response = await fetch('http://localhost:8000/api/recommend/projects?top_n=5&min_score=0.3&min_overlap=0.1&strict=false', {
+    const response = await fetch(`http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

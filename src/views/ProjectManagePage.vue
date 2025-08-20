@@ -57,9 +57,11 @@ import { useRoute, useRouter } from 'vue-router';
 import { getProject, deleteProject } from '@/api/projects'; // Import deleteProject
 import { getProjectMembers, updateMemberStatus } from '@/api/projectMember';
 import { PART_OPTIONS } from '@/constants/parts';
+import { useUserStore } from '@/stores/userStore'; // Import user store
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore(); // Get user store instance
 const projectId = ref(route.params.projectId);
 
 const project = ref(null);
@@ -77,10 +79,20 @@ const getPartLabel = (partValue) => {
 
 onMounted(async () => {
   try {
+    const currentUserId = userStore.userId;
+    if (!currentUserId) {
+      error.value = new Error('로그인이 필요합니다.');
+      loading.value = false;
+      // Optionally redirect to login
+      // router.push('/login');
+      return;
+    }
+
     const projectResponse = await getProject(projectId.value);
     project.value = projectResponse.data;
 
-    const applicantsResponse = await getProjectMembers(projectId.value, 1);
+    // Use the dynamic userId from the store
+    const applicantsResponse = await getProjectMembers(projectId.value, currentUserId);
     applicants.value = applicantsResponse.data;
 
   } catch (err) {
@@ -93,7 +105,12 @@ onMounted(async () => {
 
 const updateApplicantStatus = async (applicantId, status) => {
   try {
-    await updateMemberStatus(projectId.value, applicantId, 1, status);
+    const currentUserId = userStore.userId;
+    if (!currentUserId) {
+      alert('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    await updateMemberStatus(projectId.value, applicantId, currentUserId, status);
     alert(`지원자가 성공적으로 ${status === 'ACCEPTED' ? '수락' : '거절'}되었습니다.`);
 
     const index = applicants.value.findIndex(a => a.id === applicantId);

@@ -69,8 +69,8 @@
                 />
               </div>
               
-              <div v-if="activeTab === 'comment'" id="comment-section">
-                <ProjectComment :projectId="projectId" />
+              <div v-if="activeTab === 'comment' && project" id="comment-section">
+                <ProjectComment :projectId="projectId" :projectOwnerId="project.teamLeaderId" />
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ import { applyProject } from '@/api/projectMember';
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const projectId = ref(Number(route.params.id));
+const projectId = computed(() => Number(route.params.id));
 
 const project = ref(null);
 const loading = ref(false);
@@ -146,6 +146,12 @@ const isProjectOwner = computed(() => {
 });
 
 const load = async () => {
+  if (isNaN(projectId.value)) {
+    console.error('Invalid project ID from route:', route.params.id);
+    error.value = new Error('Invalid project ID');
+    project.value = null;
+    return;
+  }
   loading.value = true;
   error.value = null;
   
@@ -258,7 +264,7 @@ async function handleApplicationSubmit(applicationData) {
     console.log('지원서 데이터:', applicationData);
 
     const payload = {
-      userId: 2, // applicationForm에서 userId 사용
+      userId: userStore.userId, // applicationForm에서 userId 사용
       applicationMessage: applicationData.applicationForm.message,
       techPart: applicationData.applicationForm.techPart // techPart 필드 사용
     };

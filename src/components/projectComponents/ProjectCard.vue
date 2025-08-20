@@ -15,8 +15,8 @@
         <div class="view-count-display">
           👀 {{ project.viewCount }}
         </div>
-        <button class="favorite-button" @click="toggleFavorite" :class="{ 'favorited': isFavorited }">
-          <span v-if="isFavorited">❤️</span>
+        <button class="favorite-button" @click.stop="toggleFavorite" :class="{ 'favorited': props.isFavorited }">
+          <span v-if="props.isFavorited">❤️</span>
           <span v-else>🤍</span>
         </button>
       </div>
@@ -86,82 +86,72 @@
     </div>
 
     <div class="bottom-section">
-      <button class="apply-button" @click="onApplyClick">
-        <i class="bi bi-send"></i>
-        지원하기
-      </button>
-      <button class="detail-button" @click="goToDetail">
-        상세보기
-      </button>
+      <button class="detail-button" @click="goToDetail">상세보기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="project.status !== '마감'">지원하기</button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProjectCard',
-  props: {
-    project: {
-      type: Object,
-      required: true
-    }
+<script setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+const props = defineProps({
+  project: {
+    type: Object,
+    required: true
   },
-  mounted() {
-    console.log('project props in card:', this.project)
-  },
-  methods: {
-    toggleFavorite() {
-      this.isFavorited = !this.isFavorited
-    },
-    isUrgent(deadline) {
-      if (!deadline) return false
-      const today = new Date();
-      const end = new Date(deadline);
-      const diff = (end - today) / (1000 * 60 * 60 * 24);
-      return diff <= 7 && diff >= 0;
-    },
-    formatDeadline(deadline) {
-      if (!deadline) return '-';
-      const today = new Date();
-      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
-      if (dday >= 0) return `D-${dday}`;
-      return '마감';
-    },
-    goToDetail() {
-      console.log('상세보기 클릭됨! project:', this.project)
-      if (typeof this.project.viewCount === 'number') {
-        this.project.viewCount += 1
-      } else {
-        this.project.viewCount = 1
-      }
-      this.$router.push({
-        name: 'ProjectDetail',
-        params: { id: this.project.projectId || this.project.id }
-      })
-    },
-    onApplyClick() {
-      // 부모에게 프로젝트 정보 emit!
-      this.$emit('apply', this.project)
-    }
-  },
-  data() {
-    return {
-      isFavorited: false
-    }
-  },
-  computed: {
-    displayDuration() {
-      if (!this.project.startDate || !this.project.endDate) return '-';
-      const start = new Date(this.project.startDate);
-      const end = new Date(this.project.endDate);
-      if (isNaN(start) || isNaN(end)) return '-';
-      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      if (diff < 7) return `${diff}일`;
-      if (diff < 30) return `${Math.round(diff / 7)}주`;
-      return `${Math.round(diff / 30)}개월`;
-    }
+  isFavorited: {
+    type: Boolean,
+    default: false
   }
-}
+});
+
+const emit = defineEmits(['favorite-toggle', 'apply']);
+const router = useRouter();
+
+const toggleFavorite = () => {
+  emit('favorite-toggle', props.project.id);
+};
+
+const isUrgent = (deadline) => {
+  if (!deadline) return false;
+  const today = new Date();
+  const end = new Date(deadline);
+  const diff = (end - today) / (1000 * 60 * 60 * 24);
+  return diff <= 7 && diff >= 0;
+};
+
+const formatDeadline = (deadline) => {
+  if (!deadline) return '-';
+  const today = new Date();
+  const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
+  if (dday >= 0) return `D-${dday}`;
+  return '마감';
+};
+
+const goToDetail = () => {
+  router.push({
+    name: 'ProjectDetail',
+    params: { id: props.project.projectId || props.project.id }
+  });
+};
+
+const onApplyClick = () => {
+  emit('apply', props.project);
+};
+
+const displayDuration = computed(() => {
+  if (!props.project.startDate || !props.project.endDate) return '-';
+  const start = new Date(props.project.startDate);
+  const end = new Date(props.project.endDate);
+  if (isNaN(start) || isNaN(end)) return '-';
+  const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  if (diff < 7) return `${diff}일`;
+  if (diff < 30) return `${Math.round(diff / 7)}주`;
+  return `${Math.round(diff / 30)}개월`;
+});
+
 </script>
 
 <style scoped>
@@ -413,41 +403,45 @@ export default {
 
 .bottom-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: auto;
 }
 
-.detail-button {
+.detail-button, .apply-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: 90%;
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-  color: #FFF;
-  border: none;
+  padding: 14px 20px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.detail-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
+.detail-button {
+  flex: 6;
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.detail-button:hover {
+  background-color: #f4f6f8; /* 더 연한 색으로 변경 */
+}
+
+.apply-button {
+  flex: 1;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: #FFF;
+  border: none;
+}
+
+.apply-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .detail-button:hover::before {

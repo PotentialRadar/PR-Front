@@ -59,9 +59,18 @@ export function useFormValidation() {
       return num >= 1 && num <= 99
     },
     
-    techStack: (value) => {
-      return Array.isArray(value) && value.length > 0
-    },
+            techStack: (value) => Array.isArray(value) && value.length > 0, // 최소 1개 선택
+        parts: (value) => {
+            if (!Array.isArray(value) || value.length === 0) {
+                return false; // 배열이 아니거나 비어있으면 유효성 검사 실패
+            }
+            for (const partRow of value) {
+                if (!partRow.part || typeof partRow.count !== 'number' || partRow.count < 1) {
+                    return false; // 각 파트가 선택되지 않았거나 인원이 1 미만이면 유효성 검사 실패
+                }
+            }
+            return true;
+        },
     
     fileSize: (files, maxSize = 5 * 1024 * 1024) => {
       if (!files || files.length === 0) return true

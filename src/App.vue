@@ -23,7 +23,11 @@ onMounted(async () => {
 <template>
   <AppHeader />
   <main class="main-content">
-    <router-view />
+    <router-view v-slot="{ Component }">
+      <keep-alive>
+        <component :is="Component" />
+      </keep-alive>
+    </router-view>
   </main>
   <AppFooter />
 </template>
