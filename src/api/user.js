@@ -27,7 +27,14 @@ export const checkNickname = (nickname) =>
   api.get("/user/check-nickname", { params: { nickname } });
 
 export const getFavoriteProjects = userId =>
-  axios.get(`${BASE_URL}/${userId}/likes/projects`);
+  api.get(`${BASE_URL}/${userId}/likes/projects`); // Changed axios to api
 
 export const removeFavoriteProject = (userId, projectId) =>
-  axios.delete(`${BASE_URL}/${userId}/likes/projects/${projectId}`);
+  api.delete(`${BASE_URL}/${userId}/likes/projects/${projectId}`); // Changed axios to api
+
+// NEW: Project-related APIs for a user
+export const getProjectsCreatedByUser = (userId) =>
+  api.get(`${BASE_URL}/${userId}/created`);
+
+export const getAppliedProjectsByUser = (userId) =>
+  api.get(`${BASE_URL}/${userId}/applied`);

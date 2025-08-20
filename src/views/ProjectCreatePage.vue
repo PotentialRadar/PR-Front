@@ -223,7 +223,7 @@ import { PART_OPTIONS } from '@/constants/parts';
 import TechStackSelector from '@/components/common/TechStackSelector.vue';
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue';
 
-const DEV_FORCE_USER_ID = 1;
+// const DEV_FORCE_USER_ID = 1; // Removed or commented out
 
 export default {
   name: 'ProjectFormPage', // Renamed for clarity
@@ -299,7 +299,7 @@ export default {
     
 
     const submitForm = async () => {
-      const uid = DEV_FORCE_USER_ID ?? userStore.userId;
+      const uid = userStore.userId; // Directly use userStore.userId
       if (!uid && !isEditMode.value) { // User ID needed only for creation
         alert('로그인 후에 프로젝트를 등록할 수 있습니다.');
         router.push('/login');

@@ -86,9 +86,8 @@
     </div>
 
     <div class="bottom-section">
-      <button class="detail-button" @click="goToDetail">
-        상세보기
-      </button>
+      <button class="detail-button" @click="goToDetail">상세보기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="project.status !== '마감'">지원하기</button>
     </div>
   </div>
 </template>
@@ -404,41 +403,45 @@ const displayDuration = computed(() => {
 
 .bottom-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
   width: 100%;
-  margin-top: auto; /* Push to bottom */
+  margin-top: auto;
 }
 
-.detail-button {
+.detail-button, .apply-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: 90%;
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-  color: #FFF;
-  border: none;
+  padding: 14px 20px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.detail-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
+.detail-button {
+  flex: 6;
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.detail-button:hover {
+  background-color: #f4f6f8; /* 더 연한 색으로 변경 */
+}
+
+.apply-button {
+  flex: 1;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: #FFF;
+  border: none;
+}
+
+.apply-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .detail-button:hover::before {

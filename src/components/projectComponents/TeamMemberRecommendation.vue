@@ -297,7 +297,7 @@ const fetchRecommendations = async () => {
     
     // 실제 API 호출과 최소 로딩 시간을 병렬로 실행
     const [apiResponse] = await Promise.all([
-      fetch('http://localhost:8082/api/recommend/members', {
+      fetch('http://localhost:8080/api/recommend/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

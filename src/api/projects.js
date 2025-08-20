@@ -23,3 +23,11 @@ export const uploadProjectFile = (file) => {
     form.append('file', file);
     return api.post(`${ROOT}/upload-file`, form); // Content-Type 자동
 };
+
+// 사용자가 생성한 프로젝트 목록
+export const getProjectsCreatedByUser = (userId, config = {}) =>
+    api.get(`${ROOT}/users/${userId}/created`, config)
+
+// 사용자가 지원한 프로젝트 목록
+export const getAppliedProjectsByUser = (userId, config = {}) =>
+    api.get(`${ROOT}/users/${userId}/applied`, config)

@@ -72,7 +72,7 @@
                   <div class="project-title-section">
                     <h3 class="project-title">{{ project.title }}</h3>
                     <div class="project-badges">
-                      <span :class="['status-badge', project.status]">
+                      <span :class="['status-badge', statusClass(project.status)]">
                         <i :class="getStatusIcon(project.status)"></i>
                         <span>{{ getStatusText(project.status) }}</span>
                       </span>
@@ -311,98 +311,163 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listProjects } from '@/api/projects';
-import { getProjectMembers } from '@/api/projectMember.js';
+import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'   // ★ 새 API import
+        // ★ updateMemberStatus 추가
+import { useUserStore } from '@/stores/userStore'; // NEW
+import { PART_OPTIONS } from '@/constants/parts';
+import { updateMemberStatus, getProjectMembers } from '@/api/projectMember.js';
+                                      // ★ 파트 라벨용
 
 const router = useRouter()
+const userStore = useUserStore()
 
-// 반응형 데이터
-const isLoading = ref(true);
-const projects = ref([]); 
-const selectedStatus = ref('all')
-const selectedRole = ref('all')
+// 반응형 상태
+const isLoading = ref(true)
+const projects = ref([])               // created + applied 병합 리스트(공통 shape)
+const selectedStatus = ref('all')      // 'all' | 'recruiting' | 'in-progress' | 'completed' | 'cancelled'
+const selectedRole = ref('all')        // 'all' | 'pm' | 'member'
 const showApplicantsModal = ref(false)
 const showTeamReviewModal = ref(false)
 const selectedProject = ref(null)
-const applicantsList = ref([]);
+const applicantsList = ref([])
 
 // 필터 옵션
 const statusOptions = [
-  { value: 'all', label: '전체', icon: '📋' },
-  { value: 'recruiting', label: '모집중', icon: '📢' },
+  { value: 'all',         label: '전체',   icon: '📋' },
+  { value: 'recruiting',  label: '모집중', icon: '📢' },
   { value: 'in-progress', label: '진행중', icon: '⚡' },
-  { value: 'completed', label: '완료', icon: '✅' },
-  { value: 'cancelled', label: '취소', icon: '❌' }
+  { value: 'completed',   label: '완료',   icon: '✅' },
+  { value: 'cancelled',   label: '취소',   icon: '❌' }
 ]
-
 const roleOptions = [
-  { value: 'all', label: '전체' },
-  { value: 'pm', label: 'PM만' },
+  { value: 'all',    label: '전체' },
+  { value: 'pm',     label: 'PM만' },
   { value: 'member', label: '팀원만' }
 ]
 
-// 팀원 샘플 데이터 (리뷰 모달용)
+// 상태값 매핑
+const STATUS_FILTER_TO_ENUM = {
+  'recruiting':  'RECRUITING',
+  'in-progress': 'IN_PROGRESS',
+  'completed':   'COMPLETED',
+  'cancelled':   'CANCELLED'
+}
+const ENUM_TO_CLASS = {
+  'RECRUITING':  'recruiting',
+  'IN_PROGRESS': 'in-progress',
+  'COMPLETED':   'completed',
+  'CANCELLED':   'cancelled'
+}
+const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
+
+// 팀원 샘플 (리뷰 모달)
 const teamMembers = ref([
-  {
-    id: 1,
-    userId: 2,
-    name: '박디자이너',
-    role: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    rating: 0,
-    reviewComment: ''
-  },
-  {
-    id: 2,
-    userId: 3,
-    name: '이백엔드',
-    role: 'Backend Developer', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    rating: 0,
-    reviewComment: ''
-  }
+  { id: 1, userId: 2, name: '박디자이너', role: 'UI/UX Designer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2', rating: 0, reviewComment: '' },
+  { id: 2, userId: 3, name: '이백엔드',   role: 'Backend Developer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3', rating: 0, reviewComment: '' }
 ])
 
-// API 호출
+// ===== 정규화 유틸 =====
+const toTechTags = (list) => {
+  if (!Array.isArray(list)) return []
+  return list.map(ts => (typeof ts === 'string' ? { techStackName: ts } : ts))
+}
+
+// 백엔드 "생성한 프로젝트" 응답 -> 공통 형태
+const normalizeCreated = (p, currentUserId) => {
+  const projectId = p.projectId ?? p.id
+  const teamLeaderId = p.teamLeaderId ?? p.leaderId ?? p.ownerId ?? currentUserId
+  return {
+    projectId,
+    title: p.title ?? '',
+    description: p.description ?? '',
+    status: p.status ?? 'RECRUITING',                 // 백엔드 ENUM 그대로 사용
+    startDate: p.startDate ?? p.start_date ?? null,
+    endDate:   p.endDate   ?? p.end_date   ?? null,
+    recruitCount: p.recruitCount ?? p.remainingCount ?? p.memberCount ?? 0,
+    techStacks: toTechTags(p.techStacks ?? p.stackList ?? []),
+    appliedCount: p.appliedCount ?? p.applied_count ?? 0, // PM 카드에서만 사용
+    teamLeaderId,
+    isPM: teamLeaderId === currentUserId                // 내가 팀장인지
+  }
+}
+
+// 백엔드 "지원한 프로젝트" 응답 -> 공통 형태
+// 응답이 { project: {...} } 또는 필드가 평평하게 섞여 있을 수 있으니 방어적으로 처리
+const normalizeApplied = (a, currentUserId) => {
+  const proj = a.project ?? a; // Keep this logic. Handles both nested and flat structures.
+  const teamLeaderId = proj.teamLeaderId ?? proj.leaderId ?? proj.ownerId ?? null;
+
+  // The main issue is that `a.status` (application status) is overriding `proj.status` (project status).
+  // Let's get the project status first, and only if it's truly missing, use the application status as a last resort.
+  // A better approach is to find the correct project status field. Let's assume it's just `status` on the project object.
+  const projectStatus = proj.status; // Explicitly get project status
+
+  return {
+    projectId: proj.projectId ?? proj.id ?? a.projectId,
+    title: proj.title ?? proj.projectName ?? a.projectTitle ?? a.projectName ?? '제목을 불러올 수 없습니다.',
+    description: proj.description ?? a.projectDescription ?? '내용을 불러올 수 없습니다.',
+    
+    // FIX: Use the project's status. Do NOT fall back to a.status (application status).
+    status: projectStatus ?? 'RECRUITING', 
+
+    startDate: proj.startDate ?? proj.start_date ?? a.startDate ?? null,
+    endDate: proj.endDate ?? proj.end_date ?? a.endDate ?? null,
+    recruitCount: proj.recruitCount ?? proj.remainingCount ?? a.recruitCount ?? 0,
+    techStacks: toTechTags(proj.techStacks ?? a.techStacks ?? []),
+    appliedCount: 0,
+    teamLeaderId,
+    isPM: teamLeaderId ? (teamLeaderId === currentUserId) : false
+  };
+}
+
+// ===== 데이터 로드 =====
 onMounted(async () => {
   try {
-    const response = await listProjects({ userId: 1 }); // Hardcoded userId 1
-    // Assuming the current user's ID for PM check is 1 (as per listProjects call)
-    const currentUserId = 1; 
+    const currentUserId = userStore.userId
+    if (!currentUserId) {
+      console.warn('User not logged in. Redirect to /login')
+      router.push('/login')
+      return
+    }
 
-    projects.value = response.data.map(project => ({
-      ...project,
-      isPM: project.teamLeaderId === currentUserId // Add isPM property
-    }));
-  } catch (error) {
-    console.error("내 프로젝트 목록을 불러오는데 실패했습니다:", error);
+    // 내가 만든 + 내가 지원한 프로젝트 병렬 호출
+    const [createdRes, appliedRes] = await Promise.all([
+      getProjectsCreatedByUser(currentUserId),
+      getAppliedProjectsByUser(currentUserId)
+    ])
+
+    const created = Array.isArray(createdRes?.data) ? createdRes.data.map(p => normalizeCreated(p, currentUserId)) : []
+    const applied = Array.isArray(appliedRes?.data) ? appliedRes.data.map(a => normalizeApplied(a, currentUserId)) : []
+
+    // 병합 + projectId 기준 중복제거(혹시 동일 프로젝트가 두 목록에 같이 있으면 created 우선)
+    const map = new Map()
+    for (const p of [...applied, ...created]) map.set(p.projectId, p)
+    projects.value = Array.from(map.values())
+  } catch (e) {
+    console.error('내 프로젝트/지원 프로젝트 로드 실패:', e)
+    projects.value = []
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
-// 계산된 속성
+// ===== 계산된 값 =====
 const totalProjects = computed(() => projects.value.length)
 const pmProjects = computed(() => projects.value.filter(p => p.isPM).length)
-const activeProjects = computed(() => projects.value.filter(p => p.status === 'in-progress' || p.status === 'RECRUITING').length)
+const activeProjects = computed(() =>
+    projects.value.filter(p => p.status === 'IN_PROGRESS' || p.status === 'RECRUITING').length
+)
 
 const filteredProjects = computed(() => {
   let filtered = projects.value
 
+  // 상태 필터
   if (selectedStatus.value !== 'all') {
-    // API의 상태값(대문자)과 필터의 상태값(소문자)을 일치시켜야 할 수 있습니다.
-    // 여기서는 필터 버튼의 value가 API 응답과 일치한다고 가정합니다.
-    const filterStatus = selectedStatus.value.toUpperCase();
-    if (selectedStatus.value === 'in-progress') filterStatus = 'IN_PROGRESS'; // 예시: 백엔드 상태값에 맞게 조정
-    if (selectedStatus.value === 'recruiting') filterStatus = 'RECRUITING';
-    if (selectedStatus.value === 'completed') filterStatus = 'COMPLETED';
-    if (selectedStatus.value === 'cancelled') filterStatus = 'CANCELLED';
-    
-    if (selectedStatus.value !== 'all') {
-      filtered = filtered.filter(p => p.status === filterStatus)
-    }
+    const want = STATUS_FILTER_TO_ENUM[selectedStatus.value] // 'RECRUITING' 등
+    if (want) filtered = filtered.filter(p => p.status === want)
   }
 
+  // 역할 필터
   if (selectedRole.value === 'pm') {
     filtered = filtered.filter(p => p.isPM)
   } else if (selectedRole.value === 'member') {
@@ -412,156 +477,107 @@ const filteredProjects = computed(() => {
   return filtered
 })
 
-import { PART_OPTIONS } from '@/constants/parts'; // <-- 이 줄을 추가합니다.
-
+// ===== 지원자 모달/정렬 =====
 const sortedApplicantsList = computed(() => {
-  // PENDING 상태를 먼저, 그 다음 ACCEPTED, REJECTED 순으로 정렬
-  const statusOrder = { PENDING: 1, ACCEPTED: 2, REJECTED: 3 };
-  return [...applicantsList.value].sort((a, b) => {
-    return statusOrder[a.status] - statusOrder[b.status];
-  });
-});
+  const order = { PENDING: 1, ACCEPTED: 2, REJECTED: 3 }
+  return [...applicantsList.value].sort((a, b) => (order[a.status] ?? 99) - (order[b.status] ?? 99))
+})
 
-// 메서드
-const getPartLabel = (partValue) => {
-  const part = PART_OPTIONS.find(option => option.value === partValue);
-  return part ? part.label : partValue;
-};
+// ===== 헬퍼 =====
+const setStatus  = (status) => { selectedStatus.value = status }
+const setRole    = (role)   => { selectedRole.value   = role }
 
-const setStatus = (status) => {
-  selectedStatus.value = status
+const getStatusText = (statusEnum) => {
+  const map = { RECRUITING: '모집중', IN_PROGRESS: '진행중', COMPLETED: '완료', CANCELLED: '취소됨' }
+  return map[statusEnum] ?? statusEnum
 }
-
-const setRole = (role) => {
-  selectedRole.value = role
-}
-
-const getStatusText = (status) => {
-  const statusMap = {
-    RECRUITING: '모집중',
-    'IN_PROGRESS': '진행중',
-    COMPLETED: '완료',
-    CANCELLED: '취소됨'
+const getStatusIcon = (statusEnum) => {
+  const map = {
+    RECRUITING:  'bi bi-megaphone-fill',
+    IN_PROGRESS: 'bi bi-lightning-charge-fill',
+    COMPLETED:   'bi bi-check-circle-fill',
+    CANCELLED:   'bi bi-x-circle-fill'
   }
-  return statusMap[status] || status
-}
-
-const getStatusIcon = (status) => {
-  const iconMap = {
-    RECRUITING: 'bi bi-megaphone-fill',
-    'IN_PROGRESS': 'bi bi-lightning-charge-fill',
-    COMPLETED: 'bi bi-check-circle-fill',
-    CANCELLED: 'bi bi-x-circle-fill'
-  }
-  return iconMap[status] || 'bi bi-question-circle-fill'
+  return map[statusEnum] ?? 'bi bi-question-circle-fill'
 }
 
 const formatDateRange = (startDate, endDate) => {
-  const start = new Date(startDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-  const end = new Date(endDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-  return `${start} ~ ${end}`
+  if (!startDate && !endDate) return '-'
+  const opt = { month: 'short', day: 'numeric' }
+  const s = startDate ? new Date(startDate).toLocaleDateString('ko-KR', opt) : '?'
+  const e = endDate   ? new Date(endDate).toLocaleDateString('ko-KR', opt)   : '?'
+  return `${s} ~ ${e}`
 }
 
-const viewProject = (projectId) => {
-  router.push(`/projects/${projectId}`)
+const getPartLabel = (partValue) => {
+  const found = PART_OPTIONS.find(o => o.value === partValue)
+  return found ? found.label : partValue
 }
+
+const viewProject = (projectId) => router.push(`/projects/${projectId}`)
 
 const showApplicants = async (projectId) => {
   selectedProject.value = projects.value.find(p => p.projectId === projectId)
   try {
-    // 팀장 ID는 현재 로그인한 사용자 ID(하드코딩된 1)를 사용합니다.
-    const response = await getProjectMembers(projectId, 1);
-    applicantsList.value = response.data;
+    const response = await getProjectMembers(projectId, userStore.userId)
+    applicantsList.value = response.data
     showApplicantsModal.value = true
-  } catch (error) {
-    console.error("지원자 목록을 불러오는데 실패했습니다:", error);
-    alert("지원자 목록을 불러오는데 실패했습니다.");
+  } catch (e) {
+    console.error('지원자 목록 로드 실패:', e)
+    alert('지원자 목록을 불러오는데 실패했습니다.')
   }
 }
-
 const closeApplicantsModal = () => {
   showApplicantsModal.value = false
   selectedProject.value = null
-  applicantsList.value = []; // 모달이 닫힐 때 목록 초기화
+  applicantsList.value = []
 }
 
-const showTeamReview = (projectId) => {
-  selectedProject.value = projects.value.find(p => p.projectId === projectId)
-  showTeamReviewModal.value = true
-}
-
+const showTeamReview  = (projectId) => { selectedProject.value = projects.value.find(p => p.projectId === projectId); showTeamReviewModal.value = true }
 const closeTeamReviewModal = () => {
   showTeamReviewModal.value = false
   selectedProject.value = null
-  teamMembers.value.forEach(member => {
-    member.rating = 0
-    member.reviewComment= ''
-  })
+  teamMembers.value.forEach(m => { m.rating = 0; m.reviewComment = '' })
 }
+const viewApplicantPortfolio = (userId) => router.push(`/portfolio/${userId}`)
 
-const viewApplicantPortfolio = (userId) => {
-  router.push(`/portfolio/${userId}`)
-}
-
-import { updateMemberStatus } from '@/api/projectMember.js'; // <-- 이 줄을 추가합니다.
-
-// ... (기존 코드) ...
-
+// PM 전용 액션
 const acceptApplicant = async (applicantId) => {
   try {
-    const projectId = selectedProject.value?.projectId;
-    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
-    
-    await updateMemberStatus(projectId, applicantId, 1, "ACCEPTED");
-    alert("지원자가 성공적으로 수락되었습니다.");
-    
-    // 로컬 목록 업데이트
-    const applicant = applicantsList.value.find(a => a.id === applicantId);
-    if (applicant) {
-      applicant.status = "ACCEPTED"; // 상태 업데이트
-    }
-    // 목록 정렬은 computed 속성에서 처리
-  } catch (error) {
-    console.error("지원자 수락 실패:", error);
-    alert("지원자 수락에 실패했습니다.");
+    const projectId = selectedProject.value?.projectId
+    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    await updateMemberStatus(projectId, applicantId, userStore.userId, 'ACCEPTED')
+    alert('지원자가 성공적으로 수락되었습니다.')
+    const a = applicantsList.value.find(x => x.id === applicantId)
+    if (a) a.status = 'ACCEPTED'
+  } catch (e) {
+    console.error('지원자 수락 실패:', e)
+    alert('지원자 수락에 실패했습니다.')
   }
 }
-
 const rejectApplicant = async (applicantId) => {
   try {
-    const projectId = selectedProject.value?.projectId;
-    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
-
-    await updateMemberStatus(projectId, applicantId, 1, "REJECTED");
-    alert("지원자가 성공적으로 거절되었습니다.");
-
-    // 로컬 목록 업데이트
-    const applicant = applicantsList.value.find(a => a.id === applicantId);
-    if (applicant) {
-      applicant.status = "REJECTED"; // 상태 업데이트
-    }
-    // 목록 정렬은 computed 속성에서 처리
-  } catch (error) {
-    console.error("지원자 거절 실패:", error);
-    alert("지원자 거절에 실패했습니다.");
+    const projectId = selectedProject.value?.projectId
+    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    await updateMemberStatus(projectId, applicantId, userStore.userId, 'REJECTED')
+    alert('지원자가 성공적으로 거절되었습니다.')
+    const a = applicantsList.value.find(x => x.id === applicantId)
+    if (a) a.status = 'REJECTED'
+  } catch (e) {
+    console.error('지원자 거절 실패:', e)
+    alert('지원자 거절에 실패했습니다.')
   }
 }
 
 const setRating = (memberId, rating) => {
-  const member = teamMembers.value.find(m => m.id === memberId)
-  if (member) {
-    member.rating = rating
-  }
+  const m = teamMembers.value.find(x => x.id === memberId)
+  if (m) m.rating = rating
 }
-
 const submitReviews = () => {
   console.log('리뷰 제출:', teamMembers.value)
   closeTeamReviewModal()
 }
-
-const goToManagePage = (projectId) => {
-  router.push({ name: 'ProjectManage', params: { projectId: projectId } });
-};
+const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', params: { projectId } })
 </script>
 
 <style scoped>
