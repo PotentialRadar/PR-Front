@@ -8,20 +8,13 @@ import AppFooter from '@/components/layout/AppFooter.vue';
 
 const userStore = useUserStore();
 
-onMounted(async () => {
-  const token = localStorage.getItem('accessToken'); // ❌ 없으면 로그인 안 됨!
-  if (token) {
-    try {
-      const res = await api.get('/users/me', {
-        withCredentials: true,
-      });
-      userStore.login(token, res.data);
-    } catch (e) {
-      console.error('❌ 토큰으로 유저 조회 실패', e);
-      localStorage.removeItem('accessToken');
-      userStore.logout();
-    }
-  }
+onMounted(() => {
+  // OAuth 로그인에서 이미 상태가 설정되므로 별도 처리 불필요
+  console.log('App mounted - userStore 초기 상태:', {
+    isLoggedIn: userStore.isLoggedIn,
+    userId: userStore.userId,
+    email: userStore.email
+  });
 });
 </script>
 

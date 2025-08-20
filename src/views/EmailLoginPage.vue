@@ -10,15 +10,15 @@
               <div class="form-container">
                 <div class="input-group">
                   <label class="input-label">이메일</label>
-                  <input 
-                    v-model="email" 
-                    type="email" 
-                    class="form-input" 
-                    placeholder="이메일을 입력해주세요" 
-                    required 
+                  <input
+                    v-model="email"
+                    type="email"
+                    class="form-input"
+                    placeholder="이메일을 입력해주세요"
+                    required
                   />
                 </div>
-                
+
                 <div class="input-group">
                   <label class="input-label">비밀번호</label>
                   <div class="password-wrapper">
@@ -32,9 +32,9 @@
                   </div>
                 </div>
 
-                <button 
-                  class="login-button" 
-                  type="submit" 
+                <button
+                  class="login-button"
+                  type="submit"
                   :disabled="!canSubmit"
                   :class="{ active: canSubmit }"
                 >
@@ -43,12 +43,15 @@
               </div>
 
               <div class="auth-links">
-                <router-link to="/reset-password" class="auth-link">비밀번호 재설정</router-link>
+                <router-link to="/reset-password" class="auth-link"
+                  >비밀번호 재설정</router-link
+                >
                 <span class="link-divider">|</span>
-                <router-link to="/signup" class="auth-link">회원가입</router-link>
+                <router-link to="/signup" class="auth-link"
+                  >회원가입</router-link
+                >
               </div>
             </form>
-
           </div>
         </div>
       </div>
@@ -57,18 +60,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
-import { loginByEmail } from '../api/login'
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/userStore";
+import { loginByEmail } from "../api/login";
+import api from "@/api/axios";
 
-const email = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const router = useRouter()
-const userStore = useUserStore()
+const email = ref("");
+const password = ref("");
+const showPassword = ref(false);
+const router = useRouter();
+const userStore = useUserStore();
 
-const canSubmit = computed(() => email.value && password.value)
+const canSubmit = computed(() => email.value && password.value);
 
 // 이메일 로그인 처리
 const handleEmailLogin = async () => {
@@ -77,15 +81,31 @@ const handleEmailLogin = async () => {
       email: email.value,
       password: password.value,
     });
-    localStorage.setItem('accessToken', result.accessToken);
-    localStorage.setItem('refreshToken', result.refreshToken);
 
-    // Pinia 상태 갱신
-    userStore.login(email.value);
+    // 토큰 저장
+    localStorage.setItem("accessToken", result.accessToken);
+    localStorage.setItem("refreshToken", result.refreshToken);
 
-    router.push('/');
+    // 사용자 정보 가져오기
+    const userProfileResponse = await api.get("/user/me");
+    const userProfile = userProfileResponse.data;
+
+    // Pinia 상태 갱신 (OAuth와 동일한 형식)
+    userStore.login({
+      userId: userProfile.id,
+      email: userProfile.email,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+
+    console.log("로그인 성공!", {
+      userId: userProfile.id,
+      email: userProfile.email,
+    });
+    router.push("/");
   } catch (error) {
-    alert('로그인 실패: ' + (error?.response?.data || '서버 오류'));
+    console.error("로그인 실패:", error);
+    alert("로그인 실패: " + (error?.response?.data?.message || "서버 오류"));
   }
 };
 </script>
@@ -178,26 +198,26 @@ form {
 
 .form-input:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: #4caf50;
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .form-input::placeholder {
-  color: #C7C8C9;
+  color: #c7c8c9;
   opacity: 1;
 }
 
 .form-input::-webkit-input-placeholder {
-  color: #C7C8C9;
+  color: #c7c8c9;
 }
 
 .form-input::-moz-placeholder {
-  color: #C7C8C9;
+  color: #c7c8c9;
   opacity: 1;
 }
 
 .form-input:-ms-input-placeholder {
-  color: #C7C8C9;
+  color: #c7c8c9;
 }
 
 .password-wrapper {
@@ -230,8 +250,8 @@ form {
 }
 
 .login-button.active {
-  background-color: #4CAF50;
-  border-color: #4CAF50;
+  background-color: #4caf50;
+  border-color: #4caf50;
   cursor: pointer;
 }
 

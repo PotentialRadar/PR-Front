@@ -9,10 +9,19 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
 
-const app = createApp(App);
+import { useUserStore } from './stores/userStore';
 
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
 app.use(router);
 app.use(Toast);
-app.use(createPinia());
 
-app.mount('#app');
+// 앱 시작시 로그인 상태 확인
+const userStore = useUserStore();
+userStore.checkLogin().then(() => {
+  app.mount('#app');
+}).catch(() => {
+  app.mount('#app');
+});

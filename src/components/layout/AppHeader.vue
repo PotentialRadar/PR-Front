@@ -128,7 +128,11 @@
         </template>
         
         <template v-else>
-          <router-link to="/login" class="auth-link">로그인&nbsp; | &nbsp;회원가입</router-link>
+          <div class="user-menu">
+            <router-link to="/login" class="auth-link">로그인</router-link>
+            <span class="separator">|</span>
+            <router-link to="/signUp" class="auth-link">회원가입</router-link>
+          </div>
         </template>
       </div>
     </div>
@@ -290,8 +294,27 @@ const handleClickOutside = (event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  
+  // 디버깅용 로그
+  console.log('AppHeader mounted - userStore 상태:', {
+    isLoggedIn: userStore.isLoggedIn,
+    userId: userStore.userId,
+    email: userStore.email
+  });
+  
+  // 전역 객체에도 저장
+  window.debugAppHeaderUserStore = userStore;
+  
+  // 로그인 상태 확인 및 프로필 정보 가져오기
+  if (userStore.isLoggedIn && !userStore.profile) {
+    try {
+      await userStore.fetchProfile()
+    } catch (error) {
+      console.error('프로필 조회 실패:', error)
+    }
+  }
 })
 
 onUnmounted(() => {
