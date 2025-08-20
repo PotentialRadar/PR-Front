@@ -293,7 +293,8 @@ const fetchAIRecommendations = async () => {
       techStacks: selectedTechStacks
     }
     
-    const response = await fetch('http://localhost:8080/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false', {
+
+    const response = await fetch(`http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
