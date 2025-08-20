@@ -24,7 +24,7 @@
               class="verification-button"
               @click="requestVerification"
             >
-              {{ verificationRequested ? '인증번호 재전송' : '인증번호 받기' }}
+              {{ verificationRequested ? "인증번호 재전송" : "인증번호 받기" }}
             </button>
           </div>
 
@@ -55,22 +55,6 @@
               인증번호 확인
             </button>
           </div>
-        </div>
-
-        <!-- 이름 유효성 검사 -->
-        <div class="form-group">
-          <label for="name" class="form-label">이름</label>
-          <input
-            id="name"
-            v-model="formData.name"
-            type="text"
-            class="form-input"
-            placeholder="이름을 입력해주세요."
-            required
-          />
-          <p v-if="nameStatusMessage" :class="nameMessageClass">
-            {{ nameStatusMessage }}
-          </p>
         </div>
 
         <!-- 닉네임 유효성 검사 및 중복 확인 -->
@@ -114,8 +98,8 @@
           >
             {{
               isPasswordValid
-                ? '사용 가능한 비밀번호입니다.'
-                : '비밀번호는 8~20자이며 대소문자, 숫자, 특수문자를 포함해야 합니다.'
+                ? "사용 가능한 비밀번호입니다."
+                : "비밀번호는 8~20자이며 대소문자, 숫자, 특수문자를 포함해야 합니다."
             }}
           </p>
 
@@ -136,8 +120,8 @@
           >
             {{
               isPasswordMatch
-                ? '비밀번호가 일치합니다.'
-                : '비밀번호가 일치하지 않습니다.'
+                ? "비밀번호가 일치합니다."
+                : "비밀번호가 일치하지 않습니다."
             }}
           </p>
         </div>
@@ -156,28 +140,26 @@ import {
   verifyEmailCode,
   checkNickname,
   signUp,
-} from '@/api/user';
-import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
-import { debounce } from 'lodash';
+} from "@/api/user";
+import { ref, computed, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useToast } from "vue-toastification";
+import { debounce } from "lodash";
 
 const toast = useToast();
 const router = useRouter();
 
 const formData = ref({
-  email: '',
-  verificationCode: '',
-  name: '',
-  nickName: '',
-  password: '',
-  confirmPassword: '',
+  email: "",
+  verificationCode: "",
+  nickName: "",
+  password: "",
+  confirmPassword: "",
 });
 
 const verificationRequested = ref(false);
 const isVerified = ref(false);
 const nickNameTouched = ref(false);
-const nameTouched = ref(false);
 const emailTouched = ref(false);
 const isNickNameAvailable = ref(null); // null: 확인 전, true: 사용 가능, false: 중복됨
 
@@ -197,86 +179,57 @@ const isPasswordMatch = computed(() => {
   return formData.value.password === formData.value.confirmPassword;
 });
 
-const isNameValid = computed(() => {
-  const name = formData.value.name;
-  const regex = /^[가-힣]{1,50}$/;
-  return regex.test(name);
-});
-
 const isNickNameValid = computed(() => {
   const regex = /^[a-zA-Z0-9가-힣]+$/;
   const len = formData.value.nickName.length;
   return len >= 2 && len <= 20 && regex.test(formData.value.nickName);
 });
 
-// 이름 관련 computed
-const nameStatusMessage = computed(() => {
-  if (!formData.value.name || !nameTouched.value) {
-    return '';
-  }
-
-  return isNameValid.value
-    ? '사용 가능한 이름입니다.'
-    : '이름은 한글로 1~50자 이내로 입력해주세요.';
-});
-
-const nameMessageClass = computed(() => {
-  if (!formData.value.name || !nameTouched.value) {
-    return '';
-  }
-
-  return isNameValid.value
-    ? 'validation-message success'
-    : 'validation-message error';
-});
-
 // 닉네임 관련 computed
 const nickNameStatusMessage = computed(() => {
   if (!formData.value.nickName || !nickNameTouched.value) {
-    return '';
+    return "";
   }
 
   if (!isNickNameValid.value) {
-    return '닉네임은 2~20자, 한글/영문/숫자만 가능합니다.';
+    return "닉네임은 2~20자, 한글/영문/숫자만 가능합니다.";
   }
 
   if (isNickNameAvailable.value === false) {
-    return '이미 사용 중인 닉네임입니다.';
+    return "이미 사용 중인 닉네임입니다.";
   }
 
   if (isNickNameAvailable.value === true) {
-    return '사용 가능한 닉네임입니다.';
+    return "사용 가능한 닉네임입니다.";
   }
 
-  return '중복 확인 중입니다...';
+  return "중복 확인 중입니다...";
 });
 
 const nickNameMessageClass = computed(() => {
   if (!formData.value.nickName || !nickNameTouched.value) {
-    return '';
+    return "";
   }
 
   if (!isNickNameValid.value || isNickNameAvailable.value === false) {
-    return 'validation-message error';
+    return "validation-message error";
   }
 
   if (isNickNameValid.value && isNickNameAvailable.value === true) {
-    return 'validation-message success';
+    return "validation-message success";
   }
 
-  return 'validation-message checking'; // 중복 확인 중
+  return "validation-message checking"; // 중복 확인 중
 });
 
 const isFormValid = computed(() => {
   return (
     formData.value.email &&
-    formData.value.name &&
     formData.value.nickName &&
     formData.value.password &&
     formData.value.confirmPassword &&
     isPasswordValid.value &&
     isPasswordMatch.value &&
-    isNameValid.value &&
     isNickNameValid.value &&
     isNickNameAvailable.value === true
   );
@@ -291,8 +244,8 @@ const requestVerification = async () => {
   // 이메일 인증번호 발송 요청
   // ex) /api/users/send-code
   if (!isEmailValid.value) {
-    toast.error('올바른 이메일 형식을 입력해주세요.', {
-      position: 'top-center',
+    toast.error("올바른 이메일 형식을 입력해주세요.", {
+      position: "top-center",
       timeout: 2000,
       hideProgressBar: true,
     });
@@ -301,21 +254,21 @@ const requestVerification = async () => {
 
   verificationRequested.value = true;
   isVerified.value = false;
-  formData.value.verificationCode = '';
+  formData.value.verificationCode = "";
 
   try {
     await sendVerificationCode(formData.value.email);
 
-    toast.success('인증메일이 전송됐어요', {
-      position: 'top-center',
+    toast.success("인증메일이 전송됐어요", {
+      position: "top-center",
       timeout: 2000,
-      toastClassName: 'signup-toast',
-      bodyClassName: 'signup-toast-body',
+      toastClassName: "signup-toast",
+      bodyClassName: "signup-toast-body",
       hideProgressBar: true,
     });
   } catch (e) {
-    toast.error('인증 메일 전송에 실패했습니다.', {
-      position: 'top-center',
+    toast.error("인증 메일 전송에 실패했습니다.", {
+      position: "top-center",
       timeout: 2000,
       hideProgressBar: true,
     });
@@ -331,35 +284,26 @@ const handleSubmit = async () => {
   try {
     const response = await signUp({
       email: formData.value.email,
-      name: formData.value.name,
       nickname: formData.value.nickName,
       password: formData.value.password,
     });
 
     if (response.status === 200 || response.status === 201) {
-      toast.success('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.', {
-        position: 'top-center',
+      toast.success("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.", {
+        position: "top-center",
         timeout: 2000,
         hideProgressBar: true,
       });
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push("/login"), 2000);
     }
   } catch (error) {
-    toast.error(error.response?.data?.message || '회원가입에 실패했습니다.', {
-      position: 'top-center',
+    toast.error(error.response?.data?.message || "회원가입에 실패했습니다.", {
+      position: "top-center",
       timeout: 2000,
       hideProgressBar: true,
     });
   }
 };
-
-// 이름 입력 감시
-watch(
-  () => formData.value.name,
-  () => {
-    nameTouched.value = true;
-  }
-);
 
 // 닉네임 입력 감시
 watch(
@@ -396,7 +340,7 @@ const checkNickName = async () => {
 
     isNickNameAvailable.value = !response.data.duplicate;
   } catch (error) {
-    console.error('닉네임 중복 확인 실패', error);
+    console.error("닉네임 중복 확인 실패", error);
     isNickNameAvailable.value = null;
   }
 };
@@ -414,21 +358,21 @@ const verifyCode = async () => {
     );
     if (response.data.success) {
       isVerified.value = true;
-      toast.success('인증이 완료되었습니다.', {
-        position: 'top-center',
+      toast.success("인증이 완료되었습니다.", {
+        position: "top-center",
         timeout: 2000,
         hideProgressBar: true,
       });
     } else {
-      toast.error('인증번호가 일치하지 않습니다.', {
-        position: 'top-center',
+      toast.error("인증번호가 일치하지 않습니다.", {
+        position: "top-center",
         timeout: 2000,
         hideProgressBar: true,
       });
     }
   } catch (error) {
-    toast.error('인증번호 확인 중 오류가 발생했습니다.', {
-      position: 'top-center',
+    toast.error("인증번호 확인 중 오류가 발생했습니다.", {
+      position: "top-center",
       timeout: 2000,
       hideProgressBar: true,
     });
@@ -491,7 +435,7 @@ const verifyCode = async () => {
 
 .form-input:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: #4caf50;
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); /* 초록색 그림자 */
 }
 
@@ -538,7 +482,7 @@ const verifyCode = async () => {
 
 .verification-button:hover:not(:disabled) {
   background: #e8f5e8; /* 연한 초록색 배경 */
-  color: #4CAF50; /* 초록색 텍스트 */
+  color: #4caf50; /* 초록색 텍스트 */
 }
 
 .verification-button:disabled {
@@ -564,7 +508,7 @@ const verifyCode = async () => {
 .submit-button {
   margin-top: 15px;
   padding: 18px 24px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 12px;
