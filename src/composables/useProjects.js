@@ -49,8 +49,7 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
             all.value = Array.isArray(data) ? data : [];
             
             // API 데이터가 비어있거나 deadline이 없는 경우 fallback 데이터 사용
-            if (!all.value.length || !all.value[0]?.deadline) {
-                console.log('📋 API 데이터가 없거나 불완전하여 fallback 데이터 사용');
+            if (!all.value.length || !all.value[0]?.recruitDeadline) { // deadline -> recruitDeadline
                 const { projects } = await import('@/components/data/projects');
                 all.value = projects;
             }
@@ -59,7 +58,6 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
             page.value = Math.min(page.value, Math.max(1, Math.ceil(all.value.length / size.value) || 1));
             applyFilterAndPaginate();
         } catch (e) {
-            console.log('📋 API 호출 실패, fallback 데이터 사용');
             error.value = e;
             // API 실패 시 fallback 데이터 사용
             const { projects } = await import('@/components/data/projects');

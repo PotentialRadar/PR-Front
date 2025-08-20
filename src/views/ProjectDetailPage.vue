@@ -149,26 +149,49 @@ const load = async () => {
   loading.value = true;
   error.value = null;
   
-  // 먼저 fallback 데이터로 시작 (개발용)
-  const fallbackProject = projects.find(p => p.id === projectId.value);
-  if (fallbackProject) {
-    project.value = fallbackProject;
-    console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-    loading.value = false;
-    return;
-  }
-  
-  // 프로젝트를 찾을 수 없는 경우
-  console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
+  console.log('🔍 프로젝트 상세 정보 로드 시작, ID:', projectId.value);
   
   try {
+    // 먼저 API에서 데이터 조회 시도
     const { data } = await getProject(projectId.value);
-    // 백 DTO: ProjectRecruitmentResponse { projectId, title, description, ... }
-    // UI에서 id로도 쓸 수 있게 통일
-    project.value = { id: data.projectId ?? data.id, ...data };
+    console.log('✅ API에서 프로젝트 데이터 로드 성공:', data.title);
+    
+    // 백엔드 DTO를 프론트엔드 형식으로 변환
+    project.value = {
+      id: data.projectId ?? data.id,
+      title: data.title,
+      description: data.description,
+      techStacks: data.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
+      status: data.status === 'RECRUITING' ? '모집중' : data.status,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      recruitCount: data.recruitCount,
+      appliedCount: data.appliedCount,
+      acceptedCount: data.acceptedCount,
+      remainingCount: data.remainingCount,
+      recruitDeadline: data.recruitDeadline,
+      fileUrl: data.fileUrl,
+      viewCount: data.viewCount,
+      author: {
+        userId: data.teamLeaderId,
+        name: `팀장 ${data.teamLeaderId}`,
+        email: `leader${data.teamLeaderId}@example.com`
+      }
+    };
+    
   } catch (e) {
-    console.error('API 호출 실패:', e);
-    error.value = e;
+    console.log('❌ API 호출 실패, fallback 데이터 사용 시도:', e.message);
+    
+    // API 실패 시 fallback 데이터 사용
+    const fallbackProject = projects.find(p => p.id === projectId.value);
+    if (fallbackProject) {
+      project.value = fallbackProject;
+      console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+    } else {
+      console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다.`);
+      error.value = e;
+      project.value = null;
+    }
   } finally {
     loading.value = false;
   }

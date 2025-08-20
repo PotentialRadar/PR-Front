@@ -243,7 +243,7 @@ const fetchProjects = async () => {
     const response = await api.get('/projects')
     const apiProjects = response.data || []
     
-    // API 데이터를 프론트엔드 형식으로 변환
+    // API 데이터를 프로치乌드 형식으로 변환
     projects.value = apiProjects.map(project => ({
       id: project.projectId,
       title: project.title,
@@ -254,15 +254,12 @@ const fetchProjects = async () => {
       endDate: project.endDate,
       recruitCount: project.recruitCount,
       appliedCount: project.appliedCount,
-      deadline: formatDeadline(project.recruitDeadline), // 👈 formatDeadline 함수 사용
+      deadline: formatDeadline(project.recruitDeadline),
       category: mapCategoryFromTechStacks(project.techStacks),
       viewCount: project.viewCount,
       isFavorite: false
     }))
-    
-    console.log(`📂 프로젝트 ${projects.value.length}개 로드 완료`)
   } catch (error) {
-    console.error('❌ 프로젝트 로드 실패:', error)
     // API 실패 시 빈 배열 유지
     projects.value = []
   }
