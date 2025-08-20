@@ -69,8 +69,8 @@
                 />
               </div>
               
-              <div v-if="activeTab === 'comment'" id="comment-section">
-                <ProjectComment :projectId="projectId" />
+              <div v-if="activeTab === 'comment' && project" id="comment-section">
+                <ProjectComment :projectId="projectId" :projectOwnerId="project.teamLeaderId" />
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ import { applyProject } from '@/api/projectMember';
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const projectId = ref(Number(route.params.id));
+const projectId = computed(() => Number(route.params.id));
 
 const project = ref(null);
 const loading = ref(false);
@@ -146,17 +146,23 @@ const isProjectOwner = computed(() => {
 });
 
 const load = async () => {
+  if (isNaN(projectId.value)) {
+    console.error('Invalid project ID from route:', route.params.id);
+    error.value = new Error('Invalid project ID');
+    project.value = null;
+    return;
+  }
   loading.value = true;
   error.value = null;
   
   // 먼저 fallback 데이터로 시작 (개발용)
-  const fallbackProject = projects.find(p => p.id === projectId.value);
-  if (fallbackProject) {
-    project.value = fallbackProject;
-    console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-    loading.value = false;
-    return;
-  }
+  // const fallbackProject = projects.find(p => p.id === projectId.value);
+  // if (fallbackProject) {
+  //   project.value = fallbackProject;
+  //   console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+  //   loading.value = false;
+  //   return;
+  // }
   
   // 프로젝트를 찾을 수 없는 경우
   console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
@@ -235,7 +241,7 @@ async function handleApplicationSubmit(applicationData) {
     console.log('지원서 데이터:', applicationData);
 
     const payload = {
-      userId: 2, // applicationForm에서 userId 사용
+      userId: userStore.userId, // applicationForm에서 userId 사용
       applicationMessage: applicationData.applicationForm.message,
       techPart: applicationData.applicationForm.techPart // techPart 필드 사용
     };

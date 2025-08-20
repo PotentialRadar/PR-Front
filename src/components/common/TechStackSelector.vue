@@ -89,56 +89,65 @@ export default {
     const searchInput = ref(null)
 
     const availableTechnologies = ref([
-      // Frontend
-      { id: 1, name: 'React', category: 'frontend' },
-      { id: 2, name: 'Vue.js', category: 'frontend' },
-      { id: 3, name: 'Angular', category: 'frontend' },
-      { id: 4, name: 'Next.js', category: 'frontend' },
-      { id: 5, name: 'Nuxt.js', category: 'frontend' },
-      { id: 6, name: 'Svelte', category: 'frontend' },
-      { id: 7, name: 'TypeScript', category: 'frontend' },
-      { id: 8, name: 'JavaScript', category: 'frontend' },
-      
-      // Mobile
-      { id: 9, name: 'Flutter & Dart', category: 'mobile' },
-      { id: 10, name: 'React Native', category: 'mobile' },
-      { id: 11, name: 'Swift', category: 'mobile' },
-      { id: 12, name: 'Kotlin', category: 'mobile' },
-      { id: 13, name: 'Xamarin', category: 'mobile' },
-      { id: 14, name: 'Ionic', category: 'mobile' },
+      // Web/Frontend
+      { id: 1, name: 'HTML', category: 'frontend' },
+      { id: 2, name: 'CSS', category: 'frontend' },
+      { id: 3, name: 'SCSS', category: 'frontend' },
+      { id: 4, name: 'Tailwind CSS', category: 'frontend' },
+      { id: 5, name: 'JavaScript', category: 'frontend' },
+      { id: 6, name: 'TypeScript', category: 'frontend' },
+      { id: 7, name: 'React', category: 'frontend' },
+      { id: 8, name: 'Next.js', category: 'frontend' },
+      { id: 9, name: 'Vue.js', category: 'frontend' },
+      { id: 10, name: 'Nuxt.js', category: 'frontend' },
+      { id: 11, name: 'Angular', category: 'frontend' },
+      { id: 12, name: 'Svelte', category: 'frontend' },
       
       // Backend
-      { id: 15, name: 'Node.js', category: 'backend' },
-      { id: 16, name: 'Python', category: 'backend' },
-      { id: 17, name: 'Java', category: 'backend' },
-      { id: 18, name: 'C#', category: 'backend' },
-      { id: 19, name: 'PHP', category: 'backend' },
-      { id: 20, name: 'Ruby', category: 'backend' },
-      { id: 21, name: 'Go', category: 'backend' },
-      { id: 22, name: 'Rust', category: 'backend' },
-      { id: 23, name: 'Spring Boot', category: 'backend' },
-      { id: 24, name: 'Django', category: 'backend' },
-      { id: 25, name: 'Flask', category: 'backend' },
-      { id: 26, name: 'Express.js', category: 'backend' },
-      { id: 27, name: 'FastAPI', category: 'backend' },
+      { id: 13, name: 'Java', category: 'backend' },
+      { id: 14, name: 'Spring', category: 'backend' },
+      { id: 15, name: 'Spring Boot', category: 'backend' },
+      { id: 16, name: 'Node.js', category: 'backend' },
+      { id: 17, name: 'Express', category: 'backend' },
+      { id: 18, name: 'Python', category: 'backend' },
+      { id: 19, name: 'Django', category: 'backend' },
+      { id: 20, name: 'FastAPI', category: 'backend' },
+      { id: 21, name: 'PHP', category: 'backend' },
+      { id: 22, name: 'Laravel', category: 'backend' },
+      { id: 23, name: 'Ruby on Rails', category: 'backend' },
+      { id: 24, name: 'Go', category: 'backend' },
+      { id: 25, name: 'Rust', category: 'backend' },
+      { id: 26, name: '.NET', category: 'backend' },
+      { id: 27, name: 'C#', category: 'backend' },
+
+      // Mobile
+      { id: 28, name: 'React Native', category: 'mobile' },
+      { id: 29, name: 'Flutter', category: 'mobile' },
+      { id: 30, name: 'Swift', category: 'mobile' },
+      { id: 31, name: 'Kotlin', category: 'mobile' },
+      { id: 32, name: 'Xamarin', category: 'mobile' },
+      { id: 33, name: 'Ionic', category: 'mobile' },
       
-      // Database
-      { id: 28, name: 'MySQL', category: 'database' },
-      { id: 29, name: 'PostgreSQL', category: 'database' },
-      { id: 30, name: 'MongoDB', category: 'database' },
-      { id: 31, name: 'Redis', category: 'database' },
-      { id: 32, name: 'SQLite', category: 'database' },
-      { id: 33, name: 'Oracle', category: 'database' },
-      { id: 34, name: 'MariaDB', category: 'database' },
+      // DB/Cache
+      { id: 34, name: 'MySQL', category: 'database' },
+      { id: 35, name: 'PostgreSQL', category: 'database' },
+      { id: 36, name: 'SQLite', category: 'database' },
+      { id: 37, name: 'MongoDB', category: 'database' },
+      { id: 38, name: 'Redis', category: 'database' },
+      { id: 39, name: 'Oracle', category: 'database' },
+      { id: 40, name: 'MariaDB', category: 'database' },
       
-      // Cloud & DevOps
-      { id: 35, name: 'AWS', category: 'cloud' },
-      { id: 36, name: 'Google Cloud', category: 'cloud' },
-      { id: 37, name: 'Azure', category: 'cloud' },
-      { id: 38, name: 'Docker', category: 'devops' },
-      { id: 39, name: 'Kubernetes', category: 'devops' },
-      { id: 40, name: 'Jenkins', category: 'devops' },
-      { id: 41, name: 'GitHub Actions', category: 'devops' }
+      // DevOps/Infra
+      { id: 41, name: 'Docker', category: 'devops' },
+      { id: 42, name: 'Kubernetes', category: 'devops' },
+      { id: 43, name: 'Jenkins', category: 'devops' },
+      { id: 44, name: 'GitHub Actions', category: 'devops' },
+      { id: 45, name: 'AWS', category: 'cloud' },
+      { id: 46, name: 'Google Cloud', category: 'cloud' },
+      { id: 47, name: 'Azure', category: 'cloud' },
+
+      // Other
+      { id: 48, name: 'Unity', category: 'other' }
     ])
 
     const filteredTechnologies = computed(() => {
