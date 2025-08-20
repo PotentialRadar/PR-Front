@@ -17,7 +17,7 @@
       </div>
 
       <div class="header-right">
-        <template v-if="userStore.isLoggedIn">
+        <template v-if="isLoggedIn">
           <!-- 채팅 버튼 -->
           <div class="icon-button-container">
             <button 
@@ -146,6 +146,12 @@ import { useToast } from 'vue-toastification'
 
 const userStore = useUserStore()
 const toast = useToast()
+
+// 계산된 속성
+const isLoggedIn = computed(() => {
+  console.log('🔍 AppHeader isLoggedIn computed:', userStore.isLoggedIn, 'userId:', userStore.userId)
+  return userStore.isLoggedIn
+})
 
 // 반응형 데이터
 const showChat = ref(false)
@@ -307,14 +313,14 @@ onMounted(async () => {
   // 전역 객체에도 저장
   window.debugAppHeaderUserStore = userStore;
   
-  // 로그인 상태 확인 및 프로필 정보 가져오기
-  if (userStore.isLoggedIn && !userStore.profile) {
-    try {
-      await userStore.fetchProfile()
-    } catch (error) {
-      console.error('프로필 조회 실패:', error)
-    }
-  }
+  // 임시로 중복 fetchProfile 호출 비활성화 - EmailLoginPage에서 이미 처리됨
+  // if (userStore.isLoggedIn && !userStore.profile) {
+  //   try {
+  //     await userStore.fetchProfile()
+  //   } catch (error) {
+  //     console.error('프로필 조회 실패:', error)
+  //   }
+  // }
 })
 
 onUnmounted(() => {

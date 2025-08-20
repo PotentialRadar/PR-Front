@@ -240,7 +240,7 @@ const loadRecommendations = async () => {
   
   try {
     const requestData = {
-      userId: 1, // 실제로는 사용자 ID 사용
+      userId: userStore.userId, // 실제 로그인한 사용자 ID 사용
       techStacks: userTechStacks.value,
       experienceLevel: "intermediate",
       preferredCategories: [],
@@ -249,7 +249,7 @@ const loadRecommendations = async () => {
 
     console.log('🎯 AI 추천 요청:', requestData)
 
-    const response = await fetch('http://localhost:8082/api/recommend/projects-for-user', {
+    const response = await fetch('http://localhost:8080/api/recommend/projects-for-user', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -363,25 +363,38 @@ const loadPopularProjects = async () => {
 }
 
 // 라이프사이클
-onMounted(() => {
-  // 로그인 상태 체크
-  userStore.checkLogin()
-  
-  // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
-  loadPopularProjects()
-  
-  // 저장된 기술스택 불러오기
-  const savedTechStacks = localStorage.getItem('userTechStacks')
-  if (savedTechStacks) {
-    try {
-      userTechStacks.value = JSON.parse(savedTechStacks)
-      // 로그인된 상태에서만 AI 추천 로드
-      if (userStore.isLoggedIn) {
-        loadRecommendations()
-      }
-    } catch (error) {
-      console.error('기술스택 데이터 파싱 오류:', error)
+onMounted(async () => {
+  try {
+    // 로그인 상태 체크 (이미 로그인된 경우 스킵)
+    if (!userStore.isLoggedIn) {
+      await userStore.checkLogin()
     }
+    
+    // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
+    loadPopularProjects()
+    
+    // 저장된 기술스택 불러오기
+    const savedTechStacks = localStorage.getItem('userTechStacks')
+    if (savedTechStacks) {
+      try {
+        userTechStacks.value = JSON.parse(savedTechStacks)
+        // 로그인된 상태에서만 AI 추천 로드
+        if (userStore.isLoggedIn) {
+          loadRecommendations()
+        }
+      } catch (error) {
+        console.error('기술스택 데이터 파싱 오류:', error)
+      }
+    }
+    
+    console.log('📋 AI 추천 페이지 로드 완료:', {
+      isLoggedIn: userStore.isLoggedIn,
+      userId: userStore.userId,
+      techStacksCount: userTechStacks.value.length
+    })
+    
+  } catch (error) {
+    console.error('❌ AI 추천 페이지 초기화 실패:', error)
   }
 })
 </script>

@@ -18,10 +18,12 @@ app.use(pinia);
 app.use(router);
 app.use(Toast);
 
-// 앱 시작시 로그인 상태 확인
-const userStore = useUserStore();
-userStore.checkLogin().then(() => {
-  app.mount('#app');
-}).catch(() => {
-  app.mount('#app');
-});
+// 임시로 초기 checkLogin 비활성화 - 각 페이지에서 필요시 개별 처리
+// const userStore = useUserStore();
+// userStore.checkLogin().then(() => {
+//   app.mount('#app');
+// }).catch(() => {
+//   app.mount('#app');
+// });
+
+app.mount('#app');

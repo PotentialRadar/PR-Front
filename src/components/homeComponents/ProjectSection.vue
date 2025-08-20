@@ -366,10 +366,10 @@ const fetchPopularProjects = async (limit = 5) => {
 
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
 onMounted(() => {
-  // 테스트: 로그아웃 상태로 만들기
-  localStorage.removeItem('accessToken')
+  // 테스트: 로그아웃 상태로 만들기 (비활성화)
+  // localStorage.removeItem('accessToken')
   // 로그인 상태 체크
-  userStore.checkLogin()
+  // userStore.checkLogin()
   fetchProjects()
 })
 
