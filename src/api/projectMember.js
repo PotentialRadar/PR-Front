@@ -18,3 +18,7 @@ export const updateMemberStatus = (projectId, memberId, userId, status) =>
         { status },
         { params: { userId } }
     );
+
+// 확정된 팀원 목록 (프로젝트 멤버만 접근 가능)
+export const getConfirmedProjectMembers = (projectId) =>
+    api.get(`${ROOT(projectId)}/confirmed-members`);
