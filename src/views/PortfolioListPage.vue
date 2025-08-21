@@ -9,32 +9,16 @@
     </div>
     
     <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">포트폴리오 갤러리</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">다양한 분야의 크리에이터들과 만나보세요</p>
-        
-        <div class="stats-section">
-          <div class="stat-item">
-            <div class="stat-number">{{ overallStats.totalPortfolios }}+</div>
-            <div class="stat-label">포트폴리오</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ overallStats.totalSkills }}+</div>
-            <div class="stat-label">스킬 카테고리</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ overallStats.activeCreators }}</div>
-            <div class="stat-label">활성 크리에이터</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PageHeader 
+      title="포트폴리오 갤러리"
+      subtitle="다양한 분야의 크리에이터들과 만나보세요"
+      :showStats="true"
+      :stats="[
+        { number: overallStats.totalPortfolios + '+', label: '포트폴리오' },
+        { number: overallStats.totalSkills + '+', label: '스킬 카테고리' },
+        { number: overallStats.activeCreators.toString(), label: '활성 크리에이터' }
+      ]"
+    />
 
     <div class="container">
       <div class="content-wrapper">
@@ -180,6 +164,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { 
   getPortfolioList, 
   getPopularSkills, 
@@ -302,6 +287,7 @@ const getSkillType = (skill) => {
 <style scoped>
 .portfolio-list {
   min-height: 100vh;
+  padding-top: 68px;
   background: linear-gradient(135deg, #f8fffe 0%, #f0f9ff 50%, #ecfdf5 100%);
   position: relative;
   overflow-x: hidden;
@@ -406,7 +392,7 @@ const getSkillType = (skill) => {
 }
 
 .page-title {
-  font-size: 48px;
+  font-size: 42px;
   font-weight: 900;
   color: #262626;
   margin: 0;

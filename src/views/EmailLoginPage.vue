@@ -89,14 +89,19 @@ const handleEmailLogin = async () => {
     // 사용자 정보 가져오기
     const userProfileResponse = await api.get("/user/me");
     const userProfile = userProfileResponse.data;
+    
+    console.log('📋 사용자 프로필 응답:', userProfile);
 
     // Pinia 상태 갱신 (OAuth와 동일한 형식)
     userStore.login({
-      userId: userProfile.id,
+      userId: userProfile.userId || userProfile.id,
       email: userProfile.email,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+
+    // 프로필 정보 추가 로드
+    await userStore.fetchProfile();
 
     console.log("로그인 성공!", {
       userId: userProfile.id,

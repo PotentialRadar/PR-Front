@@ -1,15 +1,10 @@
 <template>
   <div class="project-list-page">
     <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">프로젝트 찾기</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">다양한 프로젝트에 참여하여 새로운 경험을 쌓아보세요</p>
-      </div>
-    </div>
+    <PageHeader 
+      title="프로젝트 찾기"
+      subtitle="다양한 프로젝트에 참여하여 새로운 경험을 쌓아보세요"
+    />
 
     <SearchSection />
 
@@ -108,6 +103,7 @@ import { ref, watch, onActivated } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore'; // NEW IMPORT
 
+import PageHeader from '@/components/common/PageHeader.vue';
 import SearchSection from '@/components/projectComponents/SearchSection.vue';
 import SortOptions from '@/components/projectComponents/SortOptions.vue';
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
@@ -290,7 +286,7 @@ const handleApplicationSubmitted = async (applicationData) => {
 .project-list-page {
   min-height: 100vh;
   background: #FFF;
-  padding-top: 100px;
+  padding-top: 68px;
 }
 
 /* 페이지 헤더 */

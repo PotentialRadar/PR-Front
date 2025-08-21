@@ -8,9 +8,11 @@ import AppFooter from '@/components/layout/AppFooter.vue';
 
 const userStore = useUserStore();
 
-onMounted(() => {
-  // OAuth 로그인에서 이미 상태가 설정되므로 별도 처리 불필요
-  console.log('App mounted - userStore 초기 상태:', {
+onMounted(async () => {
+  // 임시로 checkLogin 비활성화 - 로그인 페이지에서 이미 처리됨
+  // await userStore.checkLogin();
+  
+  console.log('App mounted - userStore 상태:', {
     isLoggedIn: userStore.isLoggedIn,
     userId: userStore.userId,
     email: userStore.email

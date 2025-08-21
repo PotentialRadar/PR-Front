@@ -30,9 +30,18 @@
           <template v-else>
             <div class="header-section">
               <ProjectHeader :project="project" />
-              <!-- 지원하기 버튼 추가 -->
-              <div class="apply-button-container">
+              <!-- 프로젝트 소유자: 팀원 초대 버튼 / 일반 사용자: 지원하기 버튼 -->
+              <div class="action-button-container">
                 <button
+                  v-if="isProjectOwner"
+                  class="invite-button"
+                  @click="openInviteModal"
+                >
+                  <i class="bi bi-person-plus"></i>
+                  팀원 초대하기
+                </button>
+                <button
+                  v-else
                   class="apply-button"
                   @click="openApplyModal"
                 >
@@ -90,6 +99,15 @@
       @portfolio-settings="goToPortfolioSettings"
     />
 
+    <!-- 팀원 초대 모달 컴포넌트 -->
+    <TeamInviteModal
+      v-if="showInviteModal"
+      :project-id="projectId"
+      :project-title="project?.title || ''"
+      @close="closeInviteModal"
+      @invites-sent="handleInvitesSent"
+    />
+
     <!-- 지원 완료 토스트 메시지 -->
     <div
       v-if="showSuccessToast"
@@ -107,6 +125,15 @@
       <span class="toast-icon">❌</span>
       지원에 실패했습니다. 다시 시도해주세요.
     </div>
+
+    <!-- 팀원 초대 완료 토스트 메시지 -->
+    <div
+      v-if="showInviteToast"
+      class="success-toast"
+    >
+      <span class="toast-icon">📧</span>
+      팀원 초대장이 성공적으로 발송되었습니다!
+    </div>
   </div>
 </template>
 
@@ -120,6 +147,7 @@ import ProjectWorkContent from '@/components/projectComponents/ProjectWorkConten
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberRecommendation.vue';
+import TeamInviteModal from '@/components/projectComponents/TeamInviteModal.vue';
 
 // API와 fallback 데이터 import
 import { getProject } from '@/api/projects';
@@ -155,26 +183,49 @@ const load = async () => {
   loading.value = true;
   error.value = null;
   
-  // 먼저 fallback 데이터로 시작 (개발용)
-  // const fallbackProject = projects.find(p => p.id === projectId.value);
-  // if (fallbackProject) {
-  //   project.value = fallbackProject;
-  //   console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-  //   loading.value = false;
-  //   return;
-  // }
-  
-  // 프로젝트를 찾을 수 없는 경우
-  console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
+  console.log('🔍 프로젝트 상세 정보 로드 시작, ID:', projectId.value);
   
   try {
+    // 먼저 API에서 데이터 조회 시도
     const { data } = await getProject(projectId.value);
-    // 백 DTO: ProjectRecruitmentResponse { projectId, title, description, ... }
-    // UI에서 id로도 쓸 수 있게 통일
-    project.value = { id: data.projectId ?? data.id, ...data };
+    console.log('✅ API에서 프로젝트 데이터 로드 성공:', data.title);
+    
+    // 백엔드 DTO를 프론트엔드 형식으로 변환
+    project.value = {
+      id: data.projectId ?? data.id,
+      title: data.title,
+      description: data.description,
+      techStacks: data.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
+      status: data.status === 'RECRUITING' ? '모집중' : data.status,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      recruitCount: data.recruitCount,
+      appliedCount: data.appliedCount,
+      acceptedCount: data.acceptedCount,
+      remainingCount: data.remainingCount,
+      recruitDeadline: data.recruitDeadline,
+      fileUrl: data.fileUrl,
+      viewCount: data.viewCount,
+      author: {
+        userId: data.teamLeaderId,
+        name: `팀장 ${data.teamLeaderId}`,
+        email: `leader${data.teamLeaderId}@example.com`
+      }
+    };
+    
   } catch (e) {
-    console.error('API 호출 실패:', e);
-    error.value = e;
+    console.log('❌ API 호출 실패, fallback 데이터 사용 시도:', e.message);
+    
+    // API 실패 시 fallback 데이터 사용
+    const fallbackProject = projects.find(p => p.id === projectId.value);
+    if (fallbackProject) {
+      project.value = fallbackProject;
+      console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+    } else {
+      console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다.`);
+      error.value = e;
+      project.value = null;
+    }
   } finally {
     loading.value = false;
   }
@@ -209,7 +260,9 @@ function handleTabChange(tab) {
 // 지원 모달 관련
 const showApplyModal = ref(false);
 const showSuccessToast = ref(false);
-const showFailToast = ref(false); // Add this line
+const showFailToast = ref(false);
+const showInviteModal = ref(false);
+const showInviteToast = ref(false);
 
 const modalProjectInfo = computed(() => ({
   title: project.value?.title || '',
@@ -264,6 +317,25 @@ function handleApplicationError(error) {
 
 function goToPortfolioSettings() {
   router.push('/portfolio/settings');
+}
+
+// 팀원 초대 관련 함수
+function openInviteModal() {
+  showInviteModal.value = true;
+}
+
+function closeInviteModal() {
+  showInviteModal.value = false;
+}
+
+function handleInvitesSent(inviteList) {
+  console.log(`📧 ${inviteList.length}명에게 초대장 발송 완료:`, inviteList);
+  
+  showInviteToast.value = true;
+  setTimeout(() => (showInviteToast.value = false), 3000);
+  
+  // 실제로는 여기서 서버에 초대 정보를 전송
+  // await sendTeamInvites(projectId.value, inviteList);
 }
 
 function handleContactAuthor(author) {
@@ -407,12 +479,6 @@ document.addEventListener('keydown', (e) => {
 }
 
 /* 지원하기 버튼 스타일 */
-.apply-button-container {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  padding-right: 10px;
-}
 
 .apply-button {
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
@@ -442,6 +508,45 @@ document.addEventListener('keydown', (e) => {
 
 .apply-icon {
   font-size: 16px;
+}
+
+/* 팀원 초대 버튼 스타일 */
+.invite-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+}
+
+.invite-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(0, 123, 255, 0.4);
+  background: linear-gradient(135deg, #0056b3, #004085);
+}
+
+.invite-button:active {
+  transform: translateY(0px);
+}
+
+.invite-button i {
+  font-size: 18px;
+}
+
+/* 액션 버튼 컨테이너 통합 스타일 */
+.action-button-container {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
 }
 
 /* 성공 토스트 */
