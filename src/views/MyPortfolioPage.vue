@@ -71,9 +71,10 @@
               @keyup.escape="cancelEdit"
             ></textarea>
             <div class="edit-actions">
-              <button @click="saveEdit('introduction')" class="save-btn">
-                <i class="bi bi-check"></i>
-                저장
+              <button @click="saveEdit('introduction')" class="save-btn" :disabled="saveLoading">
+                <i class="bi bi-check" v-if="!saveLoading"></i>
+                <div class="loading-spinner-small" v-if="saveLoading"></div>
+                {{ saveLoading ? '저장 중...' : '저장' }}
               </button>
               <button @click="cancelEdit" class="cancel-btn">
                 <i class="bi bi-x"></i>
@@ -426,11 +427,12 @@
             </div>
             
             <div class="edit-actions">
-              <button @click="saveEdit('skills')" class="save-btn">
-                <i class="bi bi-check"></i>
-                저장
+              <button @click="saveEdit('skills')" class="save-btn" :disabled="saveLoading">
+                <i class="bi bi-check" v-if="!saveLoading"></i>
+                <div class="loading-spinner-small" v-if="saveLoading"></div>
+                {{ saveLoading ? '저장 중...' : '저장' }}
               </button>
-              <button @click="cancelEdit" class="cancel-btn">
+              <button @click="cancelEdit" class="cancel-btn" :disabled="saveLoading">
                 <i class="bi bi-x"></i>
                 취소
               </button>
@@ -507,9 +509,16 @@
     </div>
 
     <Transition name="toast">
-      <div v-if="showSaveToast" class="save-toast">
+      <div v-if="showSaveToast" class="save-toast success">
         <i class="bi bi-check-circle-fill"></i>
         저장되었습니다!
+      </div>
+    </Transition>
+
+    <Transition name="toast">
+      <div v-if="errorMessage" class="save-toast error">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        {{ errorMessage }}
       </div>
     </Transition>
   </div>
@@ -518,6 +527,7 @@
 <script setup>
 import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { portfolioApi, techStackApi } from '@/api/portfolio.js'
 
 const router = useRouter()
 
@@ -578,72 +588,24 @@ const mockSkillDatabase = [
 const loading = ref(true)
 const editMode = ref(null) // null, 'introduction', 'education', 'career', 'skills'
 const showSaveToast = ref(false)
+const saveLoading = ref(false)
+const errorMessage = ref('')
 const newSkill = ref('')
 const newSkillProficiency = ref(3)
 const showSuggestions = ref(false)
 const skillSuggestions = ref([])
 const searchTimeout = ref(null)
+const allTechStacks = ref([])
 
-// 원본 포트폴리오 데이터
+// 원본 포트폴리오 데이터 (빈 초기값)
 const portfolioData = reactive({
-  userId: 1,
-  userInfo: {
-    name: '김개발자',
-    jobTitle: 'Senior Frontend Developer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-    category: 'Frontend'
-  },
-  introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. React와 Vue.js를 주력으로 사용하며, 깔끔하고 직관적인 UI/UX 구현에 열정을 가지고 있습니다.',
-  skills: [
-    { name: 'React', proficiency: 5 },
-    { name: 'Vue.js', proficiency: 4 },
-    { name: 'TypeScript', proficiency: 4 },
-    { name: 'JavaScript', proficiency: 5 },
-    { name: 'Tailwind CSS', proficiency: 3 },
-    { name: 'Node.js', proficiency: 3 },
-    { name: 'GraphQL', proficiency: 2 },
-    { name: 'Figma', proficiency: 3 }
-  ],
-  educations: [
-    {
-      institution: '서울대학교',
-      program: '컴퓨터공학과 학사',
-      startDate: '2019-03',
-      endDate: '2023-02',
-      isOngoing: false
-    },
-    {
-      institution: '패스트캠퍼스',
-      program: 'React 심화 과정',
-      startDate: '2023-06',
-      endDate: '2023-08',
-      isOngoing: false
-    }
-  ],
-  careers: [
-    {
-      company: 'Tech Startup A',
-      position: 'Frontend Developer',
-      startDate: '2023-09',
-      endDate: null,
-      isCurrent: true,
-      description: 'React 기반 웹 애플리케이션 개발 및 사용자 인터페이스 설계를 담당했습니다.'
-    },
-    {
-      company: '네이버',
-      position: 'Junior Frontend Developer',
-      startDate: '2023-03',
-      endDate: '2023-08',
-      isCurrent: false,
-      description: 'Vue.js를 활용한 사내 관리 시스템 개발 및 유지보수를 담당했습니다.'
-    }
-  ],
-  projects: [
-    { id: 1, title: 'E-commerce 플랫폼', role: 'Frontend Developer' },
-    { id: 2, title: '관리자 대시보드', role: 'Full-stack Developer' },
-    { id: 3, title: '모바일 앱 UI', role: 'UI/UX Designer' },
-    { id: 4, title: 'AI 챗봇 서비스', role: 'Frontend Developer' }
-  ],
+  userId: null,
+  userInfo: null,
+  introduction: '',
+  skills: [],
+  educations: [],
+  careers: [],
+  projects: [],
   reviews: []
 })
 
@@ -689,9 +651,78 @@ const careerData = computed(() => {
 const loadPortfolioData = async () => {
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 포트폴리오 데이터와 전체 기술 스택 목록을 병렬로 로드
+    const [portfolioResponse, techStacksResponse] = await Promise.all([
+      portfolioApi.getPortfolio(),
+      techStackApi.getAllTechStacks()
+    ])
+    
+    // 포트폴리오 데이터 설정
+    const portfolio = portfolioResponse.data
+    if (portfolio && portfolio.userInfo) {
+      // 사용자 기본 정보 설정
+      portfolioData.userId = portfolio.userId
+      portfolioData.userInfo = {
+        name: portfolio.userInfo.name || '사용자',
+        jobTitle: portfolio.userInfo.jobTitle || '',
+        avatar: portfolio.userInfo.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`,
+        category: portfolio.userInfo.category || ''
+      }
+      portfolioData.introduction = portfolio.introduction || ''
+      portfolioData.projects = portfolio.projects || []
+      
+      // 기술 스택 데이터를 프론트엔드 형식으로 변환
+      portfolioData.skills = portfolio.techStacks?.map(ts => ({
+        userTechStackId: ts.userTechStackId,
+        stackId: ts.stackId,
+        name: ts.stackName,
+        proficiency: ts.skillLevel
+      })) || []
+      
+      // 교육 정보 변환 (LocalDate -> YYYY-MM 형식)
+      portfolioData.educations = portfolio.educations?.map(edu => ({
+        educationId: edu.educationId,
+        institution: edu.institution,
+        program: edu.program,
+        startDate: edu.startDate ? edu.startDate.substring(0, 7) : '', // YYYY-MM-DD -> YYYY-MM
+        endDate: edu.endDate ? edu.endDate.substring(0, 7) : '',
+        isOngoing: edu.isCurrent || false
+      })) || []
+      
+      // 경력 정보 변환 (백엔드 필드명과 매핑)
+      portfolioData.careers = portfolio.experiences?.map(exp => ({
+        experienceId: exp.experienceId,
+        company: exp.companyName, // companyName -> company
+        position: exp.department, // department -> position
+        startDate: exp.startDate ? exp.startDate.substring(0, 7) : '', // YYYY-MM-DD -> YYYY-MM
+        endDate: exp.endDate ? exp.endDate.substring(0, 7) : '',
+        isCurrent: exp.isCurrent || false,
+        description: exp.summary || '' // summary -> description
+      })) || []
+    }
+    
+    // 전체 기술 스택 목록 설정 (검색용)
+    allTechStacks.value = techStacksResponse.data?.map(ts => ({
+      stackId: ts.stackId,
+      name: ts.name,
+      category: ts.category || '기타'
+    })) || []
+    
   } catch (error) {
     console.error('포트폴리오 데이터 로드 실패:', error)
+    
+    // 백엔드 연결 실패 시 기본값 설정 (목업 데이터 대신)
+    portfolioData.userId = 1
+    portfolioData.userInfo = {
+      name: '사용자',
+      jobTitle: '',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+      category: ''
+    }
+    
+    // 목업 기술 스택 데이터를 allTechStacks에 설정 (검색용)
+    allTechStacks.value = mockSkillDatabase
+    
   } finally {
     loading.value = false
   }
@@ -724,24 +755,63 @@ const startEdit = async (field) => {
 }
 
 const saveEdit = async (field) => {
+  saveLoading.value = true
+  errorMessage.value = ''
+  
   try {
-    // API 호출 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 데이터 저장
-    switch (field) {
-      case 'introduction':
-        portfolioData.introduction = editData.introduction
-        break
-      case 'education':
-        portfolioData.educations = [...editData.educations]
-        break
-      case 'career':
-        portfolioData.careers = [...editData.careers]
-        break
-      case 'skills':
-        portfolioData.skills = JSON.parse(JSON.stringify(editData.skills))
-        break
+    // 기술 스택 저장의 경우 개별 API 호출
+    if (field === 'skills') {
+      // 현재 기술 스택과 편집된 기술 스택을 비교하여 변경사항만 처리
+      const currentSkills = portfolioData.skills || []
+      const newSkills = editData.skills || []
+      
+      // 삭제된 기술 스택 찾기
+      for (const currentSkill of currentSkills) {
+        const stillExists = newSkills.find(ns => ns.userTechStackId === currentSkill.userTechStackId)
+        if (!stillExists && currentSkill.userTechStackId) {
+          await portfolioApi.deleteTechStack(currentSkill.userTechStackId)
+        }
+      }
+      
+      // 추가되거나 수정된 기술 스택 처리
+      for (const newSkill of newSkills) {
+        if (newSkill.userTechStackId) {
+          // 기존 기술 스택 수정
+          const currentSkill = currentSkills.find(cs => cs.userTechStackId === newSkill.userTechStackId)
+          if (currentSkill && (currentSkill.proficiency !== newSkill.proficiency)) {
+            await portfolioApi.updateTechStack(newSkill.userTechStackId, {
+              stackId: newSkill.stackId,
+              skillLevel: newSkill.proficiency
+            })
+          }
+        } else {
+          // 새 기술 스택 추가
+          const response = await portfolioApi.addTechStack({
+            stackId: newSkill.stackId,
+            skillLevel: newSkill.proficiency
+          })
+          newSkill.userTechStackId = response.data.userTechStackId
+        }
+      }
+      
+      portfolioData.skills = JSON.parse(JSON.stringify(editData.skills))
+    } else {
+      // 다른 필드들은 통합 포트폴리오 업데이트 API 사용
+      const updateData = {}
+      
+      switch (field) {
+        case 'introduction':
+          updateData.introduction = editData.introduction
+          await portfolioApi.updatePortfolio(updateData)
+          portfolioData.introduction = editData.introduction
+          break
+        case 'education':
+          await saveEducations()
+          break
+        case 'career':
+          await saveExperiences()
+          break
+      }
     }
     
     editMode.value = null
@@ -750,6 +820,10 @@ const saveEdit = async (field) => {
     
   } catch (error) {
     console.error('저장 실패:', error)
+    errorMessage.value = error.response?.data?.message || '저장 중 오류가 발생했습니다.'
+    setTimeout(() => errorMessage.value = '', 5000)
+  } finally {
+    saveLoading.value = false
   }
 }
 
@@ -806,6 +880,7 @@ const addEducation = () => {
   }
   
   editData.educations.push({
+    educationId: null, // 새로 추가하는 교육 정보
     institution: '',
     program: '',
     startDate: '',
@@ -837,6 +912,7 @@ const addCareer = () => {
   }
   
   editData.careers.push({
+    experienceId: null, // 새로 추가하는 경력 정보
     company: '',
     position: '',
     startDate: '',
@@ -858,10 +934,16 @@ const handleCurrentToggle = (index) => {
 
 // 기술 스택 관련 메서드
 const addSkill = () => {
-  const skill = newSkill.value.trim()
-  if (skill && !editData.skills.some(s => s.name === skill)) {
+  const skillName = newSkill.value.trim()
+  if (skillName && !editData.skills.some(s => s.name === skillName)) {
+    // 검색 결과에서 stackId 찾기
+    const searchResults = allTechStacks.value.length > 0 ? allTechStacks.value : mockSkillDatabase
+    const foundSkill = searchResults.find(s => s.name === skillName)
+    
     editData.skills.push({
-      name: skill,
+      userTechStackId: null, // 새로 추가하는 기술 스택
+      stackId: foundSkill?.stackId || null,
+      name: skillName,
       proficiency: newSkillProficiency.value
     })
     newSkill.value = ''
@@ -871,6 +953,99 @@ const addSkill = () => {
 
 const removeSkill = (index) => {
   editData.skills.splice(index, 1)
+}
+
+// 교육 정보 저장 함수
+const saveEducations = async () => {
+  const currentEducations = portfolioData.educations || []
+  const newEducations = editData.educations || []
+  
+  // 삭제된 교육 정보 찾기
+  for (const current of currentEducations) {
+    const stillExists = newEducations.find(ne => ne.educationId === current.educationId)
+    if (!stillExists && current.educationId) {
+      await portfolioApi.deleteEducation(current.educationId)
+    }
+  }
+  
+  // 추가되거나 수정된 교육 정보 처리
+  for (const newEdu of newEducations) {
+    const eduData = {
+      institution: newEdu.institution,
+      program: newEdu.program,
+      startDate: newEdu.startDate ? `${newEdu.startDate}-01` : null, // YYYY-MM -> YYYY-MM-01
+      endDate: newEdu.endDate && !newEdu.isOngoing ? `${newEdu.endDate}-01` : null,
+      isCurrent: newEdu.isOngoing
+    }
+    
+    if (newEdu.educationId) {
+      // 기존 교육 정보 수정
+      const response = await portfolioApi.updateEducation(newEdu.educationId, eduData)
+      Object.assign(newEdu, {
+        educationId: response.data.educationId,
+        startDate: response.data.startDate ? response.data.startDate.substring(0, 7) : '',
+        endDate: response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+      })
+    } else {
+      // 새 교육 정보 추가
+      const response = await portfolioApi.addEducation(eduData)
+      newEdu.educationId = response.data.educationId
+      newEdu.startDate = response.data.startDate ? response.data.startDate.substring(0, 7) : ''
+      newEdu.endDate = response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+    }
+  }
+  
+  portfolioData.educations = JSON.parse(JSON.stringify(editData.educations))
+}
+
+// 경력 정보 저장 함수
+const saveExperiences = async () => {
+  const currentExperiences = portfolioData.careers || []
+  const newExperiences = editData.careers || []
+  
+  // 삭제된 경력 정보 찾기
+  for (const current of currentExperiences) {
+    const stillExists = newExperiences.find(ne => ne.experienceId === current.experienceId)
+    if (!stillExists && current.experienceId) {
+      await portfolioApi.deleteExperience(current.experienceId)
+    }
+  }
+  
+  // 추가되거나 수정된 경력 정보 처리
+  for (const newExp of newExperiences) {
+    const expData = {
+      companyName: newExp.company, // company -> companyName
+      department: newExp.position, // position -> department
+      startDate: newExp.startDate ? `${newExp.startDate}-01` : null, // YYYY-MM -> YYYY-MM-01
+      endDate: newExp.endDate && !newExp.isCurrent ? `${newExp.endDate}-01` : null,
+      isCurrent: newExp.isCurrent,
+      summary: newExp.description || '' // description -> summary
+    }
+    
+    if (newExp.experienceId) {
+      // 기존 경력 정보 수정
+      const response = await portfolioApi.updateExperience(newExp.experienceId, expData)
+      Object.assign(newExp, {
+        experienceId: response.data.experienceId,
+        company: response.data.companyName,
+        position: response.data.department,
+        startDate: response.data.startDate ? response.data.startDate.substring(0, 7) : '',
+        endDate: response.data.endDate ? response.data.endDate.substring(0, 7) : '',
+        description: response.data.summary || ''
+      })
+    } else {
+      // 새 경력 정보 추가
+      const response = await portfolioApi.addExperience(expData)
+      newExp.experienceId = response.data.experienceId
+      newExp.company = response.data.companyName
+      newExp.position = response.data.department
+      newExp.startDate = response.data.startDate ? response.data.startDate.substring(0, 7) : ''
+      newExp.endDate = response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+      newExp.description = response.data.summary || ''
+    }
+  }
+  
+  portfolioData.careers = JSON.parse(JSON.stringify(editData.careers))
 }
 
 // 기술 스택 검색 관련 메서드
@@ -883,8 +1058,12 @@ const searchSkills = () => {
   
   searchTimeout.value = setTimeout(() => {
     if (query.length >= 1) {
-      // 실제로는 API 호출, 여기서는 목업 데이터 사용
-      skillSuggestions.value = mockSkillDatabase
+      // 전체 기술 스택에서 검색
+      const searchResults = allTechStacks.value.length > 0 
+        ? allTechStacks.value
+        : mockSkillDatabase // 백엔드 연동 실패 시 목업 데이터 사용
+      
+      skillSuggestions.value = searchResults
         .filter(skill => 
           skill.name.toLowerCase().includes(query.toLowerCase()) &&
           !editData.skills.some(existingSkill => existingSkill.name === skill.name)
@@ -899,7 +1078,18 @@ const searchSkills = () => {
 }
 
 const selectSkill = (skill) => {
-  newSkill.value = skill.name
+  // 선택된 기술 스택을 직접 추가
+  if (!editData.skills.some(s => s.name === skill.name)) {
+    editData.skills.push({
+      userTechStackId: null, // 새로 추가하는 기술 스택
+      stackId: skill.stackId || null,
+      name: skill.name,
+      proficiency: newSkillProficiency.value
+    })
+  }
+  
+  newSkill.value = ''
+  newSkillProficiency.value = 3
   showSuggestions.value = false
   skillSuggestions.value = []
 }
@@ -1119,10 +1309,17 @@ onMounted(() => {
 .save-btn {
   background: #4CAF50;
   color: white;
+  min-width: 80px;
+  justify-content: center;
 }
 
-.save-btn:hover {
+.save-btn:hover:not(:disabled) {
   background: #66BB6A;
+}
+
+.save-btn:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
 }
 
 .cancel-btn {
@@ -1705,8 +1902,6 @@ onMounted(() => {
   position: fixed;
   top: 80px;
   right: 20px;
-  background: #4CAF50;
-  color: white;
   padding: 12px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -1715,6 +1910,24 @@ onMounted(() => {
   gap: 8px;
   font-weight: 500;
   z-index: 1000;
+  color: white;
+}
+
+.save-toast.success {
+  background: #4CAF50;
+}
+
+.save-toast.error {
+  background: #f44336;
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .toast-enter-active, .toast-leave-active {
