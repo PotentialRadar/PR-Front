@@ -10,13 +10,14 @@
 
         <nav class="nav-menu">
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
+          <router-link to="/ai-recommendations" class="nav-item ai-nav-item">AI 추천</router-link>
           <router-link to="/portfolios" class="nav-item">포트폴리오</router-link>
           <router-link to="/new-project" class="nav-item">프로젝트 생성</router-link>
         </nav>
       </div>
 
       <div class="header-right">
-        <template v-if="userStore.isLoggedIn">
+        <template v-if="isLoggedIn">
           <!-- 채팅 버튼 -->
           <div class="icon-button-container">
             <button 
@@ -145,6 +146,12 @@ import { useToast } from 'vue-toastification'
 
 const userStore = useUserStore()
 const toast = useToast()
+
+// 계산된 속성
+const isLoggedIn = computed(() => {
+  console.log('🔍 AppHeader isLoggedIn computed:', userStore.isLoggedIn, 'userId:', userStore.userId)
+  return userStore.isLoggedIn
+})
 
 // 반응형 데이터
 const showChat = ref(false)
@@ -306,14 +313,14 @@ onMounted(async () => {
   // 전역 객체에도 저장
   window.debugAppHeaderUserStore = userStore;
   
-  // 로그인 상태 확인 및 프로필 정보 가져오기
-  if (userStore.isLoggedIn && !userStore.profile) {
-    try {
-      await userStore.fetchProfile()
-    } catch (error) {
-      console.error('프로필 조회 실패:', error)
-    }
-  }
+  // 임시로 중복 fetchProfile 호출 비활성화 - EmailLoginPage에서 이미 처리됨
+  // if (userStore.isLoggedIn && !userStore.profile) {
+  //   try {
+  //     await userStore.fetchProfile()
+  //   } catch (error) {
+  //     console.error('프로필 조회 실패:', error)
+  //   }
+  // }
 })
 
 onUnmounted(() => {
@@ -370,15 +377,49 @@ onUnmounted(() => {
   line-height: 27px;
   text-decoration: none;
   padding: 20px 5px;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #28a745;
+  opacity: 0;
+  transform: scaleX(0);
+  transition: all 0.3s ease;
 }
 
 .nav-item:hover {
-  color: #333;
+  color: #28a745;
+}
+
+.nav-item:hover::before,
+.nav-item.router-link-active::before {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .nav-item.router-link-active {
-  color: #333;
+  color: #28a745;
+  font-weight: 700;
+}
+
+.ai-nav-item {
+  color: #424953;
+  font-weight: 400;
+}
+
+.ai-nav-item:hover {
+  color: #28a745;
+}
+
+.ai-nav-item.router-link-active {
+  color: #28a745;
   font-weight: 700;
 }
 
