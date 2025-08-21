@@ -348,12 +348,43 @@
           <div v-if="editMode === 'skills'" class="edit-mode">
             <div class="skills-edit">
               <div class="skill-input-group">
-                <input
-                  v-model="newSkill"
-                  @keyup.enter="addSkill"
-                  class="edit-input"
-                  placeholder="기술 스택을 입력하고 Enter를 누르세요"
-                />
+                <div class="skill-search-container">
+                  <input
+                    v-model="newSkill"
+                    @input="searchSkills"
+                    @keyup.enter="addSkill"
+                    @focus="showSuggestions = true"
+                    @blur="hideSuggestions"
+                    class="edit-input"
+                    placeholder="기술 스택을 검색하거나 입력하세요"
+                    autocomplete="off"
+                  />
+                  <div v-if="showSuggestions && skillSuggestions.length > 0" class="suggestions-dropdown">
+                    <div 
+                      v-for="suggestion in skillSuggestions" 
+                      :key="suggestion.name"
+                      @mousedown="selectSkill(suggestion)"
+                      class="suggestion-item"
+                    >
+                      <span class="suggestion-name">{{ suggestion.name }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="proficiency-input">
+                  <label class="proficiency-label">숙련도:</label>
+                  <div class="star-rating">
+                    <button 
+                      v-for="star in 5" 
+                      :key="star"
+                      @click="newSkillProficiency = star"
+                      class="star-btn"
+                      :class="{ active: star <= newSkillProficiency }"
+                    >
+                      ★
+                    </button>
+                  </div>
+                  <span class="rating-text">{{ newSkillProficiency }}점</span>
+                </div>
                 <button @click="addSkill" class="add-skill-btn">
                   <i class="bi bi-plus"></i>
                 </button>
@@ -363,9 +394,30 @@
                 <div 
                   v-for="(skill, index) in editData.skills" 
                   :key="`skill-${index}`"
-                  class="skill-edit-tag"
+                  class="skill-edit-item"
                 >
-                  <span>{{ skill }}</span>
+                  <div class="skill-edit-content">
+                    <input 
+                      v-model="skill.name" 
+                      class="skill-name-input"
+                      placeholder="기술명"
+                    />
+                    <div class="skill-proficiency-edit">
+                      <label class="proficiency-label">숙련도:</label>
+                      <div class="star-rating">
+                        <button 
+                          v-for="star in 5" 
+                          :key="star"
+                          @click="skill.proficiency = star"
+                          class="star-btn"
+                          :class="{ active: star <= skill.proficiency }"
+                        >
+                          ★
+                        </button>
+                      </div>
+                      <span class="rating-text">{{ skill.proficiency }}점</span>
+                    </div>
+                  </div>
                   <button @click="removeSkill(index)" class="skill-remove">
                     <i class="bi bi-x"></i>
                   </button>
@@ -387,13 +439,23 @@
           
           <div v-else-if="portfolioData.skills.length > 0" class="section-content">
             <div class="skills-list">
-              <span 
+              <div 
                 v-for="skill in portfolioData.skills" 
-                :key="skill" 
+                :key="skill.name" 
                 class="skill-tag"
               >
-                {{ skill }}
-              </span>
+                <span class="skill-name">{{ skill.name }}</span>
+                <div class="skill-rating">
+                  <span 
+                    v-for="star in 5" 
+                    :key="star"
+                    class="star"
+                    :class="{ filled: star <= skill.proficiency }"
+                  >
+                    ★
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -459,10 +521,68 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// 목업 기술 스택 데이터베이스 (실제로는 API에서 가져올 데이터)
+const mockSkillDatabase = [
+  { name: 'JavaScript', category: '언어' },
+  { name: 'TypeScript', category: '언어' },
+  { name: 'Python', category: '언어' },
+  { name: 'Java', category: '언어' },
+  { name: 'C++', category: '언어' },
+  { name: 'Go', category: '언어' },
+  { name: 'Rust', category: '언어' },
+  { name: 'Swift', category: '언어' },
+  { name: 'Kotlin', category: '언어' },
+  { name: 'C#', category: '언어' },
+  { name: 'React', category: '프론트엔드' },
+  { name: 'Vue.js', category: '프론트엔드' },
+  { name: 'Angular', category: '프론트엔드' },
+  { name: 'Svelte', category: '프론트엔드' },
+  { name: 'Next.js', category: '프론트엔드' },
+  { name: 'Nuxt.js', category: '프론트엔드' },
+  { name: 'Node.js', category: '백엔드' },
+  { name: 'Express.js', category: '백엔드' },
+  { name: 'Nest.js', category: '백엔드' },
+  { name: 'Django', category: '백엔드' },
+  { name: 'FastAPI', category: '백엔드' },
+  { name: 'Spring Boot', category: '백엔드' },
+  { name: 'Laravel', category: '백엔드' },
+  { name: 'Ruby on Rails', category: '백엔드' },
+  { name: 'MySQL', category: '데이터베이스' },
+  { name: 'PostgreSQL', category: '데이터베이스' },
+  { name: 'MongoDB', category: '데이터베이스' },
+  { name: 'Redis', category: '데이터베이스' },
+  { name: 'AWS', category: '클라우드' },
+  { name: 'Azure', category: '클라우드' },
+  { name: 'GCP', category: '클라우드' },
+  { name: 'Docker', category: '데브옵스' },
+  { name: 'Kubernetes', category: '데브옵스' },
+  { name: 'Jenkins', category: '데브옵스' },
+  { name: 'GitHub Actions', category: '데브옵스' },
+  { name: 'Terraform', category: '데브옵스' },
+  { name: 'Tailwind CSS', category: 'CSS' },
+  { name: 'Styled Components', category: 'CSS' },
+  { name: 'Material UI', category: 'CSS' },
+  { name: 'Bootstrap', category: 'CSS' },
+  { name: 'SASS', category: 'CSS' },
+  { name: 'GraphQL', category: 'API' },
+  { name: 'REST API', category: 'API' },
+  { name: 'gRPC', category: 'API' },
+  { name: 'Figma', category: '디자인' },
+  { name: 'Adobe XD', category: '디자인' },
+  { name: 'Sketch', category: '디자인' },
+  { name: 'Git', category: '버전관리' },
+  { name: 'GitHub', category: '버전관리' },
+  { name: 'GitLab', category: '버전관리' }
+]
+
 const loading = ref(true)
 const editMode = ref(null) // null, 'introduction', 'education', 'career', 'skills'
 const showSaveToast = ref(false)
 const newSkill = ref('')
+const newSkillProficiency = ref(3)
+const showSuggestions = ref(false)
+const skillSuggestions = ref([])
+const searchTimeout = ref(null)
 
 // 원본 포트폴리오 데이터
 const portfolioData = reactive({
@@ -474,7 +594,16 @@ const portfolioData = reactive({
     category: 'Frontend'
   },
   introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. React와 Vue.js를 주력으로 사용하며, 깔끔하고 직관적인 UI/UX 구현에 열정을 가지고 있습니다.',
-  skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'Tailwind CSS', 'Node.js', 'GraphQL', 'Figma'],
+  skills: [
+    { name: 'React', proficiency: 5 },
+    { name: 'Vue.js', proficiency: 4 },
+    { name: 'TypeScript', proficiency: 4 },
+    { name: 'JavaScript', proficiency: 5 },
+    { name: 'Tailwind CSS', proficiency: 3 },
+    { name: 'Node.js', proficiency: 3 },
+    { name: 'GraphQL', proficiency: 2 },
+    { name: 'Figma', proficiency: 3 }
+  ],
   educations: [
     {
       institution: '서울대학교',
@@ -583,7 +712,7 @@ const startEdit = async (field) => {
       editData.careers = JSON.parse(JSON.stringify(portfolioData.careers))
       break
     case 'skills':
-      editData.skills = [...portfolioData.skills]
+      editData.skills = JSON.parse(JSON.stringify(portfolioData.skills))
       break
   }
   
@@ -611,7 +740,7 @@ const saveEdit = async (field) => {
         portfolioData.careers = [...editData.careers]
         break
       case 'skills':
-        portfolioData.skills = [...editData.skills]
+        portfolioData.skills = JSON.parse(JSON.stringify(editData.skills))
         break
     }
     
@@ -730,14 +859,56 @@ const handleCurrentToggle = (index) => {
 // 기술 스택 관련 메서드
 const addSkill = () => {
   const skill = newSkill.value.trim()
-  if (skill && !editData.skills.includes(skill)) {
-    editData.skills.push(skill)
+  if (skill && !editData.skills.some(s => s.name === skill)) {
+    editData.skills.push({
+      name: skill,
+      proficiency: newSkillProficiency.value
+    })
     newSkill.value = ''
+    newSkillProficiency.value = 3
   }
 }
 
 const removeSkill = (index) => {
   editData.skills.splice(index, 1)
+}
+
+// 기술 스택 검색 관련 메서드
+const searchSkills = () => {
+  const query = newSkill.value.trim()
+  
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  
+  searchTimeout.value = setTimeout(() => {
+    if (query.length >= 1) {
+      // 실제로는 API 호출, 여기서는 목업 데이터 사용
+      skillSuggestions.value = mockSkillDatabase
+        .filter(skill => 
+          skill.name.toLowerCase().includes(query.toLowerCase()) &&
+          !editData.skills.some(existingSkill => existingSkill.name === skill.name)
+        )
+        .slice(0, 8) // 최대 8개만 표시
+      showSuggestions.value = skillSuggestions.value.length > 0
+    } else {
+      skillSuggestions.value = []
+      showSuggestions.value = false
+    }
+  }, 200) // 200ms 디바운싱
+}
+
+const selectSkill = (skill) => {
+  newSkill.value = skill.name
+  showSuggestions.value = false
+  skillSuggestions.value = []
+}
+
+const hideSuggestions = () => {
+  // 약간의 지연을 주어 클릭 이벤트가 실행될 시간을 줌
+  setTimeout(() => {
+    showSuggestions.value = false
+  }, 150)
 }
 
 const createPortfolio = () => {
@@ -1255,17 +1426,42 @@ onMounted(() => {
 .skills-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 
 .skill-tag {
-  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
   background: rgba(76, 175, 80, 0.1);
   color: #4CAF50;
   border: 1px solid rgba(76, 175, 80, 0.2);
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
+  min-width: 80px;
+}
+
+.skill-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.skill-rating {
+  display: flex;
+  gap: 1px;
+}
+
+.star {
+  color: #ddd;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.star.filled {
+  color: #FFD700;
 }
 
 .skills-edit {
@@ -1274,12 +1470,101 @@ onMounted(() => {
 
 .skill-input-group {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
 }
 
-.skill-input-group .edit-input {
+.skill-search-container {
+  position: relative;
   flex: 1;
+  min-width: 200px;
+}
+
+.skill-search-container .edit-input {
+  width: 100%;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.suggestion-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:hover {
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.proficiency-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.proficiency-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+.star-rating {
+  display: flex;
+  gap: 2px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  color: #ddd;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px;
+  transition: all 0.2s ease;
+}
+
+.star-btn:hover {
+  color: #FFD700;
+  transform: scale(1.1);
+}
+
+.star-btn.active {
+  color: #FFD700;
+}
+
+.rating-text {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
 }
 
 .add-skill-btn {
@@ -1298,36 +1583,62 @@ onMounted(() => {
 
 .skills-edit-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.skill-edit-tag {
+.skill-edit-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-  border-radius: 16px;
-  color: #4CAF50;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.skill-edit-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.skill-name-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  min-width: 150px;
+}
+
+.skill-name-input:focus {
+  border-color: #4CAF50;
+}
+
+.skill-proficiency-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .skill-remove {
   background: none;
   border: none;
-  color: #4CAF50;
+  color: #dc3545;
   cursor: pointer;
-  padding: 2px;
-  font-size: 12px;
+  padding: 8px;
+  font-size: 16px;
   border-radius: 50%;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .skill-remove:hover {
-  background: rgba(76, 175, 80, 0.2);
+  background: rgba(220, 53, 69, 0.1);
+  transform: scale(1.1);
 }
 
 .projects-grid {
@@ -1441,6 +1752,26 @@ onMounted(() => {
 
   .projects-grid {
     grid-template-columns: 1fr;
+  }
+
+  .skill-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .skill-search-container {
+    min-width: auto;
+  }
+
+  .skill-edit-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .skill-proficiency-edit {
+    justify-content: center;
   }
 }
 
