@@ -455,7 +455,7 @@ export default {
 
 .page-subtitle {
   font-size: 18px;
-  color: var(--color-grey-50, #808080);
+  color: var(#8e8e8e);
   margin: 0;
   font-weight: 400;
   max-width: 600px;
@@ -757,7 +757,7 @@ export default {
 }
 
 .submit-button.disabled {
-  background: var(--color-grey-75, #C0C0C0);
+  background: var(#C0C0C0);
   cursor: not-allowed;
   box-shadow: none;
   transform: none;

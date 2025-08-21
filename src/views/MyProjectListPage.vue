@@ -121,7 +121,11 @@
                     <span class="btn-icon">👤</span>
                     지원자 확인 ({{ project.appliedCount }})
                   </button>
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -129,7 +133,11 @@
 
                 <!-- PM 권한이 있고 진행 중인 프로젝트 -->
                 <div v-else-if="project.isPM && project.status === 'IN_PROGRESS'" class="progress-actions">
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -137,11 +145,15 @@
 
                 <!-- PM 권한이 있고 완료된 프로젝트 -->
                 <div v-else-if="project.isPM && project.status === 'COMPLETED'" class="completed-actions">
-                  <button class="action-btn review-btn" @click="showTeamReview(project.projectId)">
+                  <button class="action-btn review-btn" @click="openReviewModal(project)">
                     <span class="btn-icon">⭐</span>
                     팀원 리뷰 작성
                   </button>
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -149,10 +161,20 @@
 
                 <!-- PM 권한이 없는 경우 (기본 액션) -->
                 <div v-else class="default-actions">
-                  <button class="action-btn view-btn" @click="viewProject(project.projectId)">
-                    <span class="btn-icon">👁️</span>
-                    프로젝트 보기
-                  </button>
+                  <!-- 완료된 프로젝트의 일반 멤버인 경우 -->
+                  <div v-if="!project.isPM && project.status === 'COMPLETED'" class="completed-member-actions">
+                    <button class="action-btn review-btn" @click="openReviewModal(project)">
+                      <span class="btn-icon">⭐</span>
+                      팀원 리뷰 작성
+                    </button>
+                  </div>
+                  <!-- 그 외의 경우 (PM이 아니며 완료되지 않은 프로젝트) -->
+                  <div v-else>
+                    <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                      <span class="btn-icon">👁️</span>
+                      프로젝트 보기
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -241,94 +263,37 @@
       </div>
     </div>
 
-    <!-- 팀원 리뷰 모달 -->
-    <div v-if="showTeamReviewModal" class="modal-overlay" @click="closeTeamReviewModal">
-      <div class="modal-container review-modal" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title">{{ selectedProject?.title }} - 팀원 리뷰</h3>
-          <button @click="closeTeamReviewModal" class="modal-close-button">
-            <span class="close-icon">✕</span>
-          </button>
-        </div>
-        
-        <div class="modal-body">
-          <div v-if="teamMembers.length > 0" class="team-members-list">
-            <div
-              v-for="member in teamMembers"
-              :key="member.id"
-              class="member-card"
-            >
-              <div class="member-header">
-                <div class="member-profile">
-                  <img :src="member.avatar" :alt="member.name" class="member-avatar" />
-                  <div class="member-info">
-                    <h4 class="member-name">{{ member.name }}</h4>
-                    <p class="member-role">{{ member.role }}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="review-section">
-                <div class="rating-section">
-                  <label>평점</label>
-                  <div class="star-rating">
-                    <button
-                      v-for="star in 5"
-                      :key="star"
-                      :class="['star-btn', { 'active': member.rating >= star }]"
-                      @click="setRating(member.id, star)"
-                    >
-                      <span class="star-emoji">⭐</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="comment-section">
-                  <label>리뷰 코멘트</label>
-                  <textarea
-                    v-model="member.reviewComment"
-                    placeholder="팀원에 대한 리뷰를 작성해주세요..."
-                    rows="3"
-                    class="review-textarea"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="review-actions">
-            <button class="submit-review-btn" @click="submitReviews">
-              <span class="btn-icon">✅</span>
-              리뷰 제출
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 새 팀원 리뷰 모달 -->
+    <team-review-modal
+      :show="showTeamReviewModal"
+      :project="selectedProject"
+      :members="membersForReview" 
+      @close="closeTeamReviewModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'   // ★ 새 API import
-        // ★ updateMemberStatus 추가
-import { useUserStore } from '@/stores/userStore'; // NEW
+import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
+import { useUserStore } from '@/stores/userStore';
 import { PART_OPTIONS } from '@/constants/parts';
-import { updateMemberStatus, getProjectMembers } from '@/api/projectMember.js';
-                                      // ★ 파트 라벨용
+import { updateMemberStatus, getProjectMembers, getConfirmedProjectMembers } from '@/api/projectMember.js';
+import TeamReviewModal from '@/components/projectComponents/TeamReviewModal.vue';
 
 const router = useRouter()
 const userStore = useUserStore()
 
 // 반응형 상태
 const isLoading = ref(true)
-const projects = ref([])               // created + applied 병합 리스트(공통 shape)
-const selectedStatus = ref('all')      // 'all' | 'recruiting' | 'in-progress' | 'completed' | 'cancelled'
-const selectedRole = ref('all')        // 'all' | 'pm' | 'member'
+const projects = ref([])
+const selectedStatus = ref('all')
+const selectedRole = ref('all')
 const showApplicantsModal = ref(false)
-const showTeamReviewModal = ref(false)
+const showTeamReviewModal = ref(false) // 새 리뷰 모달 표시 상태
 const selectedProject = ref(null)
+const membersForReview = ref([]) // 리뷰할 멤버 목록을 저장할 ref
 const applicantsList = ref([])
 
 // 필터 옵션
@@ -360,89 +325,53 @@ const ENUM_TO_CLASS = {
 }
 const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
 
-// 팀원 샘플 (리뷰 모달)
-const teamMembers = ref([
-  { id: 1, userId: 2, name: '박디자이너', role: 'UI/UX Designer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2', rating: 0, reviewComment: '' },
-  { id: 2, userId: 3, name: '이백엔드',   role: 'Backend Developer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3', rating: 0, reviewComment: '' }
-])
-
 // ===== 정규화 유틸 =====
 const toTechTags = (list) => {
   if (!Array.isArray(list)) return []
   return list.map(ts => (typeof ts === 'string' ? { techStackName: ts } : ts))
 }
 
-// 백엔드 "생성한 프로젝트" 응답 -> 공통 형태
-const normalizeCreated = (p, currentUserId) => {
-  const projectId = p.projectId ?? p.id
-  const teamLeaderId = p.teamLeaderId ?? p.leaderId ?? p.ownerId ?? currentUserId
+const normalizeProject = (p, currentUserId, isPM) => {
+  const projectId = p.projectId ?? p.id;
+  const teamLeaderId = p.teamLeaderId ?? p.leaderId ?? p.ownerId ?? (isPM ? currentUserId : null);
+  
   return {
     projectId,
     title: p.title ?? '',
     description: p.description ?? '',
-    status: p.status ?? 'RECRUITING',                 // 백엔드 ENUM 그대로 사용
-    startDate: p.startDate ?? p.start_date ?? null,
-    endDate:   p.endDate   ?? p.end_date   ?? null,
-    recruitCount: p.recruitCount ?? p.remainingCount ?? p.memberCount ?? 0,
-    techStacks: toTechTags(p.techStacks ?? p.stackList ?? []),
-    appliedCount: p.appliedCount ?? p.applied_count ?? 0, // PM 카드에서만 사용
+    status: p.status ?? 'RECRUITING',
+    startDate: p.startDate ?? null,
+    endDate: p.endDate ?? null,
+    recruitCount: p.recruitCount ?? 0,
+    techStacks: toTechTags(p.techStacks ?? []),
+    appliedCount: p.appliedCount ?? 0,
     teamLeaderId,
-    isPM: teamLeaderId === currentUserId                // 내가 팀장인지
-  }
-}
-
-// 백엔드 "지원한 프로젝트" 응답 -> 공통 형태
-// 응답이 { project: {...} } 또는 필드가 평평하게 섞여 있을 수 있으니 방어적으로 처리
-const normalizeApplied = (a, currentUserId) => {
-  const proj = a.project ?? a; // Keep this logic. Handles both nested and flat structures.
-  const teamLeaderId = proj.teamLeaderId ?? proj.leaderId ?? proj.ownerId ?? null;
-
-  // The main issue is that `a.status` (application status) is overriding `proj.status` (project status).
-  // Let's get the project status first, and only if it's truly missing, use the application status as a last resort.
-  // A better approach is to find the correct project status field. Let's assume it's just `status` on the project object.
-  const projectStatus = proj.status; // Explicitly get project status
-
-  return {
-    projectId: proj.projectId ?? proj.id ?? a.projectId,
-    title: proj.title ?? proj.projectName ?? a.projectTitle ?? a.projectName ?? '제목을 불러올 수 없습니다.',
-    description: proj.description ?? a.projectDescription ?? '내용을 불러올 수 없습니다.',
-    
-    // FIX: Use the project's status. Do NOT fall back to a.status (application status).
-    status: projectStatus ?? 'RECRUITING', 
-
-    startDate: proj.startDate ?? proj.start_date ?? a.startDate ?? null,
-    endDate: proj.endDate ?? proj.end_date ?? a.endDate ?? null,
-    recruitCount: proj.recruitCount ?? proj.remainingCount ?? a.recruitCount ?? 0,
-    techStacks: toTechTags(proj.techStacks ?? a.techStacks ?? []),
-    appliedCount: 0,
-    teamLeaderId,
-    isPM: teamLeaderId ? (teamLeaderId === currentUserId) : false
+    isPM: teamLeaderId === currentUserId,
+    members: p.members ?? [], // 멤버 목록 추가
   };
-}
+};
 
 // ===== 데이터 로드 =====
 onMounted(async () => {
   try {
     const currentUserId = userStore.userId
     if (!currentUserId) {
-      console.warn('User not logged in. Redirect to /login')
       router.push('/login')
       return
     }
 
-    // 내가 만든 + 내가 지원한 프로젝트 병렬 호출
     const [createdRes, appliedRes] = await Promise.all([
       getProjectsCreatedByUser(currentUserId),
       getAppliedProjectsByUser(currentUserId)
     ])
 
-    const created = Array.isArray(createdRes?.data) ? createdRes.data.map(p => normalizeCreated(p, currentUserId)) : []
-    const applied = Array.isArray(appliedRes?.data) ? appliedRes.data.map(a => normalizeApplied(a, currentUserId)) : []
+    const created = (createdRes.data || []).map(p => normalizeProject(p, currentUserId, true));
+    const applied = (appliedRes.data || []).map(a => normalizeProject(a.project || a, currentUserId, false));
 
-    // 병합 + projectId 기준 중복제거(혹시 동일 프로젝트가 두 목록에 같이 있으면 created 우선)
     const map = new Map()
     for (const p of [...applied, ...created]) map.set(p.projectId, p)
     projects.value = Array.from(map.values())
+
   } catch (e) {
     console.error('내 프로젝트/지원 프로젝트 로드 실패:', e)
     projects.value = []
@@ -461,13 +390,11 @@ const activeProjects = computed(() =>
 const filteredProjects = computed(() => {
   let filtered = projects.value
 
-  // 상태 필터
   if (selectedStatus.value !== 'all') {
-    const want = STATUS_FILTER_TO_ENUM[selectedStatus.value] // 'RECRUITING' 등
+    const want = STATUS_FILTER_TO_ENUM[selectedStatus.value]
     if (want) filtered = filtered.filter(p => p.status === want)
   }
 
-  // 역할 필터
   if (selectedRole.value === 'pm') {
     filtered = filtered.filter(p => p.isPM)
   } else if (selectedRole.value === 'member') {
@@ -533,12 +460,25 @@ const closeApplicantsModal = () => {
   applicantsList.value = []
 }
 
-const showTeamReview  = (projectId) => { selectedProject.value = projects.value.find(p => p.projectId === projectId); showTeamReviewModal.value = true }
+const openReviewModal = async (project) => {
+  try {
+    const response = await getConfirmedProjectMembers(project.projectId);
+    // 확정된 멤버만 반환하므로 별도의 필터링 필요 없음
+    membersForReview.value = response.data.filter(member => member.userId !== userStore.userId);
+    
+    selectedProject.value = project;
+    showTeamReviewModal.value = true;
+  } catch (error) {
+    console.error('팀 멤버 정보를 가져오는데 실패했습니다:', error);
+    alert('팀 멤버 정보를 가져오는데 실패했습니다.');
+  }
+};
+
 const closeTeamReviewModal = () => {
-  showTeamReviewModal.value = false
-  selectedProject.value = null
-  teamMembers.value.forEach(m => { m.rating = 0; m.reviewComment = '' })
-}
+  showTeamReviewModal.value = false;
+  selectedProject.value = null;
+};
+
 const viewApplicantPortfolio = (userId) => router.push(`/portfolio/${userId}`)
 
 // PM 전용 액션
@@ -569,14 +509,6 @@ const rejectApplicant = async (applicantId) => {
   }
 }
 
-const setRating = (memberId, rating) => {
-  const m = teamMembers.value.find(x => x.id === memberId)
-  if (m) m.rating = rating
-}
-const submitReviews = () => {
-  console.log('리뷰 제출:', teamMembers.value)
-  closeTeamReviewModal()
-}
 const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', params: { projectId } })
 </script>
 
@@ -910,7 +842,7 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 .default-actions {
   display: flex;
   gap: 12px;
-  justify-content: space-between;
+  justify-content: flex-end; /* 버튼들을 오른쪽 끝으로 정렬 */
 }
 
 .action-btn {
@@ -924,6 +856,12 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   align-items: center;
   gap: 6px;
   border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
 }
 
 .btn-icon {
@@ -937,13 +875,13 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 
 .applicants-btn:hover:not(:disabled) {
   background: #1976D2;
-  transform: translateY(-1px);
 }
 
 .applicants-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .view-btn {
@@ -964,8 +902,105 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 
 .review-btn:hover {
   background: #F57C00;
-  transform: translateY(-1px);
 }
+
+.manage-btn {
+  background: #607D8B; /* Greyish blue */
+  color: #fff;
+}
+
+.manage-btn:hover {
+  background: #455A64;
+}
+
+.review-btn:hover {
+  background: #F57C00;
+}
+
+/* 새로운 보조 액션 버튼 스타일 */
+.secondary-action-btn {
+  background: #f0f2f5; /* 밝은 회색 배경 */
+  color: #555; /* 어두운 글자색 */
+  border: 1px solid #e0e0e0; /* 옅은 테두리 */
+}
+
+.secondary-action-btn:hover {
+  background: #e0e2e5; /* 호버 시 더 어둡게 */
+  color: #333;
+  border-color: #d0d0d0;
+}
+
+.manage-btn {
+  /* 기존 manage-btn 스타일을 secondary-action-btn으로 대체 */
+}
+
+.view-btn {
+  /* 기존 view-btn 스타일을 secondary-action-btn으로 대체 */
+}
+
+.action-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
+}
+
+.action-btn:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
+}
+
+.btn-icon {
+  font-size: 14px;
+}
+
+.applicants-btn {
+  background: #2196F3;
+  color: #fff;
+}
+
+.applicants-btn:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.applicants-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.view-btn {
+  /* secondary-action-btn으로 대체 */
+}
+
+.review-btn {
+  background: #FF9800;
+  color: #fff;
+}
+
+.review-btn:hover {
+  background: #F57C00;
+}
+
+.manage-btn {
+  /* secondary-action-btn으로 대체 */
+}
+
+.completed-member-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  width: 100%; /* 부모 너비에 맞춤 */
+}
+
+/* 빈 상태 */
 
 /* 빈 상태 */
 .empty-state {
