@@ -131,7 +131,7 @@
                 v-model="formData.jobTitle"
                 type="text"
                 class="form-input"
-                placeholder="예: Senior Frontend Developer"
+                placeholder="직책을 입력하세요"
                 maxlength="50"
               />
               <div class="input-helper">{{ formData.jobTitle.length }}/50</div>
@@ -148,17 +148,13 @@
                 required
               >
                 <option value="">분야를 선택하세요</option>
-                <option value="Frontend">Frontend</option>
-                <option value="Backend">Backend</option>
-                <option value="Fullstack">Fullstack</option>
-                <option value="Mobile">Mobile</option>
-                <option value="DevOps">DevOps</option>
-                <option value="Data">Data</option>
-                <option value="AI/ML">AI/ML</option>
-                <option value="Design">Design</option>
-                <option value="PM">PM</option>
-                <option value="QA">QA</option>
-                <option value="Other">기타</option>
+                <option 
+                  v-for="techPart in techParts" 
+                  :key="techPart.techPartId" 
+                  :value="techPart.name"
+                >
+                  {{ techPart.name }}
+                </option>
               </select>
             </div>
 
@@ -193,7 +189,7 @@
                 v-model="formData.email"
                 type="email"
                 class="form-input readonly-input"
-                placeholder="example@email.com"
+                placeholder="이메일 주소"
                 readonly
                 disabled
               />
@@ -221,7 +217,7 @@
                 v-model="formData.github"
                 type="url"
                 class="form-input"
-                placeholder="https://github.com/username"
+                placeholder="GitHub 프로필 URL"
               />
             </div>
 
@@ -232,7 +228,7 @@
                 v-model="formData.linkedin"
                 type="url"
                 class="form-input"
-                placeholder="https://linkedin.com/in/username"
+                placeholder="LinkedIn 프로필 URL"
               />
             </div>
 
@@ -243,7 +239,7 @@
                 v-model="formData.website"
                 type="url"
                 class="form-input"
-                placeholder="https://mywebsite.com"
+                placeholder="개인 웹사이트 URL"
               />
             </div>
           </div>
@@ -317,7 +313,7 @@
 import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
-import { updateUserProfile, checkNickname } from "@/api/user";
+import { updateUserProfile, checkNickname, getTechParts } from "@/api/user";
 
 const router = useRouter();
 
@@ -334,7 +330,10 @@ const isCheckingNickname = ref(false);
 const nicknameAvailable = ref(null); // null: 확인 전, true: 사용 가능, false: 중복
 const originalNickname = ref("");
 
-// 아바타 옵션들
+// TechPart 목록 관련
+const techParts = ref([]); // [{techPartId, name}, ...]
+
+// 아바타 옵션들 (프로필 이미지 관련이므로 유지)
 const avatarOptions = [
   "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
   "https://api.dicebear.com/7.x/avataaars/svg?seed=2",
@@ -528,20 +527,12 @@ const saveProfile = async () => {
   saving.value = true;
 
   try {
-    // 분야를 techPartId로 매핑
-    const techPartMapping = {
-      Frontend: 1,
-      Backend: 2,
-      Fullstack: 3,
-      Mobile: 4,
-      DevOps: 5,
-      Data: 6,
-      "AI/ML": 7,
-      Design: 8,
-      PM: 9,
-      QA: 10,
-      Other: 11,
-    };
+    // TechPart 이름을 ID로 변환
+    let techPartId = null;
+    if (formData.category) {
+      const selectedTechPart = techParts.value.find(tp => tp.name === formData.category);
+      techPartId = selectedTechPart ? selectedTechPart.techPartId : null;
+    }
 
     // 경력을 ExperienceRange enum으로 매핑
     const experienceMapping = {
@@ -584,7 +575,7 @@ const saveProfile = async () => {
       isPortfolioOpen: formData.isPublic ?? true,
       isContactOpen: formData.showContact ?? true,
       isSearchOpen: formData.allowSearch ?? true,
-      techPartId: techPartMapping[formData.category] || null,
+      techPartId: techPartId,
       experienceRange: experienceMapping[formData.experience] || null,
     };
 
@@ -678,6 +669,12 @@ onMounted(async () => {
   window.addEventListener("beforeunload", handleBeforeUnload);
 
   try {
+    // TechPart 목록 로드
+    const techPartsResponse = await getTechParts();
+    console.log('TechParts API 응답:', techPartsResponse.data);
+    techParts.value = techPartsResponse.data || [];
+    console.log('로드된 techParts:', techParts.value);
+
     // 로그인 및 프로필 확보
     if (!userStore.isLoggedIn) {
       await userStore.checkLogin();
@@ -687,12 +684,25 @@ onMounted(async () => {
     }
 
     const profile = userStore.profile || {};
+    console.log('사용자 프로필 데이터:', profile);
+    
+    // ExperienceRange enum을 한국어로 역매핑
+    const experienceReverseMapping = {
+      "FRESHER": "신입",
+      "LT_1": "1년 미만",
+      "Y1_3": "1-3년", 
+      "Y3_5": "3-5년",
+      "Y5_10": "5-10년",
+      "GE_10": "10년 이상",
+      "ETC": "기타"
+    };
+    
     // 백엔드 필드명을 안전하게 매핑
     const hydrated = {
       name: profile.nickname || "",
       jobTitle: profile.jobTitle || "",
       category: profile.techPartName || "",
-      experience: profile.experienceRange || "",
+      experience: experienceReverseMapping[profile.experienceRange] || "",
       email: profile.email || "",
       phone: profile.phone || "",
       github: profile.githubUrl || "",

@@ -36,11 +36,11 @@ export const portfolioApi = {
   deleteExperience: (id) => api.delete(`/user/experiences/${id}`)
 };
 
-// 전체 기술 스택 목록 조회를 위한 별도 API (검색용)
+// 전체 기술 스택 목록 조회를 위한 별도 API
 export const techStackApi = {
-  // 모든 기술 스택 조회 (검색용)
+  // 전체 기술 스택 조회 (ID와 이름 포함)
   getAllTechStacks: () => api.get('/tech-stacks'),
   
-  // 이름으로 기술 스택 검색
-  searchTechStacks: (query) => api.get(`/tech-stacks?search=${encodeURIComponent(query)}`)
+  // 인기 기술 스택 조회 (검색용)
+  getPopularTechStacks: () => api.get('/search/tags')
 };

@@ -23,3 +23,7 @@ export const verifyEmailCode = (email, code) =>
 
 export const checkNickname = (nickname) =>
   api.get("/user/check-nickname", { params: { nickname } });
+
+export const getTechTags = () => api.get("/search/tags");
+
+export const getTechParts = () => api.get("/tech-parts");

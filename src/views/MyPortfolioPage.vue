@@ -5,18 +5,6 @@
       <p>포트폴리오를 불러오는 중...</p>
     </div>
 
-    <div v-else-if="!portfolioData.userInfo" class="empty-portfolio-state">
-      <div class="empty-icon">
-        <i class="bi bi-person-plus"></i>
-      </div>
-      <h3>포트폴리오를 작성해보세요</h3>
-      <p>나만의 포트폴리오를 만들어 더 많은 기회를 얻어보세요.</p>
-      <button @click="createPortfolio" class="create-button">
-        <i class="bi bi-plus-circle"></i>
-        포트폴리오 작성하기
-      </button>
-    </div>
-
     <div v-else class="portfolio-container">
       <div class="portfolio-header">
         <div class="header-content">
@@ -619,6 +607,15 @@ const portfolioStats = reactive({
   contacts: 23
 })
 
+// 포트폴리오 컨텐츠가 있는지 확인 (사용자 정보는 항상 있으므로 다른 데이터로 판단)
+const hasPortfolioContent = computed(() => {
+  return portfolioData.introduction ||
+    portfolioData.skills.length > 0 ||
+    portfolioData.educations.length > 0 ||
+    portfolioData.careers.length > 0 ||
+    portfolioData.projects.length > 0
+})
+
 // 교육 이력을 최신순으로 정렬
 const educationData = computed(() => {
   if (!portfolioData.educations) return []
@@ -652,60 +649,60 @@ const loadPortfolioData = async () => {
   loading.value = true
   try {
     // 포트폴리오 데이터와 전체 기술 스택 목록을 병렬로 로드
-    const [portfolioResponse, techStacksResponse] = await Promise.all([
+    const [portfolioResponse, allTechStacksResponse] = await Promise.all([
       portfolioApi.getPortfolio(),
       techStackApi.getAllTechStacks()
     ])
     
-    // 포트폴리오 데이터 설정
     const portfolio = portfolioResponse.data
-    if (portfolio && portfolio.userInfo) {
-      // 사용자 기본 정보 설정
-      portfolioData.userId = portfolio.userId
-      portfolioData.userInfo = {
-        name: portfolio.userInfo.name || '사용자',
-        jobTitle: portfolio.userInfo.jobTitle || '',
-        avatar: portfolio.userInfo.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`,
-        category: portfolio.userInfo.category || ''
-      }
-      portfolioData.introduction = portfolio.introduction || ''
-      portfolioData.projects = portfolio.projects || []
-      
-      // 기술 스택 데이터를 프론트엔드 형식으로 변환
-      portfolioData.skills = portfolio.techStacks?.map(ts => ({
-        userTechStackId: ts.userTechStackId,
-        stackId: ts.stackId,
-        name: ts.stackName,
-        proficiency: ts.skillLevel
-      })) || []
-      
-      // 교육 정보 변환 (LocalDate -> YYYY-MM 형식)
-      portfolioData.educations = portfolio.educations?.map(edu => ({
-        educationId: edu.educationId,
-        institution: edu.institution,
-        program: edu.program,
-        startDate: edu.startDate ? edu.startDate.substring(0, 7) : '', // YYYY-MM-DD -> YYYY-MM
-        endDate: edu.endDate ? edu.endDate.substring(0, 7) : '',
-        isOngoing: edu.isCurrent || false
-      })) || []
-      
-      // 경력 정보 변환 (백엔드 필드명과 매핑)
-      portfolioData.careers = portfolio.experiences?.map(exp => ({
-        experienceId: exp.experienceId,
-        company: exp.companyName, // companyName -> company
-        position: exp.department, // department -> position
-        startDate: exp.startDate ? exp.startDate.substring(0, 7) : '', // YYYY-MM-DD -> YYYY-MM
-        endDate: exp.endDate ? exp.endDate.substring(0, 7) : '',
-        isCurrent: exp.isCurrent || false,
-        description: exp.summary || '' // summary -> description
-      })) || []
+    
+    // 사용자 기본 정보 설정
+    portfolioData.userId = portfolio.userId
+    portfolioData.userInfo = {
+      name: portfolio.nickname || '사용자',
+      jobTitle: portfolio.jobTitle || '',
+      avatar: portfolio.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`,
+      category: portfolio.techPart || ''
     }
     
-    // 전체 기술 스택 목록 설정 (검색용)
-    allTechStacks.value = techStacksResponse.data?.map(ts => ({
+    // 기본 값 설정
+    portfolioData.introduction = portfolio.bio || ''
+    portfolioData.projects = [] // 프로젝트는 별도 관리
+    
+    // 기술 스택 데이터 설정
+    portfolioData.skills = portfolio.techStacks?.map(ts => ({
+      userTechStackId: ts.userTechStackId,
       stackId: ts.stackId,
+      name: ts.stackName,
+      proficiency: ts.skillLevel
+    })) || []
+    
+    // 교육 정보 설정 (LocalDate -> YYYY-MM 형식)
+    portfolioData.educations = portfolio.educations?.map(edu => ({
+      educationId: edu.educationId,
+      institution: edu.institution,
+      program: edu.program,
+      startDate: edu.startDate ? edu.startDate.substring(0, 7) : '',
+      endDate: edu.endDate ? edu.endDate.substring(0, 7) : '',
+      isOngoing: edu.isCurrent || false
+    })) || []
+    
+    // 경력 정보 설정
+    portfolioData.careers = portfolio.experiences?.map(exp => ({
+      experienceId: exp.experienceId,
+      company: exp.companyName,
+      position: exp.department,
+      startDate: exp.startDate ? exp.startDate.substring(0, 7) : '',
+      endDate: exp.endDate ? exp.endDate.substring(0, 7) : '',
+      isCurrent: exp.isCurrent || false,
+      description: exp.summary || ''
+    })) || []
+    
+    // 전체 기술 스택 목록 설정 (검색용) - ID와 이름 모두 포함
+    allTechStacks.value = allTechStacksResponse.data?.map(ts => ({
+      stackId: ts.techStackId, // 실제 기술 스택 ID 사용
       name: ts.name,
-      category: ts.category || '기타'
+      category: '기타' // 카테고리 정보가 없으므로 기본값 설정
     })) || []
     
   } catch (error) {
