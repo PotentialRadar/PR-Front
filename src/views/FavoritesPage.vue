@@ -28,8 +28,7 @@
                 v-for="project in paginatedProjects"
                 :key="project.id"
                 :project="project"
-                :is-favorited="true"
-                @favorite-toggle="removeFavoriteProject(project.id)"
+                @favorite-toggle="handleFavoriteToggle(project.id)"
               />
             </div>
             <pagination-component
@@ -118,7 +117,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getFavoriteProjects, removeFavoriteProject as apiRemoveFavoriteProject } from '@/api/user'
+import { getLikedProjects, toggleLike } from '@/api/likes.js'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue' // ProjectCard 임포트
 
@@ -184,27 +183,30 @@ onMounted(() => {
 
 // 좋아요 데이터 로드 함수
 const loadFavoriteData = async () => {
-  const userId = 1;
   try {
-    const response = await getFavoriteProjects(userId)
-    favoriteProjects.value = response.data
+    const projects = await getLikedProjects();
+    favoriteProjects.value = projects;
   } catch (error) {
     console.error('좋아요 프로젝트 목록을 불러오는 데 실패했습니다:', error)
+    favoriteProjects.value = []; // 에러 발생 시 빈 배열로 초기화
   }
 
+  // 포트폴리오 부분은 일단 그대로 둡니다.
   const favoritePortfolioIds = [2, 5, 6] 
   favoritePortfolios.value = favoritePortfolioIds
     .map(id => portfolioDatabase[id])
     .filter(Boolean)
 }
 
-const removeFavoriteProject = async (projectId) => {
-  const userId = 1; // userId: 1 하드코딩
+const handleFavoriteToggle = async (projectId) => {
   try {
-    await apiRemoveFavoriteProject(userId, projectId);
+    // 좋아요 토글 API 호출
+    await toggleLike('PROJECT', projectId);
+    // 목록 새로고침
     await loadFavoriteData();
   } catch (error) {
-    console.error(`프로젝트 ${projectId} 좋아요 해제에 실패했습니다:`, error);
+    console.error(`프로젝트 ${projectId} 좋아요 처리에 실패했습니다:`, error);
+    alert('오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 

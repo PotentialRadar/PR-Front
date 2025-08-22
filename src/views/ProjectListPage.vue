@@ -54,6 +54,7 @@
                     :key="project.id"
                     :project="project"
                     @apply="openApplyModal"
+                    @like-updated="handleLikeUpdate"
                 />
                 <div v-if="!projects?.length">표시할 프로젝트가 없습니다.</div>
               </template>
@@ -205,6 +206,14 @@ const handleApplicationSubmitted = async (applicationData) => {
     setTimeout(() => (showFailToast.value = false), 3000);
   } finally {
     closeApplyModal();
+  }
+};
+
+const handleLikeUpdate = ({ projectId, liked, likeCount }) => {
+  const project = projects.value.find(p => (p.projectId || p.id) === projectId);
+  if (project) {
+    project.likedByUser = liked;
+    project.likeCount = likeCount;
   }
 };
 </script>
