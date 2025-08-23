@@ -30,18 +30,9 @@
           <template v-else>
             <div class="header-section">
               <ProjectHeader :project="project" />
-              <!-- 프로젝트 소유자: 팀원 초대 버튼 / 일반 사용자: 지원하기 버튼 -->
+              <!-- 지원하기 버튼 -->
               <div class="action-button-container">
                 <button
-                  v-if="isProjectOwner"
-                  class="invite-button"
-                  @click="openInviteModal"
-                >
-                  <i class="bi bi-person-plus"></i>
-                  팀원 초대하기
-                </button>
-                <button
-                  v-else
                   class="apply-button"
                   @click="openApplyModal"
                 >
@@ -99,14 +90,6 @@
       @portfolio-settings="goToPortfolioSettings"
     />
 
-    <!-- 팀원 초대 모달 컴포넌트 -->
-    <TeamInviteModal
-      v-if="showInviteModal"
-      :project-id="projectId"
-      :project-title="project?.title || ''"
-      @close="closeInviteModal"
-      @invites-sent="handleInvitesSent"
-    />
 
     <!-- 지원 완료 토스트 메시지 -->
     <div
@@ -126,14 +109,6 @@
       지원에 실패했습니다. 다시 시도해주세요.
     </div>
 
-    <!-- 팀원 초대 완료 토스트 메시지 -->
-    <div
-      v-if="showInviteToast"
-      class="success-toast"
-    >
-      <span class="toast-icon">📧</span>
-      팀원 초대장이 성공적으로 발송되었습니다!
-    </div>
   </div>
 </template>
 
@@ -147,7 +122,6 @@ import ProjectWorkContent from '@/components/projectComponents/ProjectWorkConten
 import ProjectComment from '@/components/projectComponents/ProjectComment.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberRecommendation.vue';
-import TeamInviteModal from '@/components/projectComponents/TeamInviteModal.vue';
 
 // API와 fallback 데이터 import
 import { getProject } from '@/api/projects';
@@ -163,15 +137,8 @@ const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
 
-// 프로젝트 소유자 여부 확인
-const isProjectOwner = computed(() => {
-  if (!project.value || !userStore.isLoggedIn || !userStore.userId) {
-    return false;
-  }
-  // 프로젝트의 작성자 ID와 현재 사용자 ID 비교
-  return project.value.author?.userId === userStore.userId || 
-         project.value.createdBy === userStore.userId;
-});
+// 프로젝트 소유자 여부는 항상 false (팀원 초대 기능 제거)
+const isProjectOwner = computed(() => false);
 
 const load = async () => {
   if (isNaN(projectId.value)) {
@@ -261,8 +228,6 @@ function handleTabChange(tab) {
 const showApplyModal = ref(false);
 const showSuccessToast = ref(false);
 const showFailToast = ref(false);
-const showInviteModal = ref(false);
-const showInviteToast = ref(false);
 
 const modalProjectInfo = computed(() => ({
   title: project.value?.title || '',
@@ -319,24 +284,6 @@ function goToPortfolioSettings() {
   router.push('/portfolio/settings');
 }
 
-// 팀원 초대 관련 함수
-function openInviteModal() {
-  showInviteModal.value = true;
-}
-
-function closeInviteModal() {
-  showInviteModal.value = false;
-}
-
-function handleInvitesSent(inviteList) {
-  console.log(`📧 ${inviteList.length}명에게 초대장 발송 완료:`, inviteList);
-  
-  showInviteToast.value = true;
-  setTimeout(() => (showInviteToast.value = false), 3000);
-  
-  // 실제로는 여기서 서버에 초대 정보를 전송
-  // await sendTeamInvites(projectId.value, inviteList);
-}
 
 function handleContactAuthor(author) {
   console.log('작성자 연락하기:', author);
@@ -510,37 +457,6 @@ document.addEventListener('keydown', (e) => {
   font-size: 16px;
 }
 
-/* 팀원 초대 버튼 스타일 */
-.invite-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  color: white;
-  border: none;
-  border-radius: 16px;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
-}
-
-.invite-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(0, 123, 255, 0.4);
-  background: linear-gradient(135deg, #0056b3, #004085);
-}
-
-.invite-button:active {
-  transform: translateY(0px);
-}
-
-.invite-button i {
-  font-size: 18px;
-}
 
 /* 액션 버튼 컨테이너 통합 스타일 */
 .action-button-container {

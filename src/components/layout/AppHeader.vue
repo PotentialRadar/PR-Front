@@ -26,7 +26,7 @@
               :class="{ 'active': showChat }"
             >
               <span class="icon">💬</span>
-              <span v-if="unreadChatCount > 0" class="badge chat-badge">{{ unreadChatCount > 99 ? '99+' : unreadChatCount }}</span>
+              <span v-if="finalUnreadChatCount > 0" class="badge chat-badge">{{ finalUnreadChatCount > 99 ? '99+' : finalUnreadChatCount }}</span>
             </button>
             
             <!-- 채팅 드롭다운 -->
@@ -80,7 +80,7 @@
               :class="{ 'active': showNotifications }"
             >
               <span class="icon">🔔</span>
-              <span v-if="unreadNotificationCount > 0" class="badge notification-badge">{{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}</span>
+              <span v-if="finalUnreadNotificationCount > 0" class="badge notification-badge">{{ finalUnreadNotificationCount > 99 ? '99+' : finalUnreadNotificationCount }}</span>
             </button>
             
             <!-- 알림 드롭다운 -->
@@ -100,15 +100,21 @@
                     :key="notification.id"
                     class="notification-item"
                     :class="{ 'unread': !notification.isRead }"
-                    @click="handleNotificationClick(notification)"
                   >
                     <div class="notification-icon" :class="notification.type">
                       <span>{{ getNotificationIcon(notification.type) }}</span>
                     </div>
-                    <div class="notification-content">
+                    <div class="notification-content" @click="handleNotificationClick(notification)">
                       <p class="notification-message">{{ notification.message }}</p>
                       <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
                     </div>
+                    <button 
+                      class="notification-delete-btn"
+                      @click.stop="handleDeleteNotification(notification.id)"
+                      title="알림 삭제"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
                 <div v-else class="empty-notifications">
@@ -140,12 +146,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
+import { useNotifications } from '@/composables/useNotifications'
 
 const userStore = useUserStore()
 const toast = useToast()
+
+// 실시간 알림 관리
+const {
+  notifications: realTimeNotifications,
+  hasNewChatMessage,
+  totalUnreadNotifications,
+  unreadNotificationCount,
+  unreadChatCount,
+  initializeNotifications,
+  markAllAsRead: markAllNotificationsAsRead,
+  markChatAsRead,
+  deleteNotification,
+  acceptInvitation,
+  rejectInvitation,
+  handleNotificationClick: handleRealTimeNotificationClick,
+  cleanup: cleanupNotifications,
+  resetNotifications
+} = useNotifications()
 
 // 계산된 속성
 const isLoggedIn = computed(() => {
@@ -188,32 +213,22 @@ const chatMessages = ref([
   }
 ])
 
-// 샘플 알림 데이터 (김개발자가 받은 알림들)
-const notifications = ref([
-  {
-    id: 1,
-    type: 'project',
-    message: 'E-commerce 플랫폼 프로젝트에 새로운 지원자가 있습니다',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30분 전
-    isRead: false
-  },
-  {
-    id: 3,
-    type: 'review',
-    message: 'AI 챗봇 서비스 프로젝트에 새로운 리뷰가 등록되었습니다',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3시간 전
-    isRead: false
-  },
+// 실시간 알림만 사용
+const notifications = realTimeNotifications
 
-])
-
-// 계산된 속성
-const unreadChatCount = computed(() => {
+// 계산된 속성 - 실시간 알림과 기존 로직 통합
+const finalUnreadChatCount = computed(() => {
+  // 실시간 채팅 알림이 있으면 우선 사용
+  if (unreadChatCount.value > 0) {
+    return unreadChatCount.value
+  }
+  // 기존 샘플 데이터의 미읽음 채팅 수
   return chatMessages.value.filter(chat => !chat.isRead).length
 })
 
-const unreadNotificationCount = computed(() => {
-  return notifications.value.filter(notification => !notification.isRead).length
+const finalUnreadNotificationCount = computed(() => {
+  // 실시간 알림 수만 사용
+  return unreadNotificationCount.value
 })
 
 // 메서드
@@ -227,8 +242,13 @@ const toggleNotifications = () => {
   showChat.value = false
 }
 
-const openChat = (chatId) => {
-  // 채팅 읽음 처리
+const openChat = async (chatId) => {
+  // 실시간 채팅 알림 읽음 처리
+  if (hasNewChatMessage.value) {
+    await markChatAsRead()
+  }
+  
+  // 기존 샘플 채팅 읽음 처리
   const chat = chatMessages.value.find(c => c.id === chatId)
   if (chat) {
     chat.isRead = true
@@ -239,28 +259,66 @@ const openChat = (chatId) => {
   showChat.value = false
 }
 
-const handleNotificationClick = (notification) => {
-  // 알림 읽음 처리
-  notification.isRead = true
-  
-  // 알림 타입에 따른 페이지 이동
-  console.log('알림 클릭:', notification)
+const handleNotificationClick = async (notification) => {
+  // 실시간 알림 처리
+  await handleRealTimeNotificationClick(notification)
   showNotifications.value = false
 }
 
-const markAllAsRead = () => {
-  notifications.value.forEach(notification => {
-    notification.isRead = true
-  })
+const handleDeleteNotification = async (notificationId) => {
+  try {
+    // 실시간 알림 삭제 API 호출
+    await deleteNotification(notificationId)
+    
+    toast.success('알림이 삭제되었습니다.', {
+      position: 'top-center',
+      timeout: 1500,
+      hideProgressBar: true,
+    })
+  } catch (error) {
+    console.error('알림 삭제 실패:', error)
+    toast.error('알림 삭제 중 오류가 발생했습니다.', {
+      position: 'top-center',
+      timeout: 2000,
+      hideProgressBar: true,
+    })
+  }
+}
+
+const markAllAsRead = async () => {
+  try {
+    // 실시간 알림 모두 읽음 처리
+    await markAllNotificationsAsRead()
+    
+    toast.success('모든 알림을 읽음 처리했습니다.', {
+      position: 'top-center',
+      timeout: 2000,
+      hideProgressBar: true,
+    })
+  } catch (error) {
+    console.error('알림 읽음 처리 실패:', error)
+    toast.error('알림 처리 중 오류가 발생했습니다.', {
+      position: 'top-center',
+      timeout: 2000,
+      hideProgressBar: true,
+    })
+  }
 }
 
 const getNotificationIcon = (type) => {
   const iconMap = {
     project: '📁',
+    comment: '💬',
     message: '💬',
     review: '⭐',
+    invite: '✉️',
+    invitation: '✉️',
+    application: '🚀',
     payment: '💳',
-    system: '⚙️'
+    system: '⚙️',
+    COMMENT: '💬',
+    APPLICATION: '🚀',
+    INVITATION: '✉️'
   }
   return iconMap[type] || '📢'
 }
@@ -284,6 +342,10 @@ const formatTime = (timestamp) => {
 }
 
 const handleLogout = () => {
+  // 알림 연결 정리
+  cleanupNotifications()
+  resetNotifications()
+  
   userStore.logout()
   toast.success('로그아웃되었습니다.', {
     position: 'top-center',
@@ -308,23 +370,54 @@ onMounted(async () => {
     isLoggedIn: userStore.isLoggedIn,
     userId: userStore.userId,
     email: userStore.email
-  });
+  })
   
   // 전역 객체에도 저장
-  window.debugAppHeaderUserStore = userStore;
+  window.debugAppHeaderUserStore = userStore
   
-  // 임시로 중복 fetchProfile 호출 비활성화 - EmailLoginPage에서 이미 처리됨
-  // if (userStore.isLoggedIn && !userStore.profile) {
-  //   try {
-  //     await userStore.fetchProfile()
-  //   } catch (error) {
-  //     console.error('프로필 조회 실패:', error)
-  //   }
-  // }
+  // 로그인 상태 변화 감지하여 알림 초기화
+  watch(
+    () => userStore.isLoggedIn,
+    (newValue, oldValue) => {
+      console.log('👀 로그인 상태 변화 감지:', { newValue, oldValue, userId: userStore.userId })
+      
+      if (newValue && !oldValue) {
+        // 로그인 상태로 변경된 경우만 초기화
+        console.log('✅ 로그인 감지 - 실시간 알림 초기화')
+        // userStore에 userId가 설정될 때까지 기다림
+        const checkAndInit = () => {
+          if (userStore.userId) {
+            console.log('🆔 userId 확인됨 - 알림 시스템 시작')
+            initializeNotifications()
+          } else {
+            console.log('⏳ userId 대기 중...')
+            setTimeout(checkAndInit, 500)
+          }
+        }
+        checkAndInit()
+      } else if (!newValue && oldValue) {
+        // 로그아웃된 경우만 정리
+        console.log('❌ 로그아웃 감지 - 실시간 알림 정리')
+        cleanupNotifications()
+        resetNotifications()
+      }
+    },
+    { immediate: false } // immediate를 false로 변경하여 초기 실행 방지
+  )
+  
+  // 컴포넌트 마운트 시 로그인 상태 확인 (초기화 지연)
+  setTimeout(() => {
+    if (userStore.isLoggedIn && userStore.userId) {
+      console.log('🔄 지연된 마운트 시 로그인 상태 확인됨 - 알림 초기화')
+      initializeNotifications()
+    }
+  }, 2000) // 2초 지연으로 App.vue의 checkLogin 완료 대기
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  // 컴포넌트 언마운트 시 알림 연결 정리
+  cleanupNotifications()
 })
 </script>
 
@@ -681,10 +774,10 @@ onUnmounted(() => {
   display: flex;
   padding: 12px 20px;
   gap: 12px;
-  cursor: pointer;
   transition: background 0.2s ease;
   border-bottom: 1px solid #f5f5f5;
   position: relative;
+  align-items: flex-start;
 }
 
 .notification-item:hover {
@@ -739,6 +832,7 @@ onUnmounted(() => {
 .notification-content {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 
 .notification-message {
@@ -751,6 +845,35 @@ onUnmounted(() => {
 .notification-time {
   font-size: 12px;
   color: #888;
+}
+
+/* 알림 삭제 버튼 */
+.notification-delete-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-item:hover .notification-delete-btn {
+  opacity: 1;
+}
+
+.notification-delete-btn:hover {
+  background: #f0f0f0;
+  color: #ff4444;
+  transform: scale(1.1);
 }
 
 /* 빈 상태 */

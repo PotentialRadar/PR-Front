@@ -9,8 +9,8 @@ import AppFooter from '@/components/layout/AppFooter.vue';
 const userStore = useUserStore();
 
 onMounted(async () => {
-  // 임시로 checkLogin 비활성화 - 로그인 페이지에서 이미 처리됨
-  // await userStore.checkLogin();
+  // 앱 시작 시 로그인 상태 확인
+  await userStore.checkLogin();
   
   console.log('App mounted - userStore 상태:', {
     isLoggedIn: userStore.isLoggedIn,

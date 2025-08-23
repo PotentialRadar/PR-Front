@@ -26,6 +26,21 @@ export const useUserStore = defineStore('user', {
       console.log('로그인 성공!', { userId, email });
     },
     
+    // 사용자 데이터만 정리하는 메서드 (페이지 이동 없음)
+    clearUserData() {
+      this.isLoggedIn = false;
+      this.email = '';
+      this.userId = null;
+      this.nickname = null;
+      this.profile = null;
+      this.accessToken = null;
+      this.techStacks = [];
+      
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    },
+
+    // 실제 로그아웃 API 호출 및 리다이렉트
     async logout() {
       console.log('🚪 logout() 호출됨 - 호출 스택:', new Error().stack);
       try {
@@ -33,19 +48,14 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('로그아웃 API 호출 실패:', error);
       } finally {
-        this.isLoggedIn = false;
-        this.email = '';
-        this.userId = null;
-        this.nickname = null;
-        this.profile = null;
-        this.accessToken = null;
-        this.techStacks = [];
+        this.clearUserData();
         
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        
-        // 메인페이지로 리다이렉트
-        window.location.href = '/';
+        // 라우터가 없는 경우에만 강제 이동
+        if (typeof window !== 'undefined') {
+          // SPA 환경에서는 라우터 사용을 권장하지만, 
+          // 완전한 상태 초기화를 위해 페이지 새로고침
+          window.location.href = '/';
+        }
       }
     },
     async checkLogin() {
@@ -67,9 +77,16 @@ export const useUserStore = defineStore('user', {
           } catch (error) {
             console.error('로그인 체크 중 프로필 조회 실패:', error);
             console.error('프로필 조회 실패 상세:', error.response?.data || error.message);
-            // 프로필 조회 실패시 로그아웃 처리
-            console.log('❌ 프로필 조회 실패로 logout 호출');
-            this.logout();
+            
+            // 401 에러(토큰 만료)인 경우만 로그아웃 처리
+            if (error.response?.status === 401) {
+              console.log('❌ 토큰 만료로 인한 로그아웃');
+              this.clearUserData();
+            } else {
+              // 다른 에러는 토큰은 유지하되 로그인 상태만 false로 설정
+              console.log('⚠️ 프로필 조회 실패 - 토큰은 유지하고 로그인 상태만 false로 변경');
+              this.isLoggedIn = false;
+            }
           }
         } else {
           console.log('✅ 프로필 또는 userId 있음 - fetchProfile 스킵');
