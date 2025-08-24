@@ -212,10 +212,16 @@ const inviteUser = async (user) => {
   isLoading.value = true
   
   try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
     const response = await fetch('http://localhost:8080/api/invitations/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
       },
       body: JSON.stringify({
@@ -295,10 +301,16 @@ const inviteByEmail = async () => {
     }
     
     // 사용자를 찾았으면 초대 보내기
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
     const inviteResponse = await fetch('http://localhost:8080/api/invitations/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
       },
       body: JSON.stringify({

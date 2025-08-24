@@ -355,11 +355,18 @@ const formatDate = (dateString) => {
 
 const inviteMember = async (member) => {
   try {
+    // JWT 토큰 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
     // API 호출 (TeamInviteModal에서 사용하는 것과 동일한 API)
     const response = await fetch('http://localhost:8080/api/invitations/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
       },
       body: JSON.stringify({

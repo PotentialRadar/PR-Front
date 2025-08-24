@@ -341,7 +341,14 @@ export function useNotifications() {
         const type = notification.notificationType.toUpperCase()
 
         if (type === 'INVITATION') {
-            // 초대 알림은 별도 처리 (수락/거절 버튼)
+            // 초대 알림 클릭 시 - 프로젝트 상세 페이지 또는 초대 관리 페이지로 이동
+            const projectId = extractProjectIdFromUrl(notification.url)
+            if (projectId) {
+                router.push(`/projects/${projectId}`)
+            } else {
+                // 초대 관리 페이지가 있다면 그쪽으로, 없다면 프로젝트 목록으로
+                router.push('/projects')
+            }
             return
         }
 
