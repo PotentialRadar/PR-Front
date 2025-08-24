@@ -33,7 +33,7 @@
               <!-- 지원하기 버튼 -->
               <div class="action-button-container">
                 <button
-                  v-if="isLoggedIn && project?.status === '모집중'"
+                  v-if="isLoggedIn && !isProjectOwner && project?.status === '모집중'"
                   class="apply-button"
                   @click="openApplyModal"
                 >
@@ -92,14 +92,6 @@
     />
 
 
-    <!-- 지원 완료 토스트 메시지 -->
-    <div
-      v-if="showSuccessToast"
-      class="success-toast"
-    >
-      <span class="toast-icon">✅</span>
-      지원이 성공적으로 완료되었습니다!
-    </div>
 
     <!-- 지원 실패 토스트 메시지 -->
     <div
@@ -141,8 +133,16 @@ const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
 
-// 프로젝트 소유자 여부는 항상 false (팀원 초대 기능 제거)
-const isProjectOwner = computed(() => false);
+// 프로젝트 소유자 여부 확인
+const isProjectOwner = computed(() => {
+  if (!project.value || !userStore.isLoggedIn || !userStore.userId) {
+    return false;
+  }
+  // 프로젝트의 팀 리더 ID와 현재 사용자 ID 비교
+  return project.value.teamLeaderId === userStore.userId || 
+         project.value.author?.userId === userStore.userId || 
+         project.value.createdBy === userStore.userId;
+});
 
 const load = async () => {
   if (isNaN(projectId.value)) {
@@ -172,6 +172,7 @@ const load = async () => {
       title: data.title,
       description: data.description,
       techStacks: data.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
+      recruitmentParts: data.recruitmentParts || [],
       status: statusMap[data.status] || data.status,
       startDate: data.startDate,
       endDate: data.endDate,
@@ -182,6 +183,7 @@ const load = async () => {
       recruitDeadline: data.recruitDeadline,
       fileUrl: data.fileUrl,
       viewCount: data.viewCount,
+      teamLeaderId: data.teamLeaderId,
       author: {
         userId: data.teamLeaderId,
         name: `팀장 ${data.teamLeaderId}`,
@@ -271,13 +273,17 @@ async function handleApplicationSubmit(applicationData) {
 
     await applyProject(projectId.value, payload);
 
-    showSuccessToast.value = true;
-    setTimeout(() => (showSuccessToast.value = false), 1000);
-    closeApplyModal();
+    toast.success('지원이 성공적으로 완료되었습니다! 🚀', {
+      position: 'top-center',
+      timeout: 3000
+    });
+    closeApplyModal(); // 지원 성공 후 모달 닫기
   } catch (error) {
     console.error('지원 실패:', error);
-    showFailToast.value = true;
-    setTimeout(() => (showFailToast.value = false), 1000);
+    toast.error('지원에 실패했습니다. 다시 시도해주세요.', {
+      position: 'top-center',
+      timeout: 3000
+    });
   }
 }
 
@@ -470,28 +476,6 @@ document.addEventListener('keydown', (e) => {
   margin: 24px 0;
 }
 
-/* 성공 토스트 */
-.success-toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(135deg, #4CAF50, #66BB6A);
-  color: white;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  z-index: 1001;
-  animation: slideInRight 0.3s ease;
-}
-
-.toast-icon {
-  font-size: 18px;
-}
 
 /* 기존 스타일들 */
 .integrated-content-card {
@@ -603,13 +587,6 @@ document.addEventListener('keydown', (e) => {
     display: none;
   }
 
-  .success-toast {
-    top: 20px;
-    right: 20px;
-    left: 20px;
-    text-align: center;
-    transform: none;
-  }
 }
 
 @media (max-width: 480px) {

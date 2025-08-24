@@ -137,9 +137,13 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/userStore'
+import { useToast } from 'vue-toastification'
 
-// Router
+// Router and stores
 const router = useRouter()
+const userStore = useUserStore()
+const toast = useToast()
 
 // Props
 const props = defineProps({
@@ -348,9 +352,42 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('ko-KR')
 }
 
-const inviteMember = (member) => {
-  // TODO: 팀 초대 기능 구현
-  alert(`${member.name}님에게 팀 초대를 보냅니다.`)
+const inviteMember = async (member) => {
+  try {
+    // API 호출 (TeamInviteModal에서 사용하는 것과 동일한 API)
+    const response = await fetch('http://localhost:8080/api/invitations/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Id': userStore.userId.toString()
+      },
+      body: JSON.stringify({
+        projectId: props.projectId,
+        inviteeId: member.userId,
+        message: `AI 추천을 통해 ${member.name}님을 팀에 초대합니다!`
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      toast.success(`${member.name}님에게 팀 초대를 보냈습니다! 📧`, {
+        position: 'top-center',
+        timeout: 3000
+      });
+    } else {
+      toast.error(result.message || '초대 전송에 실패했습니다.', {
+        position: 'top-center',
+        timeout: 3000
+      });
+    }
+  } catch (error) {
+    console.error('초대 전송 오류:', error);
+    toast.error('초대 전송에 실패했습니다. 다시 시도해주세요.', {
+      position: 'top-center',
+      timeout: 3000
+    });
+  }
 }
 
 const viewProfile = (member) => {

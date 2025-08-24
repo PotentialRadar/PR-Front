@@ -50,12 +50,13 @@ export const useUserStore = defineStore('user', {
       } finally {
         this.clearUserData();
         
-        // 라우터가 없는 경우에만 강제 이동
-        if (typeof window !== 'undefined') {
-          // SPA 환경에서는 라우터 사용을 권장하지만, 
-          // 완전한 상태 초기화를 위해 페이지 새로고침
-          window.location.href = '/';
-        }
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userTechStacks');
+        localStorage.removeItem('projectFeedbacks');
+        
+        // 메인페이지로 리다이렉트
+        window.location.href = '/';
       }
     },
     async checkLogin() {

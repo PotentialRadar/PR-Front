@@ -7,6 +7,7 @@
       <span>프로젝트 내용</span>
     </div>
     <div 
+      v-if="isProjectOwner"
       class="tab-item" 
       :class="{ active: activeTab === 'recommendations' }" 
       @click="setActiveTab('recommendations')"

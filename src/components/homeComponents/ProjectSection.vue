@@ -71,7 +71,7 @@
                     </div>
                   </div>
                 </div>
-                <button class="setup-button" @click="router.push('/myPage/edit-profile')">
+                <button class="setup-button" @click="router.push('/myPage/portfolio')">
                   기술스택 설정하기
                 </button>
               </div>

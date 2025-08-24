@@ -234,9 +234,14 @@ const handleLogout = () => {
   userStore.logout()
   toast.success('로그아웃되었습니다.', {
     position: 'top-center',
-    timeout: 2000,
+    timeout: 1500,
     hideProgressBar: true,
   })
+  
+  // 토스트가 보이는 시간을 확보한 후 로그아웃
+  setTimeout(() => {
+    userStore.logout()
+  }, 500)
 }
 
 // 외부 클릭 감지

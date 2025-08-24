@@ -85,7 +85,7 @@
         <div v-else-if="userTechStacks.length === 0" class="empty-state">
           <div class="empty-icon">🔧</div>
           <h3>기술스택을 설정해주세요</h3>
-          <p>기술스택과 경험 수준을 설정하시면 AI가 맞춤형 프로젝트를 추천해드립니다.</p>
+          <p>포트폴리오 페이지에서 기술스택과 경험 수준을 설정하시면 AI가 맞춤형 프로젝트를 추천해드립니다.</p>
           <div class="popular-preview">
             <h4>🔥 지금은 인기 프로젝트를 확인해보세요!</h4>
             <div class="popular-projects-grid">
@@ -113,7 +113,7 @@
               </div>
             </div>
           </div>
-          <button @click="showTechStackModal = true" class="primary-button">
+          <button @click="router.push('/myPage/portfolio')" class="primary-button">
             기술스택 설정하기
           </button>
         </div>
@@ -128,43 +128,8 @@
           </button>
         </div>
 
-        <!-- 피드백 통계 (추천 결과가 있을 때만 표시) -->
-        <div v-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="feedback-stats">
-          <h4 class="stats-title">📊 추천 평가 현황</h4>
-          <div class="stats-grid">
-            <div class="stat-card positive">
-              <div class="stat-icon">👍</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ feedbackStats.likes }}</div>
-                <div class="stat-label">좋아요</div>
-              </div>
-            </div>
-            <div class="stat-card negative">
-              <div class="stat-icon">👎</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ feedbackStats.dislikes }}</div>
-                <div class="stat-label">별로예요</div>
-              </div>
-            </div>
-            <div class="stat-card neutral">
-              <div class="stat-icon">📈</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ feedbackStats.total }}</div>
-                <div class="stat-label">총 평가</div>
-              </div>
-            </div>
-            <div class="stat-card accuracy">
-              <div class="stat-icon">🎯</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ feedbackStats.accuracy }}%</div>
-                <div class="stat-label">만족도</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- 추천 프로젝트 리스트 (로그인 되어 있고 기술스택 설정되고 추천 결과가 있음) -->
-        <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="projects-grid">
+        <div v-if="userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="projects-grid">
           <div 
             v-for="project in recommendations" 
             :key="project.projectId"
@@ -244,30 +209,6 @@
               </div>
             </div>
 
-            <!-- 추천 평가 -->
-            <div class="recommendation-feedback">
-              <span class="feedback-label">이 추천이 도움이 되셨나요?</span>
-              <div class="feedback-buttons">
-                <button 
-                  class="feedback-btn thumbs-up"
-                  :class="{ active: getFeedback(project.projectId) === 'like' }"
-                  @click.stop="handleFeedback(project.projectId, 'like')"
-                  title="좋아요"
-                >
-                  <i class="bi bi-hand-thumbs-up-fill"></i>
-                  <span>좋아요</span>
-                </button>
-                <button 
-                  class="feedback-btn thumbs-down"
-                  :class="{ active: getFeedback(project.projectId) === 'dislike' }"
-                  @click.stop="handleFeedback(project.projectId, 'dislike')"
-                  title="별로예요"
-                >
-                  <i class="bi bi-hand-thumbs-down-fill"></i>
-                  <span>별로예요</span>
-                </button>
-              </div>
-            </div>
 
             <!-- 프로젝트 상태 -->
             <div class="project-footer">
@@ -287,8 +228,8 @@
 
     <!-- 기술스택 설정 모달 -->
     <TechStackModal 
-      v-if="showTechStackModal"
-      :initialTechStacks="userTechStacks"
+      v-if="showTechStackModal && userTechStacks"
+      :initialTechStacks="userTechStacks || []"
       @close="showTechStackModal = false"
       @save="handleTechStackSave"
     />
@@ -296,12 +237,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
 import PageHeader from '@/components/common/PageHeader.vue'
 import TechStackModal from '@/components/common/TechStackModal.vue'
+import api from '@/api/axios'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -313,26 +255,10 @@ const showTechStackModal = ref(false)
 const userTechStacks = ref([])
 const recommendations = ref([])
 const popularProjects = ref([])
-const projectFeedbacks = ref(new Map()) // 프로젝트별 피드백 저장
 
 // 계산된 속성
 const userTechNames = computed(() => userTechStacks.value.map(tech => tech.name.toLowerCase()))
 
-// 피드백 통계 계산
-const feedbackStats = computed(() => {
-  const feedbacks = Array.from(projectFeedbacks.value.values())
-  const likes = feedbacks.filter(f => f === 'like').length
-  const dislikes = feedbacks.filter(f => f === 'dislike').length
-  const total = feedbacks.length
-  const accuracy = total > 0 ? Math.round((likes / total) * 100) : 0
-  
-  return {
-    likes,
-    dislikes,
-    total,
-    accuracy
-  }
-})
 
 // 메서드
 const loadRecommendations = async () => {
@@ -345,37 +271,21 @@ const loadRecommendations = async () => {
   try {
     const requestData = {
       userId: userStore.userId, // 실제 로그인한 사용자 ID 사용
-      techStacks: userTechStacks.value,
-      experienceLevel: "intermediate",
-      preferredCategories: [],
-      maxResults: 10
+      techStacks: userTechStacks.value
     }
 
     console.log('🎯 AI 추천 요청:', requestData)
 
-    const response = await fetch('http://localhost:8080/api/recommend/projects-for-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData)
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
+    const response = await api.post('/recommend/projects', requestData)
+    const data = response.data
     console.log('📦 AI 추천 응답:', data)
     
     recommendations.value = data || []
     
     if (recommendations.value.length > 0) {
-      toast.success(`🎯 ${recommendations.value.length}개의 맞춤 프로젝트를 찾았습니다!`, {
-        position: 'top-center',
-        timeout: 3000
-      })
+      console.log(`✅ ${recommendations.value.length}개의 프로젝트 추천 완료`)
     } else {
+      console.log('⚠️ 추천 가능한 프로젝트가 없음')
       toast.info('현재 추천 가능한 프로젝트가 없습니다. 기술스택을 조정해보세요.', {
         position: 'top-center',
         timeout: 3000
@@ -439,15 +349,34 @@ const goToProject = (projectId) => {
   router.push(`/projects/${projectId}`)
 }
 
+// 포트폴리오에서 기술스택 불러오기
+const loadTechStacksFromPortfolio = async () => {
+  try {
+    const response = await api.get(`/users/${userStore.userId}/portfolio`)
+    const portfolioData = response.data
+      if (portfolioData.skills && portfolioData.skills.length > 0) {
+        // 포트폴리오 기술스택을 AI 추천용 형태로 변환 (기본 레벨 3)
+        const techStacks = portfolioData.skills.map(skill => ({
+          name: skill,
+          level: 3
+        }))
+        
+        userTechStacks.value = techStacks
+        localStorage.setItem('userTechStacks', JSON.stringify(techStacks))
+        
+        console.log('📦 포트폴리오에서 기술스택 불러옴:', techStacks)
+        loadRecommendations()
+      }
+  } catch (error) {
+    console.error('포트폴리오 기술스택 로드 실패:', error)
+  }
+}
+
 // 인기 프로젝트 조회 함수
 const loadPopularProjects = async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/projects')
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
+    const response = await api.get('/projects')
+    const data = response.data
     console.log('📊 전체 프로젝트 데이터:', data)
     
     // viewCount 기준으로 정렬하여 인기 프로젝트 선별
@@ -466,54 +395,12 @@ const loadPopularProjects = async () => {
   }
 }
 
-// 피드백 관련 함수
-const handleFeedback = (projectId, type) => {
-  const currentFeedback = projectFeedbacks.value.get(projectId)
-  
-  // 같은 피드백이면 취소, 다른 피드백이면 변경
-  if (currentFeedback === type) {
-    projectFeedbacks.value.delete(projectId)
-  } else {
-    projectFeedbacks.value.set(projectId, type)
-  }
-  
-  // LocalStorage에 저장
-  saveFeedbacksToStorage()
-  
-  // 사용자에게 피드백 완료 알림
-  const message = type === 'like' ? '좋은 추천이었다니 기뻐요! 🎉' : '피드백 감사합니다. 더 나은 추천을 위해 노력할게요! 🔄'
-  if (projectFeedbacks.value.has(projectId)) {
-    toast.success(message, {
-      position: 'top-center',
-      timeout: 2000
-    })
-  }
-}
-
-const getFeedback = (projectId) => {
-  return projectFeedbacks.value.get(projectId)
-}
-
-const saveFeedbacksToStorage = () => {
-  const feedbackData = Object.fromEntries(projectFeedbacks.value)
-  localStorage.setItem('projectFeedbacks', JSON.stringify(feedbackData))
-}
-
-const loadFeedbacksFromStorage = () => {
-  try {
-    const saved = localStorage.getItem('projectFeedbacks')
-    if (saved) {
-      const feedbackData = JSON.parse(saved)
-      projectFeedbacks.value = new Map(Object.entries(feedbackData))
-    }
-  } catch (error) {
-    console.error('피드백 데이터 로드 실패:', error)
-  }
-}
 
 // 라이프사이클
 onMounted(async () => {
   try {
+    console.log('🔄 AI 추천 페이지 마운트 시작')
+    
     // 로그인 상태 체크 (이미 로그인된 경우 스킵)
     if (!userStore.isLoggedIn) {
       await userStore.checkLogin()
@@ -522,22 +409,30 @@ onMounted(async () => {
     // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
     loadPopularProjects()
     
-    // 저장된 기술스택 불러오기
-    const savedTechStacks = localStorage.getItem('userTechStacks')
-    if (savedTechStacks) {
-      try {
-        userTechStacks.value = JSON.parse(savedTechStacks)
-        // 로그인된 상태에서만 AI 추천 로드
-        if (userStore.isLoggedIn) {
+    // 저장된 기술스택 불러오기 (로그인 상태에서만)
+    if (userStore.isLoggedIn) {
+      const savedTechStacks = localStorage.getItem('userTechStacks')
+      if (savedTechStacks) {
+        try {
+          userTechStacks.value = JSON.parse(savedTechStacks)
           loadRecommendations()
+        } catch (error) {
+          console.error('기술스택 데이터 파싱 오류:', error)
+          // 파싱 오류 시 localStorage 정리
+          localStorage.removeItem('userTechStacks')
+          userTechStacks.value = []
         }
-      } catch (error) {
-        console.error('기술스택 데이터 파싱 오류:', error)
+      } else {
+        // localStorage에 없으면 포트폴리오 기술스택 확인
+        await loadTechStacksFromPortfolio()
       }
+    } else {
+      // 로그인되지 않은 상태에서는 기술스택 정리
+      localStorage.removeItem('userTechStacks')
+      localStorage.removeItem('projectFeedbacks')
+      userTechStacks.value = []
     }
     
-    // 저장된 피드백 데이터 불러오기
-    loadFeedbacksFromStorage()
     
     console.log('📋 AI 추천 페이지 로드 완료:', {
       isLoggedIn: userStore.isLoggedIn,
@@ -548,6 +443,40 @@ onMounted(async () => {
   } catch (error) {
     console.error('❌ AI 추천 페이지 초기화 실패:', error)
   }
+})
+
+// 로그인 상태 변화 감지
+watch(() => userStore.isLoggedIn, (newValue, oldValue) => {
+  try {
+    console.log('🔄 로그인 상태 변화 감지:', { newValue, oldValue })
+    if (!newValue && oldValue !== undefined) {
+      // 로그아웃 시 기술스택 데이터 초기화
+      userTechStacks.value = []
+      recommendations.value = []
+      localStorage.removeItem('userTechStacks')
+      localStorage.removeItem('projectFeedbacks')
+      console.log('🧹 로그아웃으로 인한 데이터 초기화 완료')
+    }
+  } catch (error) {
+    console.error('🚨 로그인 상태 변화 처리 중 오류:', error)
+  }
+}, { immediate: false })
+
+// 페이지 포커스 시 기술스택 재확인 (포트폴리오에서 돌아왔을 때)
+const handleVisibilityChange = async () => {
+  if (!document.hidden && userStore.isLoggedIn && userTechStacks.value.length === 0) {
+    await loadTechStacksFromPortfolio()
+  }
+}
+
+// 브라우저 탭 포커스 이벤트 리스너 추가
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+// 컴포넌트 언마운트 시 이벤트 리스너 제거
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
@@ -1052,161 +981,6 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* 추천 평가 스타일 */
-.recommendation-feedback {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
-  border: 1px solid #e9ecef;
-}
-
-.feedback-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-
-.feedback-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.feedback-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  color: #666;
-}
-
-.feedback-btn:hover {
-  background: #f8f9fa;
-  transform: translateY(-1px);
-}
-
-.feedback-btn.thumbs-up.active {
-  background: #28a745;
-  border-color: #28a745;
-  color: white;
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-}
-
-.feedback-btn.thumbs-down.active {
-  background: #dc3545;
-  border-color: #dc3545;
-  color: white;
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-}
-
-.feedback-btn i {
-  font-size: 1rem;
-}
-
-.feedback-btn.thumbs-up:hover:not(.active) {
-  background: #e8f5e8;
-  border-color: #28a745;
-  color: #28a745;
-}
-
-.feedback-btn.thumbs-down:hover:not(.active) {
-  background: #fde8e8;
-  border-color: #dc3545;
-  color: #dc3545;
-}
-
-/* 피드백 통계 스타일 */
-.feedback-stats {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  margin: 24px 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.stats-title {
-  margin: 0 0 20px 0;
-  color: #333;
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.stat-card.positive {
-  border-color: #28a745;
-  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
-}
-
-.stat-card.negative {
-  border-color: #dc3545;
-  background: linear-gradient(135deg, #fff8f8 0%, #fde8e8 100%);
-}
-
-.stat-card.neutral {
-  border-color: #6c757d;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.stat-card.accuracy {
-  border-color: #007bff;
-  background: linear-gradient(135deg, #f8fcff 0%, #e8f4ff 100%);
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.stat-content {
-  flex: 1;
-  text-align: center;
-}
-
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
-  line-height: 1.2;
-}
-
-.stat-label {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 500;
-  margin-top: 2px;
-}
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
