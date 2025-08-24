@@ -17,7 +17,7 @@
         </div>
         <div class="like-container">
           <button class="like-button" @click.stop="handleLikeToggle">
-            <i class="heart-icon" :class="isLiked ? 'bi bi-heart-fill liked' : 'bi bi-heart'"></i>
+            <span class="heart-icon" :class="{ 'liked': isLiked }">{{ isLiked ? '❤️' : '🤍' }}</span>
           </button>
           <span class="like-count">{{ likeCount }}</span>
         </div>
@@ -95,9 +95,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { toggleLike } from '@/api/likes.js';
+import { toggleLike, isLiked as checkIsLiked } from '@/api/likes.js';
 import { useUserStore } from '@/stores/userStore.js';
 
 const props = defineProps({
@@ -112,11 +112,41 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const isLiked = ref(false);
-const likeCount = ref(0);
+const likeCount = ref(props.project.likeCount || 0);
+
+const fetchLikeStatus = async () => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] fetchLikeStatus 호출. 현재 userId: ${userStore.userId}`);
+
+  if (userStore.userId && projectId) {
+    try {
+      console.log(`[ProjectCard #${projectId}] API 요청 전송: checkIsLiked('PROJECT', ${projectId})`);
+      const response = await checkIsLiked('PROJECT', projectId);
+      console.log(`[ProjectCard #${projectId}] API 응답 받음:`, response);
+      isLiked.value = response.isLiked;
+    } catch (error) {
+      console.error(`[ProjectCard #${projectId}] checkIsLiked API 호출 실패:`, error);
+      isLiked.value = false;
+    }
+  } else {
+    console.log(`[ProjectCard #${projectId}] userId 또는 projectId가 없어서 API 호출을 건너뜁니다.`);
+    isLiked.value = false;
+  }
+};
 
 onMounted(() => {
-  isLiked.value = props.project.likedByUser || false;
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] 컴포넌트 마운트됨.`);
   likeCount.value = props.project.likeCount || 0;
+  fetchLikeStatus();
+});
+
+watch(() => userStore.userId, (newUserId, oldUserId) => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] userId 변경 감지: ${oldUserId} -> ${newUserId}`);
+  if (newUserId) {
+    fetchLikeStatus();
+  }
 });
 
 const handleLikeToggle = async () => {

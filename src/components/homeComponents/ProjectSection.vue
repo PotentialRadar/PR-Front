@@ -27,114 +27,11 @@
       <transition name="slide-fade" mode="out-in">
         <div class="projects-grid" :key="activeTab + '-' + filteredProjects.length">
           <template v-if="filteredProjects.length > 0">
-            <div v-for="project in filteredProjects.slice(0, 4)" :key="project.id" class="project-card">
-              <div class="card-header">
-                <div class="header-left">
-                  <div class="status-title-container">
-                    <div class="status-badge" v-if="project.status">
-                      <span>{{ project.status }}</span>
-                    </div>
-                    <div class="title-container">
-                      <h3 class="project-title">
-                        {{ project.title.length > 40 ? project.title.slice(0, 40) + '...' : project.title }}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-                <div class="header-right">
-                  <div class="view-count-display">
-                    👀 {{ project.viewCount || 0 }}
-                  </div>
-                  <button class="favorite-button" @click="toggleFavorite(project)" :class="{ 'favorited': project.isFavorite }">
-                    <span v-if="project.isFavorite">❤️</span>
-                    <span v-else>🤍</span>
-                  </button>
-                </div>
-              </div>
-
-              <div class="description-section" v-if="project.description">
-                <p class="project-description">
-                  {{ project.description.length > 100 ? project.description.slice(0, 100) + '...' : project.description }}
-                </p>
-              </div>
-
-              <!-- AI 추천 설명 섹션 (AI 탭에서만 표시) -->
-              <div v-if="activeTab === 'ai' && project.explanation" class="ai-explanation-section">
-                <div class="explanation-header">
-                  <span class="ai-badge">🤖 AI 추천 이유</span>
-                </div>
-                <div class="explanation-content">
-                  <p class="main-reason">{{ project.explanation.simple_explanation || project.explanation.main_reason }}</p>
-                  <div v-if="project.explanation.matched_skills?.length > 0" class="skill-match">
-                    <span class="skill-label">✅ 매칭 기술:</span>
-                    <span class="skill-list">{{ project.explanation.matched_skills.join(', ') }}</span>
-                  </div>
-                  <div v-if="project.explanation.growth_opportunities?.length > 0" class="growth-opportunities">
-                    <span class="growth-label">🌱 성장 기회:</span>
-                    <span class="growth-list">{{ project.explanation.growth_opportunities.join(', ') }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="category-tags-section">
-                <div class="project-tags">
-                  <div class="self-tag" v-for="tag in project.techStacks.slice(0, 4)" :key="tag.techStackName">
-                    {{ tag.techStackName }}
-                  </div>
-                  <div class="self-tag more-tag" v-if="project.techStacks.length > 4">
-                    +{{ project.techStacks.length - 4 }}
-                  </div>
-                </div>
-              </div>
-
-              <div class="project-info">
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-clock"></i>
-                  </div>
-                  <div class="info-content">
-                    <div class="info-label">진행 기간</div>
-                    <div class="info-value">{{ calculateDuration(project.startDate, project.endDate) }}</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-people"></i>
-                  </div>
-                  <div class="info-content">
-                    <div class="info-label">모집 인원</div>
-                    <div class="info-value">{{ project.recruitCount }}명</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-person-plus"></i>
-                  </div>
-                  <div class="info-content">
-                    <div class="info-label">지원자</div>
-                    <div class="info-value">{{ project.appliedCount }}명</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-calendar-event"></i>
-                  </div>
-                  <div class="info-content">
-                    <div class="info-label">마감일정</div>
-                    <div class="info-value" :class="{ 'urgent': isUrgent(project.deadline) }">{{ project.deadline }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="bottom-section">
-                <button class="detail-button" @click="goToDetail(project)">
-                  상세보기
-                </button>
-              </div>
-            </div>
+            <ProjectCard
+                v-for="project in filteredProjects.slice(0, 4)"
+                :key="project.id"
+                :project="project"
+            />
           </template>
           
           <template v-else>
@@ -194,6 +91,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import api from '@/api/axios'
+import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -243,21 +141,13 @@ const fetchProjects = async () => {
     const response = await api.get('/projects')
     const apiProjects = response.data || []
     
-    // API 데이터를 프로치乌드 형식으로 변환
+    // API 데이터를 ProjectCard에 맞게 변환
     projects.value = apiProjects.map(project => ({
-      id: project.projectId,
-      title: project.title,
-      description: project.description,
-      techStacks: project.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
-      status: '모집중',
-      startDate: project.startDate,
-      endDate: project.endDate,
-      recruitCount: project.recruitCount,
-      appliedCount: project.appliedCount,
-      deadline: formatDeadline(project.recruitDeadline),
+      ...project,
+      id: project.projectId, // key를 위한 id 보장
+      // ProjectCard가 자체적으로 계산하므로 중복 계산 제거
+      // deadline: formatDeadline(project.recruitDeadline), 
       category: mapCategoryFromTechStacks(project.techStacks),
-      viewCount: project.viewCount,
-      isFavorite: false
     }))
   } catch (error) {
     // API 실패 시 빈 배열 유지
@@ -299,31 +189,6 @@ const filteredProjects = computed(() => {
   }
   return projects.value.filter(p => p.category === activeTab.value)
 })
-
-const toggleFavorite = (project) => {
-  project.isFavorite = !project.isFavorite
-}
-
-const calculateDuration = (startDate, endDate) => {
-  if (!startDate || !endDate) return '-'
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-  if (isNaN(start) || isNaN(end)) return '-'
-  const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1
-  if (diff < 7) return `${diff}일`
-  if (diff < 30) return `${Math.round(diff / 7)}주`
-  return `${Math.round(diff / 30)}개월`
-}
-
-const isUrgent = (deadline) => {
-  if (!deadline) return false
-  const dayMatch = deadline.match(/D-(\d+)/)
-  if (dayMatch) {
-    const days = parseInt(dayMatch[1])
-    return days <= 7
-  }
-  return false
-}
 
 // 인기 프로젝트 조회 (viewCount 기준)
 const getPopularProjects = () => {
@@ -470,7 +335,7 @@ const fetchAIRecommendations = async () => {
       console.log('  - endDate (camelCase):', project.endDate)
       console.log('  - projectTechStacks:', project.projectTechStacks)
       
-      const recruitDeadline = project.recruitDeadline || project.recruit_deadline
+      const recruitDeadline = project.RecruitDeadline || project.recruit_deadline
       
       return {
         id: project.projectId || project.project_id,
