@@ -252,8 +252,6 @@ function closeApplyModal() {
 
 // 실제 지원 API 호출
 async function handleApplicationSubmit(applicationData) {
-  // 임시 토큰 설정 (로그인 구현 전 테스트용)
-  localStorage.setItem('accessToken', 'dummy-token-for-user2');
 
   try {
     console.log('지원서 데이터:', applicationData);
