@@ -34,6 +34,7 @@
             />
           </template>
           
+          
           <template v-else>
             <div class="no-projects" key="no-projects">
               <div v-if="activeTab === 'ai' && isLoadingAI" class="ai-loading-message">
@@ -105,11 +106,7 @@ const isUserLoggedIn = computed(() => {
 })
 
 const hasUserTechStack = computed(() => {
-  // TODO: 실제 사용자 기술스택 정보 확인 필요
-  // return userStore.user?.techStacks?.length > 0
-  
-  // 기술스택 미설정 테스트를 위해 false로 설정
-  return false // 기술스택 설정 유도 메시지 테스트용
+  return userStore.techStacks && userStore.techStacks.length > 0
 })
 
 // 프로젝트 데이터 로드
@@ -232,12 +229,21 @@ const fetchPopularProjects = async (limit = 5) => {
 }
 
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
-onMounted(() => {
+onMounted(async () => {
   // 테스트: 로그아웃 상태로 만들기 (비활성화)
   // localStorage.removeItem('accessToken')
   // 로그인 상태 체크
   // userStore.checkLogin()
   fetchProjects()
+  
+  // 로그인한 사용자라면 기술스택 로드
+  if (userStore.isLoggedIn) {
+    try {
+      await userStore.fetchTechStacks()
+    } catch (error) {
+      console.error('메인 페이지 기술스택 로드 실패:', error)
+    }
+  }
 })
 
 // AI 추천 API 호출
@@ -1014,6 +1020,7 @@ watch(activeTab, async (newTab) => {
   border-color: rgba(129, 199, 132, 0.5);
   box-shadow: 0 8px 25px rgba(129, 199, 132, 0.2);
 }
+
 
 
 </style>

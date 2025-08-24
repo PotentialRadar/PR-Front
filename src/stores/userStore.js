@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { getUserProfile, logout as logoutApi } from '../api/user';
+import api from '../api/axios';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -70,8 +71,8 @@ export const useUserStore = defineStore('user', {
         this.isLoggedIn = true;
         this.accessToken = token;
         
-        // 프로필 정보가 없고, 사용자 정보(userId)도 없으면 가져오기
-        if (!this.profile && !this.userId) {
+        // 프로필 정보가 없으면 가져오기 (userId 조건 제거)
+        if (!this.profile) {
           console.log('📋 프로필 정보 없음 - fetchProfile 호출');
           try {
             await this.fetchProfile();
@@ -90,7 +91,7 @@ export const useUserStore = defineStore('user', {
             }
           }
         } else {
-          console.log('✅ 프로필 또는 userId 있음 - fetchProfile 스킵');
+          console.log('✅ 프로필 있음 - fetchProfile 스킵');
         }
       } else {
         this.isLoggedIn = false;
@@ -127,6 +128,29 @@ export const useUserStore = defineStore('user', {
         if (profileData.nickname) {
           this.nickname = profileData.nickname;
         }
+      }
+    },
+    
+    // 기술스택 정보를 별도로 조회하는 함수 추가
+    async fetchTechStacks() {
+      try {
+        console.log('🔧 기술스택 조회 시작', {
+          accessToken: this.accessToken ? '있음' : '없음',
+          userId: this.userId
+        });
+        
+        const response = await api.get('/user/tech-stacks');
+        console.log('✅ 기술스택 조회 성공:', response.data);
+        
+        this.techStacks = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('❌ 기술스택 조회 실패:', error);
+        console.error('상태 코드:', error.response?.status);
+        console.error('응답 데이터:', error.response?.data);
+        
+        this.techStacks = [];
+        return [];
       }
     },
   },

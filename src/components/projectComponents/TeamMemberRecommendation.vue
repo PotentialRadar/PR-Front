@@ -33,6 +33,7 @@
             :src="member.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`" 
             :alt="member.name"
             class="profile-image"
+            @error="$event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`"
           />
           <div class="member-info">
             <h4 class="member-name">{{ member.name }}</h4>
