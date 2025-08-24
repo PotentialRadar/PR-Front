@@ -776,30 +776,39 @@ const saveEdit = async (field) => {
           // 기존 기술 스택 수정
           const currentSkill = currentSkills.find(cs => cs.userTechStackId === newSkill.userTechStackId)
           if (currentSkill && (currentSkill.proficiency !== newSkill.proficiency)) {
-            await portfolioApi.updateTechStack(newSkill.userTechStackId, {
+            const response = await portfolioApi.updateTechStack(newSkill.userTechStackId, {
               stackId: newSkill.stackId,
               skillLevel: newSkill.proficiency
             })
+            // 응답 데이터로 업데이트
+            newSkill.userTechStackId = response.data.userTechStackId
+            newSkill.stackId = response.data.stackId
+            newSkill.proficiency = response.data.skillLevel
           }
         } else {
           // 새 기술 스택 추가
-          const response = await portfolioApi.addTechStack({
-            stackId: newSkill.stackId,
-            skillLevel: newSkill.proficiency
-          })
-          newSkill.userTechStackId = response.data.userTechStackId
+          if (newSkill.stackId) {
+            const response = await portfolioApi.addTechStack({
+              stackId: newSkill.stackId,
+              skillLevel: newSkill.proficiency
+            })
+            // 응답 데이터로 업데이트
+            newSkill.userTechStackId = response.data.userTechStackId
+            newSkill.stackId = response.data.stackId
+            newSkill.name = response.data.stackName
+            newSkill.proficiency = response.data.skillLevel
+          } else {
+            console.warn('기술 스택 ID가 없어 추가할 수 없습니다:', newSkill.name)
+          }
         }
       }
       
       portfolioData.skills = JSON.parse(JSON.stringify(editData.skills))
     } else {
-      // 다른 필드들은 통합 포트폴리오 업데이트 API 사용
-      const updateData = {}
-      
+      // 다른 필드들은 개별 API 사용
       switch (field) {
         case 'introduction':
-          updateData.introduction = editData.introduction
-          await portfolioApi.updatePortfolio(updateData)
+          await portfolioApi.updatePortfolio({ bio: editData.introduction })
           portfolioData.introduction = editData.introduction
           break
         case 'education':
@@ -981,7 +990,8 @@ const saveEducations = async () => {
       Object.assign(newEdu, {
         educationId: response.data.educationId,
         startDate: response.data.startDate ? response.data.startDate.substring(0, 7) : '',
-        endDate: response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+        endDate: response.data.endDate ? response.data.endDate.substring(0, 7) : '',
+        isOngoing: response.data.isCurrent
       })
     } else {
       // 새 교육 정보 추가
@@ -989,6 +999,7 @@ const saveEducations = async () => {
       newEdu.educationId = response.data.educationId
       newEdu.startDate = response.data.startDate ? response.data.startDate.substring(0, 7) : ''
       newEdu.endDate = response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+      newEdu.isOngoing = response.data.isCurrent
     }
   }
   
@@ -1028,6 +1039,7 @@ const saveExperiences = async () => {
         position: response.data.department,
         startDate: response.data.startDate ? response.data.startDate.substring(0, 7) : '',
         endDate: response.data.endDate ? response.data.endDate.substring(0, 7) : '',
+        isCurrent: response.data.isCurrent,
         description: response.data.summary || ''
       })
     } else {
@@ -1038,6 +1050,7 @@ const saveExperiences = async () => {
       newExp.position = response.data.department
       newExp.startDate = response.data.startDate ? response.data.startDate.substring(0, 7) : ''
       newExp.endDate = response.data.endDate ? response.data.endDate.substring(0, 7) : ''
+      newExp.isCurrent = response.data.isCurrent
       newExp.description = response.data.summary || ''
     }
   }
@@ -1096,21 +1109,6 @@ const hideSuggestions = () => {
   setTimeout(() => {
     showSuggestions.value = false
   }, 150)
-}
-
-const createPortfolio = () => {
-  // 포트폴리오 생성 로직
-  portfolioData.userInfo = {
-    name: '새 사용자',
-    jobTitle: '',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=new',
-    category: ''
-  }
-  portfolioData.introduction = ''
-  portfolioData.skills = []
-  portfolioData.educations = []
-  portfolioData.careers = []
-  portfolioData.projects = []
 }
 
 const viewPublicPortfolio = () => {

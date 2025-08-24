@@ -2,8 +2,11 @@
 import api from './axios.js';
 
 export const portfolioApi = {
-  // 포트폴리오 전체 조회
+  // 포트폴리오 전체 조회 (개인용 - 인증 필요)
   getPortfolio: () => api.get('/user/portfolio'),
+
+  // 공개 포트폴리오 조회 (인증 불필요)
+  getPublicPortfolio: (userId) => api.get(`/portfolio/${userId}`),
 
   // 포트폴리오 통합 업데이트
   updatePortfolio: (data) => api.put('/user/portfolio', data),
