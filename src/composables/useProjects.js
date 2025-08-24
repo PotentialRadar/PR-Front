@@ -35,6 +35,7 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
             });
 
             const { data } = await listProjects(params);
+            console.log('[useProjects] API 응답 데이터:', data); // API 응답 로깅
 
             // API 응답이 배열인 경우와 페이징 객체인 경우 모두 처리
             if (Array.isArray(data)) {

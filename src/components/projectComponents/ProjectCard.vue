@@ -15,10 +15,12 @@
         <div class="view-count-display">
           👀 {{ project.viewCount }}
         </div>
-        <button class="favorite-button" @click.stop="toggleFavorite" :class="{ 'favorited': props.isFavorited }">
-          <span v-if="props.isFavorited">❤️</span>
-          <span v-else>🤍</span>
-        </button>
+        <div class="like-container">
+          <button class="like-button" @click.stop="handleLikeToggle">
+            <span class="heart-icon" :class="{ 'liked': isLiked }">{{ isLiked ? '❤️' : '🤍' }}</span>
+          </button>
+          <span class="like-count">{{ likeCount }}</span>
+        </div>
       </div>
     </div>
 
@@ -93,25 +95,76 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { toggleLike, isLiked as checkIsLiked } from '@/api/likes.js';
+import { useUserStore } from '@/stores/userStore.js';
 
 const props = defineProps({
   project: {
     type: Object,
     required: true
-  },
-  isFavorited: {
-    type: Boolean,
-    default: false
   }
 });
 
-const emit = defineEmits(['favorite-toggle', 'apply']);
+const emit = defineEmits(['apply', 'like-updated']);
 const router = useRouter();
+const userStore = useUserStore();
 
-const toggleFavorite = () => {
-  emit('favorite-toggle', props.project.id);
+const isLiked = ref(false);
+const likeCount = ref(props.project.likeCount || 0);
+
+const fetchLikeStatus = async () => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] fetchLikeStatus 호출. 현재 userId: ${userStore.userId}`);
+
+  if (userStore.userId && projectId) {
+    try {
+      console.log(`[ProjectCard #${projectId}] API 요청 전송: checkIsLiked('PROJECT', ${projectId})`);
+      const response = await checkIsLiked('PROJECT', projectId);
+      console.log(`[ProjectCard #${projectId}] API 응답 받음:`, response);
+      isLiked.value = response.isLiked;
+    } catch (error) {
+      console.error(`[ProjectCard #${projectId}] checkIsLiked API 호출 실패:`, error);
+      isLiked.value = false;
+    }
+  } else {
+    console.log(`[ProjectCard #${projectId}] userId 또는 projectId가 없어서 API 호출을 건너뜁니다.`);
+    isLiked.value = false;
+  }
+};
+
+onMounted(() => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] 컴포넌트 마운트됨.`);
+  likeCount.value = props.project.likeCount || 0;
+  fetchLikeStatus();
+});
+
+watch(() => userStore.userId, (newUserId, oldUserId) => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] userId 변경 감지: ${oldUserId} -> ${newUserId}`);
+  if (newUserId) {
+    fetchLikeStatus();
+  }
+});
+
+const handleLikeToggle = async () => {
+  if (!userStore.isLoggedIn) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
+  try {
+    const projectId = props.project.projectId || props.project.id;
+    const response = await toggleLike('PROJECT', projectId);
+    isLiked.value = response.liked;
+    likeCount.value = response.likeCount;
+    emit('like-updated', { projectId, liked: response.liked, likeCount: response.likeCount });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    alert('좋아요 처리에 실패했습니다.');
+  }
 };
 
 const isUrgent = (deadline) => {
@@ -250,21 +303,6 @@ const displayDuration = computed(() => {
   flex-shrink: 0;
 }
 
-.favorite-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #FFF;
-  border: 2px solid #E0E0E0;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #757575;
-  font-size: 16px;
-}
-
 .view-count-display {
   font-size: 14px;
   color: #666;
@@ -274,21 +312,58 @@ const displayDuration = computed(() => {
   gap: 4px;
 }
 
-.favorite-button:hover {
-  background: rgba(76, 175, 80, 0.1);
-  border-color: #4CAF50;
-  color: #4CAF50;
-  transform: scale(1.1);
+.like-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.favorite-button.favorited {
-  background: #FF5722;
-  border-color: #FF5722;
-  color: #FFF;
+.like-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.favorite-button.favorited:hover {
-  background: #E64A19;
+.heart-icon {
+  font-size: 22px;
+  color: #adb5bd;
+  transition: all 0.2s ease-in-out;
+}
+
+.heart-icon.liked {
+  color: #e74c3c;
+  animation: heart-pop 0.3s ease;
+}
+
+.like-button:hover .heart-icon.liked {
+  color: #c0392b;
+}
+
+.like-button:hover .heart-icon:not(.liked) {
+  transform: scale(1.15);
+  color: #ff8a80;
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.like-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
 }
 
 .description-section {
@@ -522,12 +597,6 @@ const displayDuration = computed(() => {
   .self-tag {
     font-size: 11px;
     padding: 4px 8px;
-  }
-
-  .favorite-button {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
   }
 }
 </style>

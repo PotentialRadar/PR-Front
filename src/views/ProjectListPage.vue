@@ -54,25 +54,20 @@
                     :key="project.id"
                     :project="project"
                     @apply="openApplyModal"
+                    @like-updated="handleLikeUpdate"
                 />
                 <div v-if="!projects?.length">표시할 프로젝트가 없습니다.</div>
               </template>
             </div>
           </div>
 
-          <!-- 서버 페이징 기반 페이지네이션 -->
-          <div class="pagination-bar">
-            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
-            <button
-                v-for="p in totalPages"
-                :key="p"
-                :class="{ active: page === p }"
-                @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
-          </div>
+          <!-- 공용 페이지네이션 컴포넌트 사용 -->
+          <PaginationComponent
+            v-if="totalPages > 1"
+            :current-page="page"
+            :total-pages="totalPages"
+            @page-changed="goToPage"
+          />
         </div>
       </div>
     </div>
@@ -101,13 +96,14 @@
 <script setup>
 import { ref, watch, onActivated } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useUserStore } from '@/stores/userStore'; // NEW IMPORT
+import { useUserStore } from '@/stores/userStore';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import SearchSection from '@/components/projectComponents/SearchSection.vue';
 import SortOptions from '@/components/projectComponents/SortOptions.vue';
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'; // 페이지네이션 컴포넌트 임포트
 
 import { useProjects } from '@/composables/useProjects';
 import { applyProject } from '@/api/projectMember';
@@ -115,7 +111,7 @@ import { applyProject } from '@/api/projectMember';
 // 라우터
 const router = useRouter();
 const route = useRoute();
-const userStore = useUserStore(); // NEW INITIALIZATION
+const userStore = useUserStore();
 
 // 서버 페이징/필터 상태 (URL 쿼리와 동기화)
 const {
@@ -132,7 +128,7 @@ const {
   category: route.query.category ?? null,
   sort: route.query.sort ?? null,
   page: Number(route.query.page ?? 1),
-  size: 8,
+  size: 10, // 페이지 크기를 10으로 변경
 });
 
 // 컴포넌트가 활성화될 때마다 데이터를 새로고침
@@ -148,6 +144,7 @@ watch([page], () => {
       page: page.value !== 1 ? page.value : undefined,
     },
   });
+  window.scrollTo(0, 0); // 페이지 변경 시 맨 위로 스크롤
 });
 
 // 페이지 내 액션들
@@ -205,6 +202,14 @@ const handleApplicationSubmitted = async (applicationData) => {
     setTimeout(() => (showFailToast.value = false), 3000);
   } finally {
     closeApplyModal();
+  }
+};
+
+const handleLikeUpdate = ({ projectId, liked, likeCount }) => {
+  const project = projects.value.find(p => (p.projectId || p.id) === projectId);
+  if (project) {
+    project.likedByUser = liked;
+    project.likeCount = likeCount;
   }
 };
 </script>

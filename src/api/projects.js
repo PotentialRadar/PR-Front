@@ -45,3 +45,6 @@ export const getProjectsCreatedByUser = (userId, config = {}) =>
 // 사용자가 지원한 프로젝트 목록
 export const getAppliedProjectsByUser = (userId, config = {}) =>
     api.get(`${ROOT}/users/${userId}/applied`, config)
+
+// 확정된 프로젝트 멤버 목록 조회
+export const getConfirmedProjectMembers = (projectId) => api.get(`${ROOT}/${projectId}/confirmed-members`);
