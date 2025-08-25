@@ -524,8 +524,23 @@
                 :key="project.id"
                 class="project-card"
               >
-                <h6 class="project-title">{{ project.title }}</h6>
-                <p class="project-role">{{ project.role }}</p>
+                <div class="project-header">
+                  <h6 class="project-title">{{ project.title }}</h6>
+                  <span class="project-role-badge">{{ project.role }}</span>
+                </div>
+                <p class="project-description">{{ project.description }}</p>
+                <div class="project-tech" v-if="project.techStacks.length > 0">
+                  <span 
+                    v-for="tech in project.techStacks.slice(0, 3)" 
+                    :key="tech" 
+                    class="tech-tag"
+                  >
+                    {{ tech }}
+                  </span>
+                  <span v-if="project.techStacks.length > 3" class="tech-more">
+                    +{{ project.techStacks.length - 3 }}
+                  </span>
+                </div>
               </div>
               
               <div v-if="portfolioData.projects.length > 6" class="more-projects-card">
@@ -721,7 +736,17 @@ const loadPortfolioData = async () => {
     
     // 기본 값 설정
     portfolioData.introduction = portfolio.bio || ''
-    portfolioData.projects = [] // 프로젝트는 별도 관리
+    portfolioData.projects = portfolio.projects?.map(project => ({
+      id: project.projectId,
+      title: project.title,
+      description: project.description,
+      role: project.role === 'LEADER' ? '팀장' : '팀원',
+      status: project.status,
+      techPart: project.techPart,
+      startDate: project.startDate,
+      endDate: project.endDate,
+      techStacks: project.techStacks || []
+    })) || []
     
     // 기술 스택 데이터 설정
     portfolioData.skills = portfolio.techStacks?.map(ts => ({
@@ -2354,17 +2379,65 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
 .project-title {
   font-size: 14px;
   font-weight: 600;
   color: #262626;
-  margin: 0 0 4px 0;
+  margin: 0;
+  flex: 1;
+  margin-right: 8px;
 }
 
-.project-role {
-  font-size: 12px;
+.project-role-badge {
+  padding: 3px 8px;
+  background: #e8f5e8;
+  color: #2e7d32;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.project-description {
+  font-size: 13px;
   color: #666;
-  margin: 0;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tech-tag {
+  padding: 2px 6px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.tech-more {
+  padding: 2px 6px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 3px;
+  font-size: 10px;
 }
 
 .more-projects-card {

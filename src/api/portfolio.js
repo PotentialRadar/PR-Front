@@ -61,7 +61,26 @@ export const portfolioApi = {
   
   updateExperience: (id, data) => api.put(`/user/experiences/${id}`, data),
   
-  deleteExperience: (id) => api.delete(`/user/experiences/${id}`)
+  deleteExperience: (id) => api.delete(`/user/experiences/${id}`),
+
+  // 프로젝트 관련 API
+  // 참가한 모든 프로젝트 + 선택 상태 조회
+  getAvailableProjects: () => api.get('/user/available-projects'),
+  
+  // 포트폴리오에 선택된 프로젝트 목록 조회
+  getSelectedProjects: () => api.get('/user/projects'),
+  
+  // 포트폴리오 프로젝트 선택 일괄 업데이트
+  updateProjectSelection: (selectedProjectIds) => 
+    api.put('/user/portfolio/projects', { selectedProjectIds }),
+  
+  // 특정 프로젝트를 포트폴리오에 추가
+  addProjectToPortfolio: (projectId) => 
+    api.post(`/user/projects/${projectId}`),
+  
+  // 포트폴리오에서 프로젝트 제거
+  removeProjectFromPortfolio: (projectId) => 
+    api.delete(`/user/projects/${projectId}`)
 };
 
 // 전체 기술 스택 목록 조회를 위한 별도 API
