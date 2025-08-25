@@ -72,7 +72,7 @@
                   <div class="project-title-section">
                     <h3 class="project-title">{{ project.title }}</h3>
                     <div class="project-badges">
-                      <span :class="['status-badge', project.status]">
+                      <span :class="['status-badge', statusClass(project.status)]">
                         <i :class="getStatusIcon(project.status)"></i>
                         <span>{{ getStatusText(project.status) }}</span>
                       </span>
@@ -121,7 +121,11 @@
                     <span class="btn-icon">👤</span>
                     지원자 확인 ({{ project.appliedCount }})
                   </button>
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -129,7 +133,11 @@
 
                 <!-- PM 권한이 있고 진행 중인 프로젝트 -->
                 <div v-else-if="project.isPM && project.status === 'IN_PROGRESS'" class="progress-actions">
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -137,11 +145,15 @@
 
                 <!-- PM 권한이 있고 완료된 프로젝트 -->
                 <div v-else-if="project.isPM && project.status === 'COMPLETED'" class="completed-actions">
-                  <button class="action-btn review-btn" @click="showTeamReview(project.projectId)">
+                  <button class="action-btn review-btn" @click="openReviewModal(project)">
                     <span class="btn-icon">⭐</span>
                     팀원 리뷰 작성
                   </button>
-                  <button class="action-btn manage-btn" @click="goToManagePage(project.projectId)">
+                  <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                    <span class="btn-icon">👁️</span>
+                    프로젝트 보기
+                  </button>
+                  <button class="action-btn secondary-action-btn manage-btn" @click="goToManagePage(project.projectId)">
                     <span class="btn-icon">⚙️</span>
                     관리
                   </button>
@@ -149,10 +161,20 @@
 
                 <!-- PM 권한이 없는 경우 (기본 액션) -->
                 <div v-else class="default-actions">
-                  <button class="action-btn view-btn" @click="viewProject(project.projectId)">
-                    <span class="btn-icon">👁️</span>
-                    프로젝트 보기
-                  </button>
+                  <!-- 완료된 프로젝트의 일반 멤버인 경우 -->
+                  <div v-if="!project.isPM && project.status === 'COMPLETED'" class="completed-member-actions">
+                    <button class="action-btn review-btn" @click="openReviewModal(project)">
+                      <span class="btn-icon">⭐</span>
+                      팀원 리뷰 작성
+                    </button>
+                  </div>
+                  <!-- 그 외의 경우 (PM이 아니며 완료되지 않은 프로젝트) -->
+                  <div v-else>
+                    <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
+                      <span class="btn-icon">👁️</span>
+                      프로젝트 보기
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -241,166 +263,136 @@
       </div>
     </div>
 
-    <!-- 팀원 리뷰 모달 -->
-    <div v-if="showTeamReviewModal" class="modal-overlay" @click="closeTeamReviewModal">
-      <div class="modal-container review-modal" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title">{{ selectedProject?.title }} - 팀원 리뷰</h3>
-          <button @click="closeTeamReviewModal" class="modal-close-button">
-            <span class="close-icon">✕</span>
-          </button>
-        </div>
-        
-        <div class="modal-body">
-          <div v-if="teamMembers.length > 0" class="team-members-list">
-            <div
-              v-for="member in teamMembers"
-              :key="member.id"
-              class="member-card"
-            >
-              <div class="member-header">
-                <div class="member-profile">
-                  <img :src="member.avatar" :alt="member.name" class="member-avatar" />
-                  <div class="member-info">
-                    <h4 class="member-name">{{ member.name }}</h4>
-                    <p class="member-role">{{ member.role }}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="review-section">
-                <div class="rating-section">
-                  <label>평점</label>
-                  <div class="star-rating">
-                    <button
-                      v-for="star in 5"
-                      :key="star"
-                      :class="['star-btn', { 'active': member.rating >= star }]"
-                      @click="setRating(member.id, star)"
-                    >
-                      <span class="star-emoji">⭐</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="comment-section">
-                  <label>리뷰 코멘트</label>
-                  <textarea
-                    v-model="member.reviewComment"
-                    placeholder="팀원에 대한 리뷰를 작성해주세요..."
-                    rows="3"
-                    class="review-textarea"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="review-actions">
-            <button class="submit-review-btn" @click="submitReviews">
-              <span class="btn-icon">✅</span>
-              리뷰 제출
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 새 팀원 리뷰 모달 -->
+    <team-review-modal
+      :show="showTeamReviewModal"
+      :project="selectedProject"
+      :members="membersForReview" 
+      @close="closeTeamReviewModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listProjects } from '@/api/projects';
-import { getProjectMembers } from '@/api/projectMember.js';
+import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
+import { useUserStore } from '@/stores/userStore';
+import { PART_OPTIONS } from '@/constants/parts';
+import { updateMemberStatus, getProjectMembers, getConfirmedProjectMembers } from '@/api/projectMember.js';
+import TeamReviewModal from '@/components/projectComponents/TeamReviewModal.vue';
 
 const router = useRouter()
+const userStore = useUserStore()
 
-// 반응형 데이터
-const isLoading = ref(true);
-const projects = ref([]); 
+// 반응형 상태
+const isLoading = ref(true)
+const projects = ref([])
 const selectedStatus = ref('all')
 const selectedRole = ref('all')
 const showApplicantsModal = ref(false)
-const showTeamReviewModal = ref(false)
+const showTeamReviewModal = ref(false) // 새 리뷰 모달 표시 상태
 const selectedProject = ref(null)
-const applicantsList = ref([]);
+const membersForReview = ref([]) // 리뷰할 멤버 목록을 저장할 ref
+const applicantsList = ref([])
 
 // 필터 옵션
 const statusOptions = [
-  { value: 'all', label: '전체', icon: '📋' },
-  { value: 'recruiting', label: '모집중', icon: '📢' },
+  { value: 'all',         label: '전체',   icon: '📋' },
+  { value: 'recruiting',  label: '모집중', icon: '📢' },
   { value: 'in-progress', label: '진행중', icon: '⚡' },
-  { value: 'completed', label: '완료', icon: '✅' },
-  { value: 'cancelled', label: '취소', icon: '❌' }
+  { value: 'completed',   label: '완료',   icon: '✅' },
+  { value: 'cancelled',   label: '취소',   icon: '❌' }
 ]
-
 const roleOptions = [
-  { value: 'all', label: '전체' },
-  { value: 'pm', label: 'PM만' },
+  { value: 'all',    label: '전체' },
+  { value: 'pm',     label: 'PM만' },
   { value: 'member', label: '팀원만' }
 ]
 
-// 팀원 샘플 데이터 (리뷰 모달용)
-const teamMembers = ref([
-  {
-    id: 1,
-    userId: 2,
-    name: '박디자이너',
-    role: 'UI/UX Designer',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    rating: 0,
-    reviewComment: ''
-  },
-  {
-    id: 2,
-    userId: 3,
-    name: '이백엔드',
-    role: 'Backend Developer', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    rating: 0,
-    reviewComment: ''
-  }
-])
+// 상태값 매핑
+const STATUS_FILTER_TO_ENUM = {
+  'recruiting':  'RECRUITING',
+  'in-progress': 'IN_PROGRESS',
+  'completed':   'COMPLETED',
+  'cancelled':   'CANCELLED'
+}
+const ENUM_TO_CLASS = {
+  'RECRUITING':  'recruiting',
+  'IN_PROGRESS': 'in-progress',
+  'COMPLETED':   'completed',
+  'CANCELLED':   'cancelled'
+}
+const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
 
-// API 호출
+// ===== 정규화 유틸 =====
+const toTechTags = (list) => {
+  if (!Array.isArray(list)) return []
+  return list.map(ts => (typeof ts === 'string' ? { techStackName: ts } : ts))
+}
+
+const normalizeProject = (p, currentUserId, isPM) => {
+  const projectId = p.projectId ?? p.id;
+  const teamLeaderId = p.teamLeaderId ?? p.leaderId ?? p.ownerId ?? (isPM ? currentUserId : null);
+  
+  return {
+    projectId,
+    title: p.title ?? '',
+    description: p.description ?? '',
+    status: p.status ?? 'RECRUITING',
+    startDate: p.startDate ?? null,
+    endDate: p.endDate ?? null,
+    recruitCount: p.recruitCount ?? 0,
+    techStacks: toTechTags(p.techStacks ?? []),
+    appliedCount: p.appliedCount ?? 0,
+    teamLeaderId,
+    isPM: teamLeaderId === currentUserId,
+    members: p.members ?? [], // 멤버 목록 추가
+  };
+};
+
+// ===== 데이터 로드 =====
 onMounted(async () => {
   try {
-    const response = await listProjects({ userId: 1 }); // Hardcoded userId 1
-    // Assuming the current user's ID for PM check is 1 (as per listProjects call)
-    const currentUserId = 1; 
+    const currentUserId = userStore.userId
+    if (!currentUserId) {
+      router.push('/login')
+      return
+    }
 
-    projects.value = response.data.map(project => ({
-      ...project,
-      isPM: project.teamLeaderId === currentUserId // Add isPM property
-    }));
-  } catch (error) {
-    console.error("내 프로젝트 목록을 불러오는데 실패했습니다:", error);
+    const [createdRes, appliedRes] = await Promise.all([
+      getProjectsCreatedByUser(currentUserId),
+      getAppliedProjectsByUser(currentUserId)
+    ])
+
+    const created = (createdRes.data || []).map(p => normalizeProject(p, currentUserId, true));
+    const applied = (appliedRes.data || []).map(a => normalizeProject(a.project || a, currentUserId, false));
+
+    const map = new Map()
+    for (const p of [...applied, ...created]) map.set(p.projectId, p)
+    projects.value = Array.from(map.values())
+
+  } catch (e) {
+    console.error('내 프로젝트/지원 프로젝트 로드 실패:', e)
+    projects.value = []
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
-// 계산된 속성
+// ===== 계산된 값 =====
 const totalProjects = computed(() => projects.value.length)
 const pmProjects = computed(() => projects.value.filter(p => p.isPM).length)
-const activeProjects = computed(() => projects.value.filter(p => p.status === 'in-progress' || p.status === 'RECRUITING').length)
+const activeProjects = computed(() =>
+    projects.value.filter(p => p.status === 'IN_PROGRESS' || p.status === 'RECRUITING').length
+)
 
 const filteredProjects = computed(() => {
   let filtered = projects.value
 
   if (selectedStatus.value !== 'all') {
-    // API의 상태값(대문자)과 필터의 상태값(소문자)을 일치시켜야 할 수 있습니다.
-    // 여기서는 필터 버튼의 value가 API 응답과 일치한다고 가정합니다.
-    const filterStatus = selectedStatus.value.toUpperCase();
-    if (selectedStatus.value === 'in-progress') filterStatus = 'IN_PROGRESS'; // 예시: 백엔드 상태값에 맞게 조정
-    if (selectedStatus.value === 'recruiting') filterStatus = 'RECRUITING';
-    if (selectedStatus.value === 'completed') filterStatus = 'COMPLETED';
-    if (selectedStatus.value === 'cancelled') filterStatus = 'CANCELLED';
-    
-    if (selectedStatus.value !== 'all') {
-      filtered = filtered.filter(p => p.status === filterStatus)
-    }
+    const want = STATUS_FILTER_TO_ENUM[selectedStatus.value]
+    if (want) filtered = filtered.filter(p => p.status === want)
   }
 
   if (selectedRole.value === 'pm') {
@@ -412,156 +404,112 @@ const filteredProjects = computed(() => {
   return filtered
 })
 
-import { PART_OPTIONS } from '@/constants/parts'; // <-- 이 줄을 추가합니다.
-
+// ===== 지원자 모달/정렬 =====
 const sortedApplicantsList = computed(() => {
-  // PENDING 상태를 먼저, 그 다음 ACCEPTED, REJECTED 순으로 정렬
-  const statusOrder = { PENDING: 1, ACCEPTED: 2, REJECTED: 3 };
-  return [...applicantsList.value].sort((a, b) => {
-    return statusOrder[a.status] - statusOrder[b.status];
-  });
-});
+  const order = { PENDING: 1, ACCEPTED: 2, REJECTED: 3 }
+  return [...applicantsList.value].sort((a, b) => (order[a.status] ?? 99) - (order[b.status] ?? 99))
+})
 
-// 메서드
-const getPartLabel = (partValue) => {
-  const part = PART_OPTIONS.find(option => option.value === partValue);
-  return part ? part.label : partValue;
-};
+// ===== 헬퍼 =====
+const setStatus  = (status) => { selectedStatus.value = status }
+const setRole    = (role)   => { selectedRole.value   = role }
 
-const setStatus = (status) => {
-  selectedStatus.value = status
+const getStatusText = (statusEnum) => {
+  const map = { RECRUITING: '모집중', IN_PROGRESS: '진행중', COMPLETED: '완료', CANCELLED: '취소됨' }
+  return map[statusEnum] ?? statusEnum
 }
-
-const setRole = (role) => {
-  selectedRole.value = role
-}
-
-const getStatusText = (status) => {
-  const statusMap = {
-    RECRUITING: '모집중',
-    'IN_PROGRESS': '진행중',
-    COMPLETED: '완료',
-    CANCELLED: '취소됨'
+const getStatusIcon = (statusEnum) => {
+  const map = {
+    RECRUITING:  'bi bi-megaphone-fill',
+    IN_PROGRESS: 'bi bi-lightning-charge-fill',
+    COMPLETED:   'bi bi-check-circle-fill',
+    CANCELLED:   'bi bi-x-circle-fill'
   }
-  return statusMap[status] || status
-}
-
-const getStatusIcon = (status) => {
-  const iconMap = {
-    RECRUITING: 'bi bi-megaphone-fill',
-    'IN_PROGRESS': 'bi bi-lightning-charge-fill',
-    COMPLETED: 'bi bi-check-circle-fill',
-    CANCELLED: 'bi bi-x-circle-fill'
-  }
-  return iconMap[status] || 'bi bi-question-circle-fill'
+  return map[statusEnum] ?? 'bi bi-question-circle-fill'
 }
 
 const formatDateRange = (startDate, endDate) => {
-  const start = new Date(startDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-  const end = new Date(endDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-  return `${start} ~ ${end}`
+  if (!startDate && !endDate) return '-'
+  const opt = { month: 'short', day: 'numeric' }
+  const s = startDate ? new Date(startDate).toLocaleDateString('ko-KR', opt) : '?'
+  const e = endDate   ? new Date(endDate).toLocaleDateString('ko-KR', opt)   : '?'
+  return `${s} ~ ${e}`
 }
 
-const viewProject = (projectId) => {
-  router.push(`/projects/${projectId}`)
+const getPartLabel = (partValue) => {
+  const found = PART_OPTIONS.find(o => o.value === partValue)
+  return found ? found.label : partValue
 }
+
+const viewProject = (projectId) => router.push(`/projects/${projectId}`)
 
 const showApplicants = async (projectId) => {
   selectedProject.value = projects.value.find(p => p.projectId === projectId)
   try {
-    // 팀장 ID는 현재 로그인한 사용자 ID(하드코딩된 1)를 사용합니다.
-    const response = await getProjectMembers(projectId, 1);
-    applicantsList.value = response.data;
+    const response = await getProjectMembers(projectId, userStore.userId)
+    applicantsList.value = response.data
     showApplicantsModal.value = true
-  } catch (error) {
-    console.error("지원자 목록을 불러오는데 실패했습니다:", error);
-    alert("지원자 목록을 불러오는데 실패했습니다.");
+  } catch (e) {
+    console.error('지원자 목록 로드 실패:', e)
+    alert('지원자 목록을 불러오는데 실패했습니다.')
   }
 }
-
 const closeApplicantsModal = () => {
   showApplicantsModal.value = false
   selectedProject.value = null
-  applicantsList.value = []; // 모달이 닫힐 때 목록 초기화
+  applicantsList.value = []
 }
 
-const showTeamReview = (projectId) => {
-  selectedProject.value = projects.value.find(p => p.projectId === projectId)
-  showTeamReviewModal.value = true
-}
+const openReviewModal = async (project) => {
+  try {
+    const response = await getConfirmedProjectMembers(project.projectId);
+    // 확정된 멤버만 반환하므로 별도의 필터링 필요 없음
+    membersForReview.value = response.data.filter(member => member.userId !== userStore.userId);
+    
+    selectedProject.value = project;
+    showTeamReviewModal.value = true;
+  } catch (error) {
+    console.error('팀 멤버 정보를 가져오는데 실패했습니다:', error);
+    alert('팀 멤버 정보를 가져오는데 실패했습니다.');
+  }
+};
 
 const closeTeamReviewModal = () => {
-  showTeamReviewModal.value = false
-  selectedProject.value = null
-  teamMembers.value.forEach(member => {
-    member.rating = 0
-    member.reviewComment= ''
-  })
-}
+  showTeamReviewModal.value = false;
+  selectedProject.value = null;
+};
 
-const viewApplicantPortfolio = (userId) => {
-  router.push(`/portfolio/${userId}`)
-}
+const viewApplicantPortfolio = (userId) => router.push(`/portfolio/${userId}`)
 
-import { updateMemberStatus } from '@/api/projectMember.js'; // <-- 이 줄을 추가합니다.
-
-// ... (기존 코드) ...
-
+// PM 전용 액션
 const acceptApplicant = async (applicantId) => {
   try {
-    const projectId = selectedProject.value?.projectId;
-    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
-    
-    await updateMemberStatus(projectId, applicantId, 1, "ACCEPTED");
-    alert("지원자가 성공적으로 수락되었습니다.");
-    
-    // 로컬 목록 업데이트
-    const applicant = applicantsList.value.find(a => a.id === applicantId);
-    if (applicant) {
-      applicant.status = "ACCEPTED"; // 상태 업데이트
-    }
-    // 목록 정렬은 computed 속성에서 처리
-  } catch (error) {
-    console.error("지원자 수락 실패:", error);
-    alert("지원자 수락에 실패했습니다.");
+    const projectId = selectedProject.value?.projectId
+    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    await updateMemberStatus(projectId, applicantId, userStore.userId, 'ACCEPTED')
+    alert('지원자가 성공적으로 수락되었습니다.')
+    const a = applicantsList.value.find(x => x.id === applicantId)
+    if (a) a.status = 'ACCEPTED'
+  } catch (e) {
+    console.error('지원자 수락 실패:', e)
+    alert('지원자 수락에 실패했습니다.')
   }
 }
-
 const rejectApplicant = async (applicantId) => {
   try {
-    const projectId = selectedProject.value?.projectId;
-    if (!projectId) { alert("프로젝트 ID를 찾을 수 없습니다."); return; }
-
-    await updateMemberStatus(projectId, applicantId, 1, "REJECTED");
-    alert("지원자가 성공적으로 거절되었습니다.");
-
-    // 로컬 목록 업데이트
-    const applicant = applicantsList.value.find(a => a.id === applicantId);
-    if (applicant) {
-      applicant.status = "REJECTED"; // 상태 업데이트
-    }
-    // 목록 정렬은 computed 속성에서 처리
-  } catch (error) {
-    console.error("지원자 거절 실패:", error);
-    alert("지원자 거절에 실패했습니다.");
+    const projectId = selectedProject.value?.projectId
+    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    await updateMemberStatus(projectId, applicantId, userStore.userId, 'REJECTED')
+    alert('지원자가 성공적으로 거절되었습니다.')
+    const a = applicantsList.value.find(x => x.id === applicantId)
+    if (a) a.status = 'REJECTED'
+  } catch (e) {
+    console.error('지원자 거절 실패:', e)
+    alert('지원자 거절에 실패했습니다.')
   }
 }
 
-const setRating = (memberId, rating) => {
-  const member = teamMembers.value.find(m => m.id === memberId)
-  if (member) {
-    member.rating = rating
-  }
-}
-
-const submitReviews = () => {
-  console.log('리뷰 제출:', teamMembers.value)
-  closeTeamReviewModal()
-}
-
-const goToManagePage = (projectId) => {
-  router.push({ name: 'ProjectManage', params: { projectId: projectId } });
-};
+const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', params: { projectId } })
 </script>
 
 <style scoped>
@@ -894,7 +842,7 @@ const goToManagePage = (projectId) => {
 .default-actions {
   display: flex;
   gap: 12px;
-  justify-content: space-between;
+  justify-content: flex-end; /* 버튼들을 오른쪽 끝으로 정렬 */
 }
 
 .action-btn {
@@ -908,6 +856,12 @@ const goToManagePage = (projectId) => {
   align-items: center;
   gap: 6px;
   border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
 }
 
 .btn-icon {
@@ -921,13 +875,13 @@ const goToManagePage = (projectId) => {
 
 .applicants-btn:hover:not(:disabled) {
   background: #1976D2;
-  transform: translateY(-1px);
 }
 
 .applicants-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .view-btn {
@@ -948,8 +902,105 @@ const goToManagePage = (projectId) => {
 
 .review-btn:hover {
   background: #F57C00;
-  transform: translateY(-1px);
 }
+
+.manage-btn {
+  background: #607D8B; /* Greyish blue */
+  color: #fff;
+}
+
+.manage-btn:hover {
+  background: #455A64;
+}
+
+.review-btn:hover {
+  background: #F57C00;
+}
+
+/* 새로운 보조 액션 버튼 스타일 */
+.secondary-action-btn {
+  background: #f0f2f5; /* 밝은 회색 배경 */
+  color: #555; /* 어두운 글자색 */
+  border: 1px solid #e0e0e0; /* 옅은 테두리 */
+}
+
+.secondary-action-btn:hover {
+  background: #e0e2e5; /* 호버 시 더 어둡게 */
+  color: #333;
+  border-color: #d0d0d0;
+}
+
+.manage-btn {
+  /* 기존 manage-btn 스타일을 secondary-action-btn으로 대체 */
+}
+
+.view-btn {
+  /* 기존 view-btn 스타일을 secondary-action-btn으로 대체 */
+}
+
+.action-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
+}
+
+.action-btn:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
+}
+
+.btn-icon {
+  font-size: 14px;
+}
+
+.applicants-btn {
+  background: #2196F3;
+  color: #fff;
+}
+
+.applicants-btn:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.applicants-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.view-btn {
+  /* secondary-action-btn으로 대체 */
+}
+
+.review-btn {
+  background: #FF9800;
+  color: #fff;
+}
+
+.review-btn:hover {
+  background: #F57C00;
+}
+
+.manage-btn {
+  /* secondary-action-btn으로 대체 */
+}
+
+.completed-member-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  width: 100%; /* 부모 너비에 맞춤 */
+}
+
+/* 빈 상태 */
 
 /* 빈 상태 */
 .empty-state {

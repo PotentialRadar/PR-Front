@@ -16,15 +16,10 @@
     </div>
 
     <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">{{ isEditMode ? '프로젝트 수정' : '새로운 프로젝트' }}</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">{{ isEditMode ? '프로젝트 정보를 수정합니다.' : '프로젝트 정보를 입력하여 맞춤형 개발자를 찾아보세요' }}</p>
-      </div>
-    </div>
+    <PageHeader 
+      :title="isEditMode ? '프로젝트 수정' : '새로운 프로젝트'"
+      :subtitle="isEditMode ? '프로젝트 정보를 수정합니다.' : '프로젝트 정보를 입력하여 맞춤형 개발자를 찾아보세요'"
+    />
 
     <div class="form-container">
       <div class="form-content">
@@ -217,17 +212,18 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import PageHeader from '@/components/common/PageHeader.vue';
 import { useFormValidation } from '@/composables/useFormValidation.js';
 import { getProject, createProject, updateProject, uploadProjectFile } from '@/api/projects';
 import { PART_OPTIONS } from '@/constants/parts';
 import TechStackSelector from '@/components/common/TechStackSelector.vue';
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue';
 
-const DEV_FORCE_USER_ID = 1;
+// const DEV_FORCE_USER_ID = 1; // Removed or commented out
 
 export default {
   name: 'ProjectFormPage', // Renamed for clarity
-  components: { TechStackSelector, FileUploadArea },
+  components: { TechStackSelector, FileUploadArea, PageHeader },
   props: {
     projectId: { // Accept projectId as a prop
       type: String,
@@ -286,13 +282,20 @@ export default {
     });
 
     const validationSchema = {
-      // ... (validation schema remains the same)
+      projectTitle: ['required', { minLength: 5 }, { maxLength: 100 }],
+      projectDescription: ['required', { minLength: 10 }],
+      startDate: ['required'],
+      endDate: ['required'],
+      parts: ['parts'],
+      techStack: ['techStack'],
+      recruitDeadline: ['required'],
+      files: []
     };
 
     
 
     const submitForm = async () => {
-      const uid = DEV_FORCE_USER_ID ?? userStore.userId;
+      const uid = userStore.userId; // Directly use userStore.userId
       if (!uid && !isEditMode.value) { // User ID needed only for creation
         alert('로그인 후에 프로젝트를 등록할 수 있습니다.');
         router.push('/login');
@@ -314,8 +317,19 @@ export default {
 
         
 
-        const techStacks = formData.techStack.map(ts => ({ techStackName: ts.techStackName || ts.name, recruitCount: 1 }));
-        const parts = partRows.value.filter(r => r.part && Number(r.count) > 0).map(r => ({ partName: r.part, recruitCount: Number(r.count) }));
+        const techStacks = formData.techStack
+          .filter(s => s.techStackName && s.techStackName.trim())
+          .map(s => ({
+            techStackName: s.techStackName.trim(),
+            recruitCount: Number(s.recruitCount ?? 0)
+          }));
+
+        const parts = partRows.value
+          .filter(r => r.part && r.part.trim() && Number(r.count) > 0)
+          .map(r => ({
+            partName: r.part.trim(),
+            recruitCount: Number(r.count ?? 0)
+          }));
 
         const projectData = {
           title: formData.projectTitle,
@@ -369,7 +383,7 @@ export default {
   display: flex;
   width: 100%;
   min-height: 100vh;
-  padding: 100px 20px 100px 20px;
+  padding: 68px 20px 100px 20px;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
@@ -437,7 +451,7 @@ export default {
 
 .page-subtitle {
   font-size: 18px;
-  color: var(--color-grey-50, #808080);
+  color: var(#8e8e8e);
   margin: 0;
   font-weight: 400;
   max-width: 600px;
@@ -739,7 +753,7 @@ export default {
 }
 
 .submit-button.disabled {
-  background: var(--color-grey-75, #C0C0C0);
+  background: var(#C0C0C0);
   cursor: not-allowed;
   box-shadow: none;
   transform: none;

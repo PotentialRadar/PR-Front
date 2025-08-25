@@ -15,10 +15,12 @@
         <div class="view-count-display">
           👀 {{ project.viewCount }}
         </div>
-        <button class="favorite-button" @click="toggleFavorite" :class="{ 'favorited': isFavorited }">
-          <span v-if="isFavorited">❤️</span>
-          <span v-else>🤍</span>
-        </button>
+        <div class="like-container">
+          <button class="like-button" @click.stop="handleLikeToggle">
+            <span class="heart-icon" :class="{ 'liked': isLiked }">{{ isLiked ? '❤️' : '🤍' }}</span>
+          </button>
+          <span class="like-count">{{ likeCount }}</span>
+        </div>
       </div>
     </div>
 
@@ -86,82 +88,123 @@
     </div>
 
     <div class="bottom-section">
-      <button class="apply-button" @click="onApplyClick">
-        <i class="bi bi-send"></i>
-        지원하기
-      </button>
-      <button class="detail-button" @click="goToDetail">
-        상세보기
-      </button>
+      <button class="detail-button" @click="goToDetail">상세보기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="project.status !== '마감'">지원하기</button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProjectCard',
-  props: {
-    project: {
-      type: Object,
-      required: true
-    }
-  },
-  mounted() {
-    console.log('project props in card:', this.project)
-  },
-  methods: {
-    toggleFavorite() {
-      this.isFavorited = !this.isFavorited
-    },
-    isUrgent(deadline) {
-      if (!deadline) return false
-      const today = new Date();
-      const end = new Date(deadline);
-      const diff = (end - today) / (1000 * 60 * 60 * 24);
-      return diff <= 7 && diff >= 0;
-    },
-    formatDeadline(deadline) {
-      if (!deadline) return '-';
-      const today = new Date();
-      const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
-      if (dday >= 0) return `D-${dday}`;
-      return '마감';
-    },
-    goToDetail() {
-      console.log('상세보기 클릭됨! project:', this.project)
-      if (typeof this.project.viewCount === 'number') {
-        this.project.viewCount += 1
-      } else {
-        this.project.viewCount = 1
-      }
-      this.$router.push({
-        name: 'ProjectDetail',
-        params: { id: this.project.projectId || this.project.id }
-      })
-    },
-    onApplyClick() {
-      // 부모에게 프로젝트 정보 emit!
-      this.$emit('apply', this.project)
-    }
-  },
-  data() {
-    return {
-      isFavorited: false
-    }
-  },
-  computed: {
-    displayDuration() {
-      if (!this.project.startDate || !this.project.endDate) return '-';
-      const start = new Date(this.project.startDate);
-      const end = new Date(this.project.endDate);
-      if (isNaN(start) || isNaN(end)) return '-';
-      const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      if (diff < 7) return `${diff}일`;
-      if (diff < 30) return `${Math.round(diff / 7)}주`;
-      return `${Math.round(diff / 30)}개월`;
-    }
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { toggleLike, isLiked as checkIsLiked } from '@/api/likes.js';
+import { useUserStore } from '@/stores/userStore.js';
+
+const props = defineProps({
+  project: {
+    type: Object,
+    required: true
   }
-}
+});
+
+const emit = defineEmits(['apply', 'like-updated']);
+const router = useRouter();
+const userStore = useUserStore();
+
+const isLiked = ref(false);
+const likeCount = ref(props.project.likeCount || 0);
+
+const fetchLikeStatus = async () => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] fetchLikeStatus 호출. 현재 userId: ${userStore.userId}`);
+
+  if (userStore.userId && projectId) {
+    try {
+      console.log(`[ProjectCard #${projectId}] API 요청 전송: checkIsLiked('PROJECT', ${projectId})`);
+      const response = await checkIsLiked('PROJECT', projectId);
+      console.log(`[ProjectCard #${projectId}] API 응답 받음:`, response);
+      isLiked.value = response.isLiked;
+    } catch (error) {
+      console.error(`[ProjectCard #${projectId}] checkIsLiked API 호출 실패:`, error);
+      isLiked.value = false;
+    }
+  } else {
+    console.log(`[ProjectCard #${projectId}] userId 또는 projectId가 없어서 API 호출을 건너뜁니다.`);
+    isLiked.value = false;
+  }
+};
+
+onMounted(() => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] 컴포넌트 마운트됨.`);
+  likeCount.value = props.project.likeCount || 0;
+  fetchLikeStatus();
+});
+
+watch(() => userStore.userId, (newUserId, oldUserId) => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log(`[ProjectCard #${projectId}] userId 변경 감지: ${oldUserId} -> ${newUserId}`);
+  if (newUserId) {
+    fetchLikeStatus();
+  }
+});
+
+const handleLikeToggle = async () => {
+  if (!userStore.isLoggedIn) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
+  try {
+    const projectId = props.project.projectId || props.project.id;
+    const response = await toggleLike('PROJECT', projectId);
+    isLiked.value = response.liked;
+    likeCount.value = response.likeCount;
+    emit('like-updated', { projectId, liked: response.liked, likeCount: response.likeCount });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    alert('좋아요 처리에 실패했습니다.');
+  }
+};
+
+const isUrgent = (deadline) => {
+  if (!deadline) return false;
+  const today = new Date();
+  const end = new Date(deadline);
+  const diff = (end - today) / (1000 * 60 * 60 * 24);
+  return diff <= 7 && diff >= 0;
+};
+
+const formatDeadline = (deadline) => {
+  if (!deadline) return '-';
+  const today = new Date();
+  const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24));
+  if (dday >= 0) return `D-${dday}`;
+  return '마감';
+};
+
+const goToDetail = () => {
+  router.push({
+    name: 'ProjectDetail',
+    params: { id: props.project.projectId || props.project.id }
+  });
+};
+
+const onApplyClick = () => {
+  emit('apply', props.project);
+};
+
+const displayDuration = computed(() => {
+  if (!props.project.startDate || !props.project.endDate) return '-';
+  const start = new Date(props.project.startDate);
+  const end = new Date(props.project.endDate);
+  if (isNaN(start) || isNaN(end)) return '-';
+  const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  if (diff < 7) return `${diff}일`;
+  if (diff < 30) return `${Math.round(diff / 7)}주`;
+  return `${Math.round(diff / 30)}개월`;
+});
+
 </script>
 
 <style scoped>
@@ -260,21 +303,6 @@ export default {
   flex-shrink: 0;
 }
 
-.favorite-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #FFF;
-  border: 2px solid #E0E0E0;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #757575;
-  font-size: 16px;
-}
-
 .view-count-display {
   font-size: 14px;
   color: #666;
@@ -284,21 +312,58 @@ export default {
   gap: 4px;
 }
 
-.favorite-button:hover {
-  background: rgba(76, 175, 80, 0.1);
-  border-color: #4CAF50;
-  color: #4CAF50;
-  transform: scale(1.1);
+.like-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.favorite-button.favorited {
-  background: #FF5722;
-  border-color: #FF5722;
-  color: #FFF;
+.like-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.favorite-button.favorited:hover {
-  background: #E64A19;
+.heart-icon {
+  font-size: 22px;
+  color: #adb5bd;
+  transition: all 0.2s ease-in-out;
+}
+
+.heart-icon.liked {
+  color: #e74c3c;
+  animation: heart-pop 0.3s ease;
+}
+
+.like-button:hover .heart-icon.liked {
+  color: #c0392b;
+}
+
+.like-button:hover .heart-icon:not(.liked) {
+  transform: scale(1.15);
+  color: #ff8a80;
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.like-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
 }
 
 .description-section {
@@ -413,41 +478,45 @@ export default {
 
 .bottom-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: auto;
 }
 
-.detail-button {
+.detail-button, .apply-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: 90%;
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-  color: #FFF;
-  border: none;
+  padding: 14px 20px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.detail-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
+.detail-button {
+  flex: 6;
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.detail-button:hover {
+  background-color: #f4f6f8; /* 더 연한 색으로 변경 */
+}
+
+.apply-button {
+  flex: 1;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: #FFF;
+  border: none;
+}
+
+.apply-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .detail-button:hover::before {
@@ -528,12 +597,6 @@ export default {
   .self-tag {
     font-size: 11px;
     padding: 4px 8px;
-  }
-
-  .favorite-button {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
   }
 }
 </style>

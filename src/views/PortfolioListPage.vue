@@ -9,35 +9,22 @@
     </div>
     
     <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">포트폴리오 갤러리</h1>
-          <div class="title-underline"></div>
-        </div>
-        <p class="page-subtitle">다양한 분야의 개발자들과 만나보세요</p>
-        
-        <div class="stats-section" v-if="totalPortfolios > 0">
-          <div class="stat-item">
-            <div class="stat-number">{{ totalPortfolios }}+</div>
-            <div class="stat-label">포트폴리오</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ categories.length - 1 }}</div>
-            <div class="stat-label">기술 분야</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-number">{{ currentPageItems }}</div>
-            <div class="stat-label">활성 개발자</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PageHeader 
+      title="포트폴리오 갤러리"
+      subtitle="다양한 분야의 크리에이터들과 만나보세요"
+      :showStats="true"
+      :stats="[
+        { number: totalPortfolios + '+', label: '포트폴리오' },
+        { number: (categories.length - 1).toString(), label: '기술 분야' },
+        { number: currentPageItems.toString(), label: '활성 개발자' }
+      ]"
+    />
 
     <div class="container">
       <div class="content-wrapper">
+        <!-- 검색 섹션 -->
+        <EnhancedSearchSection type="portfolio" @perform-search="handleSearch" />
+        
         <!-- 필터 섹션 -->
         <div class="filters-section">
           <div class="filters-card">
@@ -92,7 +79,7 @@
         <div class="portfolios-section">
           <div class="section-header">
             <h2 class="section-title">
-              {{ totalPortfolios }}개의 포트폴리오
+              {{ totalPortfolios || portfolios.length }}개의 포트폴리오
             </h2>
             <div class="sort-options">
               <select v-model="sortBy" @change="loadPortfolios" class="sort-select">
@@ -103,17 +90,11 @@
             </div>
           </div>
           
-          <!-- 로딩 상태 -->
-          <div v-if="loading" class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>포트폴리오를 불러오는 중...</p>
-          </div>
-          
           <!-- 포트폴리오 그리드 -->
-          <div v-else-if="portfolios.length > 0" class="portfolios-grid">
+          <div v-if="!loading && portfolios.length > 0" class="portfolios-grid">
             <div 
               v-for="portfolio in portfolios" 
-              :key="portfolio.userId" 
+              :key="portfolio.userId || portfolio.id"
               class="portfolio-card"
               @click="viewPortfolio(portfolio.userId)"
             >
@@ -191,8 +172,7 @@
             </div>
           </div>
           
-          <!-- 빈 상태 -->
-          <div v-else class="empty-state">
+          <div v-else-if="!loading && portfolios.length === 0" class="empty-state">
             <div class="empty-icon">
               <i class="bi bi-search"></i>
             </div>
@@ -208,7 +188,7 @@
           <div v-if="totalPages > 1" class="pagination-section">
             <div class="pagination">
               <button 
-                :disabled="currentPage === 0" 
+                :disabled="currentPage === 0 || currentPage === 1" 
                 @click="goToPage(currentPage - 1)"
                 class="pagination-btn prev-btn"
               >
@@ -220,15 +200,15 @@
                 <button
                   v-for="page in visiblePages"
                   :key="page"
-                  :class="['pagination-number', { 'active': page - 1 === currentPage }]"
-                  @click="goToPage(page - 1)"
+                  :class="['pagination-number', { 'active': page === currentPage }]"
+                  @click="goToPage(page)"
                 >
                   {{ page }}
                 </button>
               </div>
               
               <button 
-                :disabled="currentPage >= totalPages - 1" 
+                :disabled="currentPage >= totalPages" 
                 @click="goToPage(currentPage + 1)"
                 class="pagination-btn next-btn"
               >
@@ -238,8 +218,14 @@
             </div>
             
             <div class="pagination-info">
-              {{ currentPage + 1 }} / {{ totalPages }} 페이지 (총 {{ totalPortfolios }}개)
+              {{ currentPage }} / {{ totalPages }} 페이지 (총 {{ totalPortfolios || portfolios.length }}개)
             </div>
+          </div>
+          
+          <!-- 로딩 상태 -->
+          <div v-if="loading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>포트폴리오를 검색하는 중...</p>
           </div>
         </div>
       </div>
@@ -250,21 +236,32 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import PageHeader from '@/components/common/PageHeader.vue'
+import EnhancedSearchSection from '@/components/projectComponents/EnhancedSearchSection.vue'
 import { portfolioApi } from '@/api/portfolio.js'
+import { searchUsers } from '@/api/search'
+import { 
+  getOverallStats
+} from '@/components/data/portfolioData.js'
 
 const router = useRouter()
 
 // 반응형 데이터
 const portfolios = ref([])
 const loading = ref(false)
+const error = ref(null)
 const selectedCategory = ref('전체')
 const selectedExperience = ref('')
 const searchQuery = ref('')
 const sortBy = ref('reputation')
-const currentPage = ref(0)
-const totalPages = ref(0)
+const currentPage = ref(1)
+const totalPages = ref(1)
 const totalPortfolios = ref(0)
 const pageSize = ref(12)
+
+// 검색 상태
+const currentSearchParams = ref({})
+const isSearchMode = ref(false)
 
 // 카테고리 및 옵션 데이터
 const categories = ['전체', 'FRONTEND', 'BACKEND', 'DEVOPS', 'DESIGN']
@@ -276,6 +273,9 @@ const experienceOptions = [
   { value: 'SENIOR', label: '시니어' },
   { value: 'EXPERT', label: '전문가' }
 ]
+
+// 데이터 로드
+const overallStats = getOverallStats()
 
 // 계산된 속성들
 const currentPageItems = computed(() => portfolios.value.length)
@@ -295,33 +295,79 @@ const visiblePages = computed(() => {
 const loadPortfolios = async () => {
   loading.value = true
   try {
-    const params = {
-      page: currentPage.value,
-      size: pageSize.value,
-      sortBy: sortBy.value
+    if (portfolioApi && portfolioApi.getPublicPortfolios) {
+      // 기존 API 사용
+      const params = {
+        page: currentPage.value - 1,
+        size: pageSize.value,
+        sortBy: sortBy.value
+      }
+      
+      if (selectedCategory.value && selectedCategory.value !== '전체') {
+        params.techPart = selectedCategory.value
+      }
+      
+      if (selectedExperience.value) {
+        params.experienceRange = selectedExperience.value
+      }
+      
+      if (searchQuery.value.trim()) {
+        params.keyword = searchQuery.value.trim()
+      }
+      
+      const response = await portfolioApi.getPublicPortfolios(params)
+      const data = response.data
+      
+      portfolios.value = data.portfolios
+      totalPages.value = data.totalPages
+      totalPortfolios.value = data.totalElements
+    } else {
+      // 대체 API 사용
+      await loadInitialData()
     }
-    
-    if (selectedCategory.value && selectedCategory.value !== '전체') {
-      params.techPart = selectedCategory.value
-    }
-    
-    if (selectedExperience.value) {
-      params.experienceRange = selectedExperience.value
-    }
-    
-    if (searchQuery.value.trim()) {
-      params.keyword = searchQuery.value.trim()
-    }
-    
-    const response = await portfolioApi.getPublicPortfolios(params)
-    const data = response.data
-    
-    portfolios.value = data.portfolios
-    totalPages.value = data.totalPages
-    totalPortfolios.value = data.totalElements
-    
   } catch (error) {
     console.error('포트폴리오 목록 조회 실패:', error)
+    await loadInitialData() // fallback
+  } finally {
+    loading.value = false
+  }
+}
+
+// 초기 데이터 로드 함수
+const loadInitialData = async () => {
+  loading.value = true
+  try {
+    const result = await searchUsers({
+      page: currentPage.value - 1,
+      size: pageSize.value
+    })
+    
+    portfolios.value = result.content?.map(user => ({
+      userId: user.userId,
+      id: user.userId,
+      nickname: user.nickname || `User ${user.userId}`,
+      name: user.nickname || `User ${user.userId}`,
+      jobTitle: user.techParts?.join(', ') || '개발자',
+      techPartName: user.techParts?.[0] || 'General',
+      category: user.techParts?.[0] || 'General',
+      skills: user.techStacks || [],
+      profileImage: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      isLiked: false,
+      experienceRange: user.experienceRange,
+      bio: user.bio || '',
+      projectCount: user.projectCount || 0,
+      techStackCount: user.techStackCount || user.techStacks?.length || 0,
+      reviewCount: user.reviewCount || 0,
+      reputationScore: user.reputationScore || 0
+    })) || []
+    
+    totalPages.value = result.totalPages || 1
+    totalPortfolios.value = result.totalElements || result.content?.length || 0
+    console.log('포트폴리오 데이터 로드 완료:', portfolios.value)
+  } catch (error) {
+    console.error('포트폴리오 로드 실패:', error)
+    error.value = '포트폴리오를 불러오는 중 오류가 발생했습니다.'
     portfolios.value = []
   } finally {
     loading.value = false
@@ -330,18 +376,18 @@ const loadPortfolios = async () => {
 
 const setCategory = (category) => {
   selectedCategory.value = category
-  currentPage.value = 0
+  currentPage.value = 1
   loadPortfolios()
 }
 
 const setExperience = (experience) => {
   selectedExperience.value = experience
-  currentPage.value = 0
+  currentPage.value = 1
   loadPortfolios()
 }
 
 const searchPortfolios = () => {
-  currentPage.value = 0
+  currentPage.value = 1
   loadPortfolios()
 }
 
@@ -350,17 +396,78 @@ const clearSearch = () => {
   searchPortfolios()
 }
 
+// 검색 처리
+const handleSearch = async (searchParams) => {
+  currentSearchParams.value = searchParams
+  isSearchMode.value = Object.values(searchParams).some(value => value !== null && value !== undefined)
+  currentPage.value = 1
+  
+  if (isSearchMode.value) {
+    await performSearch(searchParams)
+  } else {
+    // 필터가 모두 제거된 경우 초기 데이터 로드
+    await loadInitialData()
+  }
+}
+
+const performSearch = async (searchParams) => {
+  loading.value = true
+  try {
+    const result = await searchUsers({
+      ...searchParams,
+      page: currentPage.value - 1, // API는 0부터 시작
+      size: pageSize.value
+    })
+    
+    portfolios.value = result.content?.map(user => ({
+      userId: user.userId,
+      id: user.userId,
+      nickname: user.nickname || `User ${user.userId}`,
+      name: user.nickname || `User ${user.userId}`,
+      jobTitle: user.techParts?.join(', ') || '개발자',
+      techPartName: user.techParts?.[0] || 'General',
+      category: user.techParts?.[0] || 'General',
+      skills: user.techStacks || [],
+      profileImage: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      isLiked: false,
+      experienceRange: user.experienceRange,
+      bio: user.bio || '',
+      projectCount: user.projectCount || 0,
+      techStackCount: user.techStackCount || user.techStacks?.length || 0,
+      reviewCount: user.reviewCount || 0,
+      reputationScore: user.reputationScore || 0
+    })) || []
+    
+    totalPages.value = result.totalPages || 1
+    totalPortfolios.value = result.totalElements || result.content?.length || 0
+    console.log('검색 결과:', result)
+  } catch (error) {
+    console.error('검색 실패:', error)
+    error.value = '검색 중 오류가 발생했습니다.'
+    portfolios.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
 const resetFilters = () => {
   selectedCategory.value = '전체'
   selectedExperience.value = ''
   searchQuery.value = ''
-  currentPage.value = 0
-  loadPortfolios()
+  currentSearchParams.value = {}
+  isSearchMode.value = false
+  currentPage.value = 1
+  loadInitialData()
 }
 
 const goToPage = (page) => {
   currentPage.value = page
-  loadPortfolios()
+  if (isSearchMode.value) {
+    performSearch(currentSearchParams.value)
+  } else {
+    loadPortfolios()
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -383,20 +490,25 @@ const handleImageError = (event) => {
 }
 
 // 생명주기 및 감시자
-onMounted(() => {
-  loadPortfolios()
+onMounted(async () => {
+  await loadPortfolios()
 })
 
 // sortBy 변경 감시
 watch(sortBy, () => {
-  currentPage.value = 0
-  loadPortfolios()
+  currentPage.value = 1
+  if (isSearchMode.value) {
+    performSearch(currentSearchParams.value)
+  } else {
+    loadPortfolios()
+  }
 })
 </script>
 
 <style scoped>
 .portfolio-list {
   min-height: 100vh;
+  padding-top: 68px;
   background: linear-gradient(135deg, #f8fffe 0%, #f0f9ff 50%, #ecfdf5 100%);
   position: relative;
   overflow-x: hidden;
@@ -501,7 +613,7 @@ watch(sortBy, () => {
 }
 
 .page-title {
-  font-size: 48px;
+  font-size: 42px;
   font-weight: 900;
   color: #262626;
   margin: 0;
@@ -1120,6 +1232,37 @@ watch(sortBy, () => {
   background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+/* 로딩 상태 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #666;
+  font-size: 16px;
+  margin: 0;
 }
 
 /* 반응형 디자인 */

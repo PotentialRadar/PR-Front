@@ -30,8 +30,8 @@
           <template v-else>
             <div class="header-section">
               <ProjectHeader :project="project" />
-              <!-- 지원하기 버튼 추가 -->
-              <div class="apply-button-container">
+              <!-- 지원하기 버튼 -->
+              <div class="action-button-container">
                 <button
                   class="apply-button"
                   @click="openApplyModal"
@@ -69,8 +69,8 @@
                 />
               </div>
               
-              <div v-if="activeTab === 'comment'" id="comment-section">
-                <ProjectComment :projectId="projectId" />
+              <div v-if="activeTab === 'comment' && project" id="comment-section">
+                <ProjectComment :projectId="projectId" :projectOwnerId="project.teamLeaderId" />
               </div>
             </div>
           </div>
@@ -90,6 +90,7 @@
       @portfolio-settings="goToPortfolioSettings"
     />
 
+
     <!-- 지원 완료 토스트 메시지 -->
     <div
       v-if="showSuccessToast"
@@ -107,6 +108,7 @@
       <span class="toast-icon">❌</span>
       지원에 실패했습니다. 다시 시도해주세요.
     </div>
+
   </div>
 </template>
 
@@ -129,46 +131,68 @@ import { applyProject } from '@/api/projectMember';
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const projectId = ref(Number(route.params.id));
+const projectId = computed(() => Number(route.params.id));
 
 const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
 
-// 프로젝트 소유자 여부 확인
-const isProjectOwner = computed(() => {
-  if (!project.value || !userStore.isLoggedIn || !userStore.userId) {
-    return false;
-  }
-  // 프로젝트의 작성자 ID와 현재 사용자 ID 비교
-  return project.value.author?.userId === userStore.userId || 
-         project.value.createdBy === userStore.userId;
-});
+// 프로젝트 소유자 여부는 항상 false (팀원 초대 기능 제거)
+const isProjectOwner = computed(() => false);
 
 const load = async () => {
+  if (isNaN(projectId.value)) {
+    console.error('Invalid project ID from route:', route.params.id);
+    error.value = new Error('Invalid project ID');
+    project.value = null;
+    return;
+  }
   loading.value = true;
   error.value = null;
   
-  // 먼저 fallback 데이터로 시작 (개발용)
-  const fallbackProject = projects.find(p => p.id === projectId.value);
-  if (fallbackProject) {
-    project.value = fallbackProject;
-    console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-    loading.value = false;
-    return;
-  }
-  
-  // 프로젝트를 찾을 수 없는 경우
-  console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다. 사용 가능한 ID: 1~8`);
+  console.log('🔍 프로젝트 상세 정보 로드 시작, ID:', projectId.value);
   
   try {
+    // 먼저 API에서 데이터 조회 시도
     const { data } = await getProject(projectId.value);
-    // 백 DTO: ProjectRecruitmentResponse { projectId, title, description, ... }
-    // UI에서 id로도 쓸 수 있게 통일
-    project.value = { id: data.projectId ?? data.id, ...data };
+    console.log('✅ API에서 프로젝트 데이터 로드 성공:', data.title);
+    
+    // 백엔드 DTO를 프론트엔드 형식으로 변환
+    project.value = {
+      id: data.projectId ?? data.id,
+      title: data.title,
+      description: data.description,
+      techStacks: data.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
+      status: data.status === 'RECRUITING' ? '모집중' : data.status,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      recruitCount: data.recruitCount,
+      appliedCount: data.appliedCount,
+      acceptedCount: data.acceptedCount,
+      remainingCount: data.remainingCount,
+      recruitDeadline: data.recruitDeadline,
+      fileUrl: data.fileUrl,
+      viewCount: data.viewCount,
+      author: {
+        userId: data.teamLeaderId,
+        name: `팀장 ${data.teamLeaderId}`,
+        email: `leader${data.teamLeaderId}@example.com`
+      }
+    };
+    
   } catch (e) {
-    console.error('API 호출 실패:', e);
-    error.value = e;
+    console.log('❌ API 호출 실패, fallback 데이터 사용 시도:', e.message);
+    
+    // API 실패 시 fallback 데이터 사용
+    const fallbackProject = projects.find(p => p.id === projectId.value);
+    if (fallbackProject) {
+      project.value = fallbackProject;
+      console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+    } else {
+      console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다.`);
+      error.value = e;
+      project.value = null;
+    }
   } finally {
     loading.value = false;
   }
@@ -203,7 +227,7 @@ function handleTabChange(tab) {
 // 지원 모달 관련
 const showApplyModal = ref(false);
 const showSuccessToast = ref(false);
-const showFailToast = ref(false); // Add this line
+const showFailToast = ref(false);
 
 const modalProjectInfo = computed(() => ({
   title: project.value?.title || '',
@@ -228,14 +252,12 @@ function closeApplyModal() {
 
 // 실제 지원 API 호출
 async function handleApplicationSubmit(applicationData) {
-  // 임시 토큰 설정 (로그인 구현 전 테스트용)
-  localStorage.setItem('accessToken', 'dummy-token-for-user2');
 
   try {
     console.log('지원서 데이터:', applicationData);
 
     const payload = {
-      userId: 2, // applicationForm에서 userId 사용
+      userId: userStore.userId, // applicationForm에서 userId 사용
       applicationMessage: applicationData.applicationForm.message,
       techPart: applicationData.applicationForm.techPart // techPart 필드 사용
     };
@@ -259,6 +281,7 @@ function handleApplicationError(error) {
 function goToPortfolioSettings() {
   router.push('/portfolio/settings');
 }
+
 
 function handleContactAuthor(author) {
   console.log('작성자 연락하기:', author);
@@ -401,12 +424,6 @@ document.addEventListener('keydown', (e) => {
 }
 
 /* 지원하기 버튼 스타일 */
-.apply-button-container {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  padding-right: 10px;
-}
 
 .apply-button {
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
@@ -436,6 +453,14 @@ document.addEventListener('keydown', (e) => {
 
 .apply-icon {
   font-size: 16px;
+}
+
+
+/* 액션 버튼 컨테이너 통합 스타일 */
+.action-button-container {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
 }
 
 /* 성공 토스트 */

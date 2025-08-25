@@ -89,6 +89,12 @@ const routes = [
     name: 'PortfolioList',
     component: PortfolioListPage,
   },
+  {
+    // AI 추천 페이지
+    path: '/ai-recommendations',
+    name: 'AIRecommendations',
+    component: () => import('@/views/AIRecommendationsPage.vue'),
+  },
 
   // ===========================================
   // 대시보드 스타일 마이페이지 관련 라우트들

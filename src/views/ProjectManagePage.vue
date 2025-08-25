@@ -37,12 +37,18 @@
           <p v-else>아직 승인된 멤버가 없습니다.</p>
         </section>
 
-        <!-- 프로젝트 수정 버튼 -->
         <section class="edit-project-section">
           <h2>프로젝트 정보</h2>
           <div class="project-actions">
-            <button class="edit-btn" @click="goToEditPage">프로젝트 수정</button>
-            <button class="delete-btn" @click="confirmDelete">프로젝트 삭제</button>
+            <label for="project-status">상태:</label>
+            <select id="project-status" v-model="projectStatus">
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <button @click="handleStatusUpdate" class="action-btn status-update-btn">상태 저장</button>
+            <button class="action-btn edit-btn" @click="goToEditPage">수정</button>
+            <button class="action-btn delete-btn" @click="confirmDelete">삭제</button>
           </div>
         </section>
       </div>
@@ -54,18 +60,27 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getProject, deleteProject } from '@/api/projects'; // Import deleteProject
+import { getProject, deleteProject, updateProjectStatus } from '@/api/projects'; // Import deleteProject
 import { getProjectMembers, updateMemberStatus } from '@/api/projectMember';
 import { PART_OPTIONS } from '@/constants/parts';
+import { useUserStore } from '@/stores/userStore'; // Import user store
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore(); // Get user store instance
 const projectId = ref(route.params.projectId);
 
 const project = ref(null);
 const applicants = ref([]);
 const loading = ref(true);
 const error = ref(null);
+
+const projectStatus = ref('');
+const statusOptions = [
+  { value: 'RECRUITING', label: '모집중' },
+  { value: 'IN_PROGRESS', label: '진행중' },
+  { value: 'COMPLETED', label: '완료' },
+];
 
 const pendingApplicants = computed(() => applicants.value.filter(a => a.status === 'PENDING'));
 const approvedMembers = computed(() => applicants.value.filter(a => a.status === 'ACCEPTED'));
@@ -77,10 +92,21 @@ const getPartLabel = (partValue) => {
 
 onMounted(async () => {
   try {
+    const currentUserId = userStore.userId;
+    if (!currentUserId) {
+      error.value = new Error('로그인이 필요합니다.');
+      loading.value = false;
+      // Optionally redirect to login
+      // router.push('/login');
+      return;
+    }
+
     const projectResponse = await getProject(projectId.value);
     project.value = projectResponse.data;
+    projectStatus.value = projectResponse.data.status;
 
-    const applicantsResponse = await getProjectMembers(projectId.value, 1);
+    // Use the dynamic userId from the store
+    const applicantsResponse = await getProjectMembers(projectId.value, currentUserId);
     applicants.value = applicantsResponse.data;
 
   } catch (err) {
@@ -91,9 +117,34 @@ onMounted(async () => {
   }
 });
 
+const handleStatusUpdate = async () => {
+  if (!projectStatus.value) {
+    alert('변경할 상태를 선택해주세요.');
+    return;
+  }
+  try {
+    const currentUserId = userStore.userId;
+    if (!currentUserId) {
+      alert('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    await updateProjectStatus(projectId.value, projectStatus.value, currentUserId);
+    alert('프로젝트 상태가 성공적으로 변경되었습니다.');
+    router.push('/myPage/projects');
+  } catch (err) {
+    console.error('프로젝트 상태 변경 실패:', err);
+    alert('프로젝트 상태 변경에 실패했습니다.');
+  }
+};
+
 const updateApplicantStatus = async (applicantId, status) => {
   try {
-    await updateMemberStatus(projectId.value, applicantId, 1, status);
+    const currentUserId = userStore.userId;
+    if (!currentUserId) {
+      alert('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    await updateMemberStatus(projectId.value, applicantId, currentUserId, status);
     alert(`지원자가 성공적으로 ${status === 'ACCEPTED' ? '수락' : '거절'}되었습니다.`);
 
     const index = applicants.value.findIndex(a => a.id === applicantId);
@@ -233,28 +284,54 @@ h2 {
   margin-left: 10px;
 }
 
-.reject-btn:hover {
-  background-color: #d32f2f;
-}
-
 .project-actions {
   display: flex;
   gap: 10px;
+  align-items: center; /* Vertically align items */
   margin-top: 20px;
-  padding: 15px 0;
+  padding: 15px;
   border-top: 1px solid #eee;
-  justify-content: flex-end;
+  background-color: #fdfdfd;
+  border-radius: 8px;
+  justify-content: flex-start; /* Align items to the start */
 }
 
-.edit-btn,
-.delete-btn {
-  padding: 10px 20px;
+.project-actions label {
+  font-weight: bold;
+  color: #333;
+  margin-right: 5px;
+}
+
+.project-actions select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  transition: border-color 0.2s ease;
+}
+
+.project-actions select:hover {
+  border-color: #4CAF50;
+}
+
+.action-btn {
+  padding: 9px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.status-update-btn {
+  background-color: #4CAF50;
+  color: white;
 }
 
 .edit-btn {
@@ -262,20 +339,8 @@ h2 {
   color: white;
 }
 
-.edit-btn:hover {
-  background-color: #1976D2;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
 .delete-btn {
   background-color: #f44336;
   color: white;
-}
-
-.delete-btn:hover {
-  background-color: #d32f2f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 </style>
