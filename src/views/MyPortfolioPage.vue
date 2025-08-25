@@ -117,27 +117,53 @@
                 </div>
                 
                 <div class="edit-form-grid">
-                  <input 
-                    v-model="education.institution" 
-                    placeholder="기관명"
-                    class="edit-input"
-                  />
-                  <input 
-                    v-model="education.program" 
-                    placeholder="전공/과정"
-                    class="edit-input"
-                  />
-                  <input 
-                    v-model="education.startDate" 
-                    type="month"
-                    class="edit-input"
-                  />
-                  <input 
-                    v-model="education.endDate" 
-                    type="month"
-                    class="edit-input"
-                    :disabled="education.isOngoing"
-                  />
+                  <div class="input-group">
+                    <input 
+                      v-model="education.institution" 
+                      placeholder="기관명"
+                      class="edit-input"
+                    />
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="education.program" 
+                      placeholder="전공/과정"
+                      class="edit-input"
+                    />
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="education.startDate" 
+                      placeholder="시작일 (예: 202403, 2024.03, 2024년 3월)"
+                      class="edit-input"
+                      :class="{ 'error': educationErrors[index]?.startDate }"
+                      @blur="validateEducationDate(index, 'startDate')"
+                      @input="handleDateInput($event, index, 'startDate', 'education'); clearEducationError(index, 'startDate')"
+                    />
+                    <div v-if="educationErrors[index]?.startDate" class="error-message">
+                      {{ educationErrors[index].startDate }}
+                    </div>
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="education.endDate" 
+                      placeholder="종료일 (예: 202412, 2024.12, 2024년 12월)"
+                      class="edit-input"
+                      :class="{ 'error': educationErrors[index]?.endDate || educationErrors[index]?.dateOrder }"
+                      :disabled="education.isOngoing"
+                      @blur="validateEducationDate(index, 'endDate')"
+                      @input="handleDateInput($event, index, 'endDate', 'education'); clearEducationError(index, 'endDate')"
+                    />
+                    <div v-if="educationErrors[index]?.endDate" class="error-message">
+                      {{ educationErrors[index].endDate }}
+                    </div>
+                    <div v-if="educationErrors[index]?.dateOrder" class="error-message">
+                      {{ educationErrors[index].dateOrder }}
+                    </div>
+                  </div>
                 </div>
                 
                 <label class="checkbox-label">
@@ -229,29 +255,53 @@
                 </div>
                 
                 <div class="edit-form-grid">
-                  <input 
-                    v-model="career.company" 
-                    placeholder="회사명"
-                    class="edit-input"
-                  />
-                  <input 
-                    v-model="career.position" 
-                    placeholder="직책/부서"
-                    class="edit-input"
-                  />
-                  <input 
-                    v-model="career.startDate" 
-                    type="month"
-                    class="edit-input"
-                    placeholder="시작일"
-                  />
-                  <input 
-                    v-model="career.endDate" 
-                    type="month"
-                    class="edit-input"
-                    placeholder="종료일"
-                    :disabled="career.isCurrent"
-                  />
+                  <div class="input-group">
+                    <input 
+                      v-model="career.company" 
+                      placeholder="회사명"
+                      class="edit-input"
+                    />
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="career.position" 
+                      placeholder="직책/부서"
+                      class="edit-input"
+                    />
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="career.startDate" 
+                      placeholder="시작일 (예: 202201, 2022.01, 2022년 1월)"
+                      class="edit-input"
+                      :class="{ 'error': careerErrors[index]?.startDate }"
+                      @blur="validateCareerDate(index, 'startDate')"
+                      @input="handleDateInput($event, index, 'startDate', 'career'); clearCareerError(index, 'startDate')"
+                    />
+                    <div v-if="careerErrors[index]?.startDate" class="error-message">
+                      {{ careerErrors[index].startDate }}
+                    </div>
+                  </div>
+                  
+                  <div class="input-group">
+                    <input 
+                      v-model="career.endDate" 
+                      placeholder="종료일 (예: 202412, 2024.12, 2024년 12월)"
+                      class="edit-input"
+                      :class="{ 'error': careerErrors[index]?.endDate || careerErrors[index]?.dateOrder }"
+                      :disabled="career.isCurrent"
+                      @blur="validateCareerDate(index, 'endDate')"
+                      @input="handleDateInput($event, index, 'endDate', 'career'); clearCareerError(index, 'endDate')"
+                    />
+                    <div v-if="careerErrors[index]?.endDate" class="error-message">
+                      {{ careerErrors[index].endDate }}
+                    </div>
+                    <div v-if="careerErrors[index]?.dateOrder" class="error-message">
+                      {{ careerErrors[index].dateOrder }}
+                    </div>
+                  </div>
                 </div>
                 
                 <label class="checkbox-label">
@@ -600,6 +650,10 @@ const portfolioData = reactive({
 // 편집용 데이터
 const editData = reactive({})
 
+// 에러 상태 관리
+const educationErrors = reactive({})
+const careerErrors = reactive({})
+
 // 포트폴리오 통계
 const portfolioStats = reactive({
   views: 1247,
@@ -876,6 +930,186 @@ const formatCareerPeriod = (career) => {
 }
 
 // 교육 이력 관련 메서드
+// 연도/월 입력 검증 함수
+const validateDateInput = (dateString, fieldName, itemIndex, type) => {
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth() + 1
+  const currentDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+  
+  if (!dateString) {
+    return '날짜를 입력해주세요.'
+  }
+  
+  // 다양한 형식 지원 (YYYY-MM, YYYY.MM, YYYY/MM, YYYY년 MM월, YYYY년, YYYYMM, YYYYM)
+  let normalizedDate = dateString
+  
+  // "YYYY년 MM월" 형식 처리
+  if (/^\d{4}년\s*\d{1,2}월$/.test(dateString)) {
+    const matches = dateString.match(/^(\d{4})년\s*(\d{1,2})월$/)
+    normalizedDate = `${matches[1]}-${String(matches[2]).padStart(2, '0')}`
+  }
+  // "YYYY년" 형식 처리 (1월로 설정)
+  else if (/^\d{4}년$/.test(dateString)) {
+    const year = dateString.match(/^(\d{4})년$/)[1]
+    normalizedDate = `${year}-01`
+  }
+  // 점(.) 구분자 처리
+  else if (/^\d{4}\.\d{1,2}$/.test(dateString)) {
+    const [year, month] = dateString.split('.')
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  // 슬래시(/) 구분자 처리
+  else if (/^\d{4}\/\d{1,2}$/.test(dateString)) {
+    const [year, month] = dateString.split('/')
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  // YYYYMM 형식 처리 (6자리 숫자)
+  else if (/^\d{6}$/.test(dateString)) {
+    const year = dateString.substring(0, 4)
+    const month = dateString.substring(4, 6)
+    normalizedDate = `${year}-${month}`
+  }
+  // YYYYM 형식 처리 (5자리 숫자)
+  else if (/^\d{5}$/.test(dateString)) {
+    const year = dateString.substring(0, 4)
+    const month = dateString.substring(4, 5)
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  
+  // YYYY-MM 형식 검증
+  if (!/^\d{4}-\d{2}$/.test(normalizedDate)) {
+    return '올바른 날짜 형식이 아닙니다. (예: 202403, 2024.03, 2024년 3월)'
+  }
+  
+  const [year, month] = normalizedDate.split('-').map(Number)
+  
+  // 연도 검증 (1900년 이후, 현재 연도 이전)
+  if (year < 1900) {
+    return '1900년 이후의 연도를 입력해주세요.'
+  }
+  
+  if (year > currentYear) {
+    return '현재 연도보다 이후의 날짜는 입력할 수 없습니다.'
+  }
+  
+  // 월 검증 (1-12)
+  if (month < 1 || month > 12) {
+    return '월은 1~12 사이의 값을 입력해주세요.'
+  }
+  
+  // 현재 연도이고 현재 월보다 이후인지 검증
+  if (year === currentYear && normalizedDate > currentDate) {
+    return '현재 날짜보다 이후의 날짜는 입력할 수 없습니다.'
+  }
+  
+  return null
+}
+
+// 시작일과 종료일 순서 검증
+const validateDateOrder = (startDate, endDate, isOngoing) => {
+  if (isOngoing || !startDate || !endDate) return null
+  
+  if (startDate >= endDate) {
+    return '종료일은 시작일보다 이후여야 합니다.'
+  }
+  
+  return null
+}
+
+// 입력된 날짜를 정규화하는 함수 (내부 저장용 YYYY-MM 형식)
+const normalizeDateInput = (dateString) => {
+  if (!dateString) return ''
+  
+  let normalizedDate = dateString
+  
+  // "YYYY년 MM월" 형식 처리
+  if (/^\d{4}년\s*\d{1,2}월$/.test(dateString)) {
+    const matches = dateString.match(/^(\d{4})년\s*(\d{1,2})월$/)
+    normalizedDate = `${matches[1]}-${String(matches[2]).padStart(2, '0')}`
+  }
+  // "YYYY년" 형식 처리 (1월로 설정)
+  else if (/^\d{4}년$/.test(dateString)) {
+    const year = dateString.match(/^(\d{4})년$/)[1]
+    normalizedDate = `${year}-01`
+  }
+  // 점(.) 구분자 처리
+  else if (/^\d{4}\.\d{1,2}$/.test(dateString)) {
+    const [year, month] = dateString.split('.')
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  // 슬래시(/) 구분자 처리
+  else if (/^\d{4}\/\d{1,2}$/.test(dateString)) {
+    const [year, month] = dateString.split('/')
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  // YYYYMM 형식 처리 (6자리 숫자)
+  else if (/^\d{6}$/.test(dateString)) {
+    const year = dateString.substring(0, 4)
+    const month = dateString.substring(4, 6)
+    normalizedDate = `${year}-${month}`
+  }
+  // YYYYM 형식 처리 (5자리 숫자)
+  else if (/^\d{5}$/.test(dateString)) {
+    const year = dateString.substring(0, 4)
+    const month = dateString.substring(4, 5)
+    normalizedDate = `${year}-${String(month).padStart(2, '0')}`
+  }
+  
+  return normalizedDate
+}
+
+// 표시용 날짜 포맷팅 함수 (YYYY-MM -> YYYY년 M월)
+const formatDateForDisplay = (dateString) => {
+  if (!dateString) return ''
+  
+  // YYYY-MM 형식이면 YYYY년 M월로 변환
+  if (/^\d{4}-\d{2}$/.test(dateString)) {
+    const [year, month] = dateString.split('-')
+    return `${year}년 ${parseInt(month)}월`
+  }
+  
+  return dateString
+}
+
+// 입력 필드에서 자동 포맷팅을 처리하는 함수
+const handleDateInput = (event, index, field, type) => {
+  const value = event.target.value
+  
+  // 숫자만 입력된 경우 자동 포맷팅
+  if (/^\d{5,6}$/.test(value)) {
+    let year, month
+    
+    if (value.length === 6) {
+      // YYYYMM
+      year = value.substring(0, 4)
+      month = value.substring(4, 6)
+    } else if (value.length === 5) {
+      // YYYYM
+      year = value.substring(0, 4)
+      month = value.substring(4, 5)
+    }
+    
+    // 유효한 월인지 확인
+    const monthNum = parseInt(month)
+    if (monthNum >= 1 && monthNum <= 12) {
+      const formattedDate = `${year}년 ${monthNum}월`
+      
+      // 해당 필드에 포맷된 값 설정
+      if (type === 'education') {
+        editData.educations[index][field] = formattedDate
+      } else if (type === 'career') {
+        editData.careers[index][field] = formattedDate
+      }
+      
+      // 포커스 해제하여 검증 트리거
+      event.target.blur()
+      setTimeout(() => {
+        event.target.focus()
+      }, 10)
+    }
+  }
+}
+
 const addEducation = () => {
   if (!editMode.value) {
     startEdit('education')
@@ -885,6 +1119,7 @@ const addEducation = () => {
     editData.educations = []
   }
   
+  const newIndex = editData.educations.length
   editData.educations.push({
     educationId: null, // 새로 추가하는 교육 정보
     institution: '',
@@ -893,16 +1128,41 @@ const addEducation = () => {
     endDate: '',
     isOngoing: false
   })
+  
+  // 에러 상태 초기화
+  if (!educationErrors[newIndex]) {
+    educationErrors[newIndex] = {}
+  }
 }
 
 const removeEducation = (index) => {
   editData.educations.splice(index, 1)
+  // 에러 상태도 함께 제거
+  delete educationErrors[index]
+  
+  // 인덱스 재정렬
+  const newErrors = {}
+  Object.keys(educationErrors).forEach((key) => {
+    const keyIndex = parseInt(key)
+    if (keyIndex > index) {
+      newErrors[keyIndex - 1] = educationErrors[key]
+    } else if (keyIndex < index) {
+      newErrors[keyIndex] = educationErrors[key]
+    }
+  })
+  Object.keys(educationErrors).forEach(key => delete educationErrors[key])
+  Object.assign(educationErrors, newErrors)
 }
 
 const handleOngoingToggle = (index, type) => {
   if (type === 'education') {
     if (editData.educations[index].isOngoing) {
       editData.educations[index].endDate = ''
+      // 종료일 에러 클리어
+      if (educationErrors[index]) {
+        delete educationErrors[index].endDate
+        delete educationErrors[index].dateOrder
+      }
     }
   }
 }
@@ -917,6 +1177,7 @@ const addCareer = () => {
     editData.careers = []
   }
   
+  const newIndex = editData.careers.length
   editData.careers.push({
     experienceId: null, // 새로 추가하는 경력 정보
     company: '',
@@ -926,15 +1187,40 @@ const addCareer = () => {
     isCurrent: false,
     description: ''
   })
+  
+  // 에러 상태 초기화
+  if (!careerErrors[newIndex]) {
+    careerErrors[newIndex] = {}
+  }
 }
 
 const removeCareer = (index) => {
   editData.careers.splice(index, 1)
+  // 에러 상태도 함께 제거
+  delete careerErrors[index]
+  
+  // 인덱스 재정렬
+  const newErrors = {}
+  Object.keys(careerErrors).forEach((key) => {
+    const keyIndex = parseInt(key)
+    if (keyIndex > index) {
+      newErrors[keyIndex - 1] = careerErrors[key]
+    } else if (keyIndex < index) {
+      newErrors[keyIndex] = careerErrors[key]
+    }
+  })
+  Object.keys(careerErrors).forEach(key => delete careerErrors[key])
+  Object.assign(careerErrors, newErrors)
 }
 
 const handleCurrentToggle = (index) => {
   if (editData.careers[index].isCurrent) {
     editData.careers[index].endDate = ''
+    // 종료일 에러 클리어
+    if (careerErrors[index]) {
+      delete careerErrors[index].endDate
+      delete careerErrors[index].dateOrder
+    }
   }
 }
 
@@ -961,8 +1247,62 @@ const removeSkill = (index) => {
   editData.skills.splice(index, 1)
 }
 
+// 날짜 입력 검증
+const validateEducationDates = () => {
+  let hasErrors = false
+  
+  // 기존 에러 초기화
+  Object.keys(educationErrors).forEach(key => {
+    educationErrors[key] = {}
+  })
+  
+  editData.educations?.forEach((education, index) => {
+    if (!educationErrors[index]) {
+      educationErrors[index] = {}
+    }
+    
+    // 시작일 검증
+    if (education.startDate) {
+      const startDateError = validateDateInput(education.startDate, 'startDate', index, 'education')
+      if (startDateError) {
+        educationErrors[index].startDate = startDateError
+        hasErrors = true
+      } else {
+        // 정규화된 날짜로 업데이트
+        education.startDate = normalizeDateInput(education.startDate)
+      }
+    }
+    
+    // 종료일 검증 (진행 중이 아닌 경우만)
+    if (!education.isOngoing && education.endDate) {
+      const endDateError = validateDateInput(education.endDate, 'endDate', index, 'education')
+      if (endDateError) {
+        educationErrors[index].endDate = endDateError
+        hasErrors = true
+      } else {
+        // 정규화된 날짜로 업데이트
+        education.endDate = normalizeDateInput(education.endDate)
+        
+        // 날짜 순서 검증
+        const dateOrderError = validateDateOrder(education.startDate, education.endDate, education.isOngoing)
+        if (dateOrderError) {
+          educationErrors[index].dateOrder = dateOrderError
+          hasErrors = true
+        }
+      }
+    }
+  })
+  
+  return !hasErrors
+}
+
 // 교육 정보 저장 함수
 const saveEducations = async () => {
+  // 날짜 검증
+  if (!validateEducationDates()) {
+    throw new Error('입력된 날짜를 확인해주세요.')
+  }
+  
   const currentEducations = portfolioData.educations || []
   const newEducations = editData.educations || []
   
@@ -1006,8 +1346,62 @@ const saveEducations = async () => {
   portfolioData.educations = JSON.parse(JSON.stringify(editData.educations))
 }
 
+// 경력 날짜 입력 검증
+const validateCareerDates = () => {
+  let hasErrors = false
+  
+  // 기존 에러 초기화
+  Object.keys(careerErrors).forEach(key => {
+    careerErrors[key] = {}
+  })
+  
+  editData.careers?.forEach((career, index) => {
+    if (!careerErrors[index]) {
+      careerErrors[index] = {}
+    }
+    
+    // 시작일 검증
+    if (career.startDate) {
+      const startDateError = validateDateInput(career.startDate, 'startDate', index, 'career')
+      if (startDateError) {
+        careerErrors[index].startDate = startDateError
+        hasErrors = true
+      } else {
+        // 정규화된 날짜로 업데이트
+        career.startDate = normalizeDateInput(career.startDate)
+      }
+    }
+    
+    // 종료일 검증 (현재 재직중이 아닌 경우만)
+    if (!career.isCurrent && career.endDate) {
+      const endDateError = validateDateInput(career.endDate, 'endDate', index, 'career')
+      if (endDateError) {
+        careerErrors[index].endDate = endDateError
+        hasErrors = true
+      } else {
+        // 정규화된 날짜로 업데이트
+        career.endDate = normalizeDateInput(career.endDate)
+        
+        // 날짜 순서 검증
+        const dateOrderError = validateDateOrder(career.startDate, career.endDate, career.isCurrent)
+        if (dateOrderError) {
+          careerErrors[index].dateOrder = dateOrderError
+          hasErrors = true
+        }
+      }
+    }
+  })
+  
+  return !hasErrors
+}
+
 // 경력 정보 저장 함수
 const saveExperiences = async () => {
+  // 날짜 검증
+  if (!validateCareerDates()) {
+    throw new Error('입력된 날짜를 확인해주세요.')
+  }
+  
   const currentExperiences = portfolioData.careers || []
   const newExperiences = editData.careers || []
   
@@ -1109,6 +1503,83 @@ const hideSuggestions = () => {
   setTimeout(() => {
     showSuggestions.value = false
   }, 150)
+}
+
+// 실시간 에러 처리 함수
+const validateEducationDate = (index, field) => {
+  const education = editData.educations[index]
+  if (!education || !education[field]) return
+  
+  if (!educationErrors[index]) {
+    educationErrors[index] = {}
+  }
+  
+  const error = validateDateInput(education[field], field, index, 'education')
+  if (error) {
+    educationErrors[index][field] = error
+  } else {
+    delete educationErrors[index][field]
+    const normalizedDate = normalizeDateInput(education[field])
+    // 사용자에게는 친화적인 형식으로 표시
+    education[field] = formatDateForDisplay(normalizedDate)
+    
+    // 날짜 순서 검증 (종료일일 때만)
+    if (field === 'endDate' && !education.isOngoing) {
+      const dateOrderError = validateDateOrder(education.startDate, education.endDate, education.isOngoing)
+      if (dateOrderError) {
+        educationErrors[index].dateOrder = dateOrderError
+      } else {
+        delete educationErrors[index].dateOrder
+      }
+    }
+  }
+}
+
+const validateCareerDate = (index, field) => {
+  const career = editData.careers[index]
+  if (!career || !career[field]) return
+  
+  if (!careerErrors[index]) {
+    careerErrors[index] = {}
+  }
+  
+  const error = validateDateInput(career[field], field, index, 'career')
+  if (error) {
+    careerErrors[index][field] = error
+  } else {
+    delete careerErrors[index][field]
+    const normalizedDate = normalizeDateInput(career[field])
+    // 사용자에게는 친화적인 형식으로 표시
+    career[field] = formatDateForDisplay(normalizedDate)
+    
+    // 날짜 순서 검증 (종료일일 때만)
+    if (field === 'endDate' && !career.isCurrent) {
+      const dateOrderError = validateDateOrder(career.startDate, career.endDate, career.isCurrent)
+      if (dateOrderError) {
+        careerErrors[index].dateOrder = dateOrderError
+      } else {
+        delete careerErrors[index].dateOrder
+      }
+    }
+  }
+}
+
+const clearEducationError = (index, field) => {
+  if (educationErrors[index]) {
+    delete educationErrors[index][field]
+    if (field === 'endDate') {
+      delete educationErrors[index].dateOrder
+    }
+  }
+}
+
+const clearCareerError = (index, field) => {
+  if (careerErrors[index]) {
+    delete careerErrors[index][field]
+    if (field === 'endDate') {
+      delete careerErrors[index].dateOrder
+    }
+  }
 }
 
 const viewPublicPortfolio = () => {
@@ -1565,6 +2036,37 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
+
+.edit-input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.error-message {
+  font-size: 12px;
+  color: #dc3545;
+  font-weight: 500;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-message:before {
+  content: '⚠';
+  font-size: 11px;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -1956,6 +2458,10 @@ onMounted(() => {
 
   .edit-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .input-group {
+    margin-bottom: 8px;
   }
 
   .projects-grid {
