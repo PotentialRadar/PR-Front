@@ -105,6 +105,34 @@ export const getPopularKeywords = async () => {
 }
 
 /**
+ * 필터별 결과 수 미리보기 API
+ * @param {Object} params - 검색 파라미터
+ * @returns {Promise} 결과 수 정보
+ */
+export const getProjectCountPreview = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams()
+    
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    if (params.techParts?.length) {
+      params.techParts.forEach(part => queryParams.append('techParts', part))
+    }
+    if (params.techStacks?.length) {
+      params.techStacks.forEach(stack => queryParams.append('techStacks', stack))
+    }
+    if (params.statuses?.length) {
+      params.statuses.forEach(status => queryParams.append('statuses', status))
+    }
+    
+    const response = await api.get(`/search/projects/count-preview?${queryParams.toString()}`)
+    return response.data
+  } catch (error) {
+    console.error('프로젝트 결과 수 미리보기 API 오류:', error)
+    throw error
+  }
+}
+
+/**
  * 데이터 동기화 API (개발용)
  * @returns {Promise} 동기화 결과
  */

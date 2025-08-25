@@ -38,29 +38,48 @@
 
       <div class="filter-area">
         <div class="filter-row">
-          <div class="filter-label">💼 기술 파트</div>
+          <div class="filter-label">
+            💼 기술 파트
+            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
+          </div>
           <div class="filter-content">
             <div class="filter-chips">
-              <button v-for="part in techParts" :key="part" class="filter-chip" :class="{ 'active': selectedTechParts.includes(part) }" @click="toggleTechPart(part)">{{ part }}</button>
+              <button v-for="part in techParts" :key="part" class="filter-chip" :class="{ 'active': selectedTechParts.includes(part) }" @click="toggleTechPart(part)">
+                {{ part }}
+                <span class="result-count">({{ getFilterResultCount('techPart', part) }})</span>
+                <span v-if="selectedTechParts.length > 0 && selectedTechParts.includes(part)" class="logic-indicator">+</span>
+              </button>
             </div>
           </div>
         </div>
         
         <div class="filter-row">
-          <div class="filter-label">⚡ 기술 스택</div>
+          <div class="filter-label">
+            ⚡ 기술 스택
+            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
+          </div>
           <div class="filter-content">
             <div class="filter-chips">
-              <button v-for="stack in popularTechStacks" :key="stack" class="filter-chip" :class="{ 'active': selectedTechStacks.includes(stack) }" @click="toggleTechStack(stack)">{{ stack }}</button>
+              <button v-for="stack in popularTechStacks" :key="stack" class="filter-chip" :class="{ 'active': selectedTechStacks.includes(stack) }" @click="toggleTechStack(stack)">
+                {{ stack }}
+                <span class="result-count">({{ getFilterResultCount('techStack', stack) }})</span>
+                <span v-if="selectedTechStacks.length > 0 && selectedTechStacks.includes(stack)" class="logic-indicator">+</span>
+              </button>
             </div>
           </div>
         </div>
         
         <div class="filter-row">
-          <div class="filter-label">📊 프로젝트 상태</div>
+          <div class="filter-label">
+            📊 프로젝트 상태
+            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
+          </div>
           <div class="filter-content">
             <div class="filter-chips">
               <button v-for="status in filteredProjectStatuses" :key="status.value" class="filter-chip status-chip" :class="{ 'active': selectedStatuses.includes(status.value) }" @click="toggleStatus(status.value)">
                 <div class="status-indicator" :class="getStatusClass(status.value)"></div>{{ status.label }}
+                <span class="result-count">({{ getFilterResultCount('status', status.value) }})</span>
+                <span v-if="selectedStatuses.length > 0 && selectedStatuses.includes(status.value)" class="logic-indicator">+</span>
               </button>
             </div>
           </div>
@@ -181,7 +200,7 @@ import PaginationComponent from '@/components/projectComponents/PaginationCompon
 
 import { useProjects } from '@/composables/useProjects';
 import { applyProject } from '@/api/projectMember';
-import { searchProjects, getPopularKeywords } from '@/api/search';
+import { searchProjects, getPopularKeywords, getProjectCountPreview } from '@/api/search';
 
 const router = useRouter();
 const route = useRoute();
@@ -195,6 +214,7 @@ const selectedTechStacks = ref([]);
 const selectedStatuses = ref([]);
 
 const popularKeywords = ref([]);
+const filterResultCounts = ref({}); // 각 필터별 결과 수 저장
 
 const selectPopularKeyword = (keyword) => {
   searchQuery.value = keyword;
@@ -243,6 +263,8 @@ onActivated(async () => {
     loadPopularKeywords()
   ]);
   handleSearch(false);
+  // 초기 필터 결과 수 로딩
+  setTimeout(() => updateFilterResultCounts(), 1000);
 });
 
 watch([page], () => {
@@ -293,6 +315,8 @@ const toggleItem = (list, item) => {
   if (index > -1) list.value.splice(index, 1);
   else list.value.push(item);
   handleSearch();
+  // 필터 변경 시 결과 수 업데이트 (디바운스 적용)
+  setTimeout(() => updateFilterResultCounts(), 500);
 };
 
 const toggleTechPart = (part) => toggleItem(selectedTechParts, part);
@@ -307,6 +331,60 @@ const clearAllFilters = () => {
   handleSearch();
 };
 const clearSearch = () => { searchQuery.value = ''; handleSearch(); };
+
+// 결과 수 미리보기 기능 (OR 방식으로 수정)
+const updateFilterResultCounts = async () => {
+  try {
+    // 각 기술 파트별 결과 수 계산 - 단독으로 검색
+    for (const part of techParts.value) {
+      const params = {
+        keyword: searchQuery.value.trim() || null,
+        techParts: [part]
+      };
+      try {
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`techPart-${part}`] = result.totalCount;
+      } catch (error) {
+        filterResultCounts.value[`techPart-${part}`] = 0;
+      }
+    }
+
+    // 각 기술 스택별 결과 수 계산 - 단독으로 검색
+    for (const stack of popularTechStacks.value) {
+      const params = {
+        keyword: searchQuery.value.trim() || null,
+        techStacks: [stack]
+      };
+      try {
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`techStack-${stack}`] = result.totalCount;
+      } catch (error) {
+        filterResultCounts.value[`techStack-${stack}`] = 0;
+      }
+    }
+
+    // 각 상태별 결과 수 계산 - 단독으로 검색
+    for (const status of filteredProjectStatuses.value) {
+      const params = {
+        keyword: searchQuery.value.trim() || null,
+        statuses: [status.value]
+      };
+      try {
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`status-${status.value}`] = result.totalCount;
+      } catch (error) {
+        filterResultCounts.value[`status-${status.value}`] = 0;
+      }
+    }
+  } catch (error) {
+    console.error('필터 결과 수 업데이트 실패:', error);
+  }
+};
+
+// 각 필터의 결과 수 가져오기
+const getFilterResultCount = (type, value) => {
+  return filterResultCounts.value[`${type}-${value}`] || 0;
+};
 
 // 유틸리티
 const getActiveFilterCount = () => selectedTechParts.value.length + selectedTechStacks.value.length + selectedStatuses.value.length;
@@ -423,9 +501,9 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   transition: all 0.2s ease;
 }
 .popular-tag:hover {
-  background: #6366F1;
+  background: #4CAF50;
   color: #fff;
-  border-color: #6366F1;
+  border-color: #4CAF50;
 }
 
 .module-divider {
@@ -451,6 +529,15 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   width: 100px;
   padding-top: 6px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9CA3AF;
+  font-style: italic;
 }
 .filter-content {
   flex-grow: 1;
@@ -475,13 +562,13 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   transition: all 0.2s ease;
 }
 .filter-chip:hover {
-  border-color: #A5B4FC;
-  background: #EEF2FF;
-  color: #4338CA;
+  border-color: #C8E6C9;
+  background: #F1F8E9;
+  color: #2E7D32;
 }
 .filter-chip.active {
-  background: #4F46E5;
-  border-color: #4F46E5;
+  background: #4CAF50;
+  border-color: #4CAF50;
   color: #fff;
   font-weight: 600;
 }
@@ -491,6 +578,30 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
 .status-completed { background: #6366F1; }
 .filter-chip.active .status-indicator {
   background-color: #fff;
+}
+.logic-indicator {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.result-count {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+  color: inherit;
+}
+.filter-chip.active .result-count {
+  color: rgba(255, 255, 255, 0.8);
 }
 .filter-actions {
   margin-top: 16px;
@@ -525,7 +636,7 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #4F46E5;
+  background: #4CAF50;
   color: #FFF;
   border: none;
   border-radius: 8px;
@@ -534,30 +645,30 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 .create-project-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 .projects-section {
   width: 100%;
 }
 .search-results-header {
-  background: #EEF2FF;
-  border: 1px solid #C7D2FE;
-  color: #4338CA;
+  background: #F1F8E9;
+  border: 1px solid #C8E6C9;
+  color: #2E7D32;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
 }
 .search-info { font-size: 16px; font-weight: 600; }
 .applied-filters { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; margin-top: 8px; }
-.filter-group strong { color: #3730A3; }
+.filter-group strong { color: #2E7D32; }
 
 /* 상태 표시 */
 .loading-state, .error-state, .empty-state { text-align: center; padding: 40px; }
-.loading-spinner { width: 24px; height: 24px; border: 3px solid #E5E7EB; border-top-color: #4F46E5; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px auto; }
+.loading-spinner { width: 24px; height: 24px; border: 3px solid #E5E7EB; border-top-color: #4CAF50; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
 .empty-message h3 { font-size: 20px; font-weight: 600; }
@@ -579,14 +690,14 @@ const handleApplicationSubmitted = async (applicationData) => { if (!selectedPro
   font-weight: 500;
 }
 .pagination-bar button:hover {
-  background: #EEF2FF;
-  border-color: #C7D2FE;
-  color: #4338CA;
+  background: #F1F8E9;
+  border-color: #C8E6C9;
+  color: #2E7D32;
 }
 .pagination-bar button.active {
-  background: #4F46E5;
+  background: #4CAF50;
   color: #fff;
-  border-color: #4F46E5;
+  border-color: #4CAF50;
 }
 .pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
 
