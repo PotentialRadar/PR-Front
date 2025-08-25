@@ -37,10 +37,10 @@
       <hr class="module-divider" />
 
       <div class="filter-area">
+        <div class="filter-hint">선택한 항목 중 하나라도 일치하는 결과를 반환합니다.</div>
         <div class="filter-row">
           <div class="filter-label">
             💼 기술 파트
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -56,7 +56,6 @@
         <div class="filter-row">
           <div class="filter-label">
             ⚡ 기술 스택
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -72,7 +71,6 @@
         <div class="filter-row">
           <div class="filter-label">
             📊 프로젝트 상태
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -258,13 +256,21 @@ const loadPopularKeywords = async () => {
 };
 
 onActivated(async () => {
-  await Promise.all([
-    loadTechTags(),
-    loadPopularKeywords()
-  ]);
-  handleSearch(false);
-  // 초기 필터 결과 수 로딩
-  setTimeout(() => updateFilterResultCounts(), 1000);
+  try {
+    await Promise.all([
+      loadTechTags(),
+      loadPopularKeywords()
+    ]);
+    console.log('✅ 기술 태그 및 인기 키워드 로드 완료');
+    console.log('기술 파트:', techParts.value);
+    console.log('기술 스택:', popularTechStacks.value);
+    
+    handleSearch(false);
+    // 초기 필터 결과 수 로딩
+    setTimeout(() => updateFilterResultCounts(), 1000);
+  } catch (error) {
+    console.error('❌ 초기 데이터 로드 실패:', error);
+  }
 });
 
 watch([page], () => {
@@ -335,6 +341,10 @@ const clearSearch = () => { searchQuery.value = ''; handleSearch(); };
 // 결과 수 미리보기 기능 (OR 방식으로 수정)
 const updateFilterResultCounts = async () => {
   try {
+    console.log('🔄 필터 결과 수 업데이트 시작');
+    console.log('기술 파트:', techParts.value);
+    console.log('기술 스택:', popularTechStacks.value);
+
     // 각 기술 파트별 결과 수 계산 - 단독으로 검색
     for (const part of techParts.value) {
       const params = {
@@ -344,7 +354,9 @@ const updateFilterResultCounts = async () => {
       try {
         const result = await getProjectCountPreview(params);
         filterResultCounts.value[`techPart-${part}`] = result.totalCount;
+        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount}`);
       } catch (error) {
+        console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, error);
         filterResultCounts.value[`techPart-${part}`] = 0;
       }
     }
@@ -358,7 +370,9 @@ const updateFilterResultCounts = async () => {
       try {
         const result = await getProjectCountPreview(params);
         filterResultCounts.value[`techStack-${stack}`] = result.totalCount;
+        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount}`);
       } catch (error) {
+        console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, error);
         filterResultCounts.value[`techStack-${stack}`] = 0;
       }
     }
@@ -372,12 +386,16 @@ const updateFilterResultCounts = async () => {
       try {
         const result = await getProjectCountPreview(params);
         filterResultCounts.value[`status-${status.value}`] = result.totalCount;
+        console.log(`✅ 상태 "${status.label}" 결과 수: ${result.totalCount}`);
       } catch (error) {
+        console.error(`❌ 상태 "${status.label}" 결과 수 조회 실패:`, error);
         filterResultCounts.value[`status-${status.value}`] = 0;
       }
     }
+
+    console.log('✅ 필터 결과 수 업데이트 완료:', filterResultCounts.value);
   } catch (error) {
-    console.error('필터 결과 수 업데이트 실패:', error);
+    console.error('❌ 필터 결과 수 업데이트 실패:', error);
   }
 };
 

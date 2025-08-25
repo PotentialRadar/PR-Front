@@ -264,9 +264,13 @@ export default {
       
       // 경력 범위 옵션
       experienceRanges: [
-        { value: 'JUNIOR', label: '신입 (0-2년)' },
-        { value: 'MIDDLE', label: '중급 (3-5년)' },
-        { value: 'SENIOR', label: '시니어 (6년+)' }
+        { value: 'FRESHER', label: '신입' },
+        { value: 'LT_1', label: '1년 미만' },
+        { value: 'Y1_3', label: '1-3년' },
+        { value: 'Y3_5', label: '3-5년' },
+        { value: 'Y5_10', label: '5-10년' },
+        { value: 'GE_10', label: '10년 이상' },
+        { value: 'ETC', label: '기타' }
       ]
     }
   },
@@ -412,18 +416,26 @@ export default {
 
     getExperienceClass(exp) {
       const classes = {
-        'JUNIOR': 'exp-junior',
-        'MIDDLE': 'exp-middle',
-        'SENIOR': 'exp-senior'
+        'FRESHER': 'exp-junior',
+        'LT_1': 'exp-junior',
+        'Y1_3': 'exp-middle',
+        'Y3_5': 'exp-middle',
+        'Y5_10': 'exp-senior',
+        'GE_10': 'exp-senior',
+        'ETC': 'exp-default'
       }
       return classes[exp] || 'exp-default'
     },
     
     getExperienceEmoji(exp) {
       const emojis = {
-        'JUNIOR': '🌱',
-        'MIDDLE': '🌿',
-        'SENIOR': '🌳'
+        'FRESHER': '🌱',
+        'LT_1': '🌿',
+        'Y1_3': '🌳',
+        'Y3_5': '🚀',
+        'Y5_10': '⭐',
+        'GE_10': '👑',
+        'ETC': '👤'
       }
       return emojis[exp] || '👤'
     }
