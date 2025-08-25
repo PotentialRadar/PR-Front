@@ -8,7 +8,11 @@
       </div>
       
       <div v-if="processedProjects.length === 0" class="empty-state">
-        <p class="empty-message">등록한 프로젝트가 없습니다.</p>
+        <div class="empty-icon">
+          <i class="bi bi-folder-x"></i>
+        </div>
+        <h3 class="empty-title">공개한 프로젝트가 없습니다</h3>
+        <p class="empty-description">아직 공개된 프로젝트가 없습니다.</p>
       </div>
       
       <div v-else class="projects-content">
@@ -195,17 +199,40 @@ const processedProjects = computed(() => {
 
 .empty-state {
   display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 1000px;
-  padding: 0 24px;
+  padding: 40px 24px;
   justify-content: center;
   align-items: center;
   position: relative;
   box-sizing: border-box;
-  min-height: 120px;
+  min-height: 200px;
+  text-align: center;
+  gap: 16px;
 }
 
-.empty-message {
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #4CAF50;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0;
+}
+
+.empty-description {
   color: #6F6F72;
   text-align: center;
   font-size: 15px;
@@ -214,8 +241,7 @@ const processedProjects = computed(() => {
   line-height: 24px;
   letter-spacing: -0.2px;
   margin: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
+  max-width: 300px;
 }
 
 .projects-content {

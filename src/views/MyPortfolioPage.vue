@@ -558,6 +558,67 @@
             </button>
           </div>
         </section>
+
+        <section class="portfolio-section">
+          <div class="section-header">
+            <h5 class="section-title">받은 리뷰</h5>
+            <span class="review-count" v-if="portfolioData.reviews.length > 0">
+              {{ portfolioData.reviews.length }}개
+            </span>
+          </div>
+          
+          <div v-if="portfolioData.reviews.length > 0" class="section-content">
+            <div class="reviews-list">
+              <div 
+                v-for="review in portfolioData.reviews" 
+                :key="review.reviewId"
+                class="review-card"
+              >
+                <div class="review-header">
+                  <div class="reviewer-info">
+                    <div class="reviewer-avatar">
+                      <img 
+                        :src="review.reviewerProfileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.reviewerId}`" 
+                        :alt="review.reviewerName"
+                      />
+                    </div>
+                    <div class="reviewer-details">
+                      <h6 class="reviewer-name">{{ review.reviewerName || '익명' }}</h6>
+                      <p class="project-context">{{ review.projectTitle }}</p>
+                    </div>
+                  </div>
+                  <div class="review-rating">
+                    <div class="stars">
+                      <i 
+                        v-for="star in 5" 
+                        :key="star"
+                        :class="['bi', star <= review.rating ? 'bi-star-fill' : 'bi-star']"
+                        class="star"
+                      ></i>
+                    </div>
+                    <span class="rating-text">{{ review.rating.toFixed(1) }}</span>
+                  </div>
+                </div>
+                
+                <div class="review-content">
+                  <p class="review-comment">{{ review.comment }}</p>
+                </div>
+                
+                <div class="review-footer">
+                  <span class="review-date">{{ formatReviewDate(review.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="empty-section">
+            <div class="empty-icon">
+              <i class="bi bi-chat-heart"></i>
+            </div>
+            <p class="empty-message">아직 받은 리뷰가 없습니다.</p>
+            <p class="empty-description">프로젝트에 참여하여 동료들과 함께 작업해보세요!</p>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -574,6 +635,13 @@
         {{ errorMessage }}
       </div>
     </Transition>
+
+    <!-- 프로젝트 선택 모달 -->
+    <ProjectSelectionModal 
+      :show="showProjectSelectionModal"
+      @close="closeProjectSelectionModal"
+      @saved="onProjectsUpdated"
+    />
   </div>
 </template>
 
@@ -581,66 +649,32 @@
 import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { portfolioApi, techStackApi } from '@/api/portfolio.js'
+import api from '@/api/axios.js'
+import ProjectSelectionModal from '@/components/portfolio/ProjectSelectionModal.vue'
 
 const router = useRouter()
 
-// 목업 기술 스택 데이터베이스 (실제로는 API에서 가져올 데이터)
-const mockSkillDatabase = [
-  { name: 'JavaScript', category: '언어' },
-  { name: 'TypeScript', category: '언어' },
-  { name: 'Python', category: '언어' },
-  { name: 'Java', category: '언어' },
-  { name: 'C++', category: '언어' },
-  { name: 'Go', category: '언어' },
-  { name: 'Rust', category: '언어' },
-  { name: 'Swift', category: '언어' },
-  { name: 'Kotlin', category: '언어' },
-  { name: 'C#', category: '언어' },
-  { name: 'React', category: '프론트엔드' },
-  { name: 'Vue.js', category: '프론트엔드' },
-  { name: 'Angular', category: '프론트엔드' },
-  { name: 'Svelte', category: '프론트엔드' },
-  { name: 'Next.js', category: '프론트엔드' },
-  { name: 'Nuxt.js', category: '프론트엔드' },
-  { name: 'Node.js', category: '백엔드' },
-  { name: 'Express.js', category: '백엔드' },
-  { name: 'Nest.js', category: '백엔드' },
-  { name: 'Django', category: '백엔드' },
-  { name: 'FastAPI', category: '백엔드' },
-  { name: 'Spring Boot', category: '백엔드' },
-  { name: 'Laravel', category: '백엔드' },
-  { name: 'Ruby on Rails', category: '백엔드' },
-  { name: 'MySQL', category: '데이터베이스' },
-  { name: 'PostgreSQL', category: '데이터베이스' },
-  { name: 'MongoDB', category: '데이터베이스' },
-  { name: 'Redis', category: '데이터베이스' },
-  { name: 'AWS', category: '클라우드' },
-  { name: 'Azure', category: '클라우드' },
-  { name: 'GCP', category: '클라우드' },
-  { name: 'Docker', category: '데브옵스' },
-  { name: 'Kubernetes', category: '데브옵스' },
-  { name: 'Jenkins', category: '데브옵스' },
-  { name: 'GitHub Actions', category: '데브옵스' },
-  { name: 'Terraform', category: '데브옵스' },
-  { name: 'Tailwind CSS', category: 'CSS' },
-  { name: 'Styled Components', category: 'CSS' },
-  { name: 'Material UI', category: 'CSS' },
-  { name: 'Bootstrap', category: 'CSS' },
-  { name: 'SASS', category: 'CSS' },
-  { name: 'GraphQL', category: 'API' },
-  { name: 'REST API', category: 'API' },
-  { name: 'gRPC', category: 'API' },
-  { name: 'Figma', category: '디자인' },
-  { name: 'Adobe XD', category: '디자인' },
-  { name: 'Sketch', category: '디자인' },
-  { name: 'Git', category: '버전관리' },
-  { name: 'GitHub', category: '버전관리' },
-  { name: 'GitLab', category: '버전관리' }
+// 백업용 기술 스택 데이터베이스 (API 실패 시에만 사용)
+const fallbackSkillDatabase = [
+  { stackId: 1, name: 'JavaScript', category: '언어' },
+  { stackId: 2, name: 'TypeScript', category: '언어' },
+  { stackId: 3, name: 'Python', category: '언어' },
+  { stackId: 4, name: 'Java', category: '언어' },
+  { stackId: 5, name: 'React', category: '프론트엔드' },
+  { stackId: 6, name: 'Vue.js', category: '프론트엔드' },
+  { stackId: 7, name: 'Node.js', category: '백엔드' },
+  { stackId: 8, name: 'Spring Boot', category: '백엔드' },
+  { stackId: 9, name: 'MySQL', category: '데이터베이스' },
+  { stackId: 10, name: 'PostgreSQL', category: '데이터베이스' },
+  { stackId: 11, name: 'MongoDB', category: '데이터베이스' },
+  { stackId: 12, name: 'AWS', category: '클라우드' },
+  { stackId: 13, name: 'Docker', category: '데브옵스' }
 ]
 
 const loading = ref(true)
 const editMode = ref(null) // null, 'introduction', 'education', 'career', 'skills'
 const showSaveToast = ref(false)
+const showProjectSelectionModal = ref(false)
 const saveLoading = ref(false)
 const errorMessage = ref('')
 const newSkill = ref('')
@@ -669,12 +703,16 @@ const editData = reactive({})
 const educationErrors = reactive({})
 const careerErrors = reactive({})
 
-// 포트폴리오 통계
-const portfolioStats = reactive({
-  views: 1247,
-  likes: 89,
-  contacts: 23
-})
+// 리뷰 데이터를 가져오는 API 함수
+const getUserReviews = async (userId) => {
+  try {
+    const response = await api.get(`/reviews/users/${userId}`)
+    return response.data
+  } catch (error) {
+    console.error('리뷰 데이터 로드 실패:', error)
+    return []
+  }
+}
 
 // 포트폴리오 컨텐츠가 있는지 확인 (사용자 정보는 항상 있으므로 다른 데이터로 판단)
 const hasPortfolioContent = computed(() => {
@@ -777,6 +815,9 @@ const loadPortfolioData = async () => {
       description: exp.summary || ''
     })) || []
     
+    // 리뷰 정보 설정
+    portfolioData.reviews = await getUserReviews(portfolio.userId)
+    
     // 전체 기술 스택 목록 설정 (검색용) - ID와 이름 모두 포함
     allTechStacks.value = allTechStacksResponse.data?.map(ts => ({
       stackId: ts.techStackId, // 실제 기술 스택 ID 사용
@@ -796,8 +837,8 @@ const loadPortfolioData = async () => {
       category: ''
     }
     
-    // 목업 기술 스택 데이터를 allTechStacks에 설정 (검색용)
-    allTechStacks.value = mockSkillDatabase
+    // 백업 기술 스택 데이터를 allTechStacks에 설정 (검색용)
+    allTechStacks.value = fallbackSkillDatabase
     
   } finally {
     loading.value = false
@@ -952,6 +993,30 @@ const formatCareerPeriod = (career) => {
   
   const endFormatted = formatDate(career.endDate)
   return `${startFormatted} ~ ${endFormatted}`
+}
+
+const formatReviewDate = (dateString) => {
+  if (!dateString) return ''
+  
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now - date)
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) {
+    return '어제'
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7)
+    return `${weeks}주 전`
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30)
+    return `${months}개월 전`
+  } else {
+    const years = Math.floor(diffDays / 365)
+    return `${years}년 전`
+  }
 }
 
 // 교육 이력 관련 메서드
@@ -1254,7 +1319,7 @@ const addSkill = () => {
   const skillName = newSkill.value.trim()
   if (skillName && !editData.skills.some(s => s.name === skillName)) {
     // 검색 결과에서 stackId 찾기
-    const searchResults = allTechStacks.value.length > 0 ? allTechStacks.value : mockSkillDatabase
+    const searchResults = allTechStacks.value.length > 0 ? allTechStacks.value : fallbackSkillDatabase
     const foundSkill = searchResults.find(s => s.name === skillName)
     
     editData.skills.push({
@@ -1490,7 +1555,7 @@ const searchSkills = () => {
       // 전체 기술 스택에서 검색
       const searchResults = allTechStacks.value.length > 0 
         ? allTechStacks.value
-        : mockSkillDatabase // 백엔드 연동 실패 시 목업 데이터 사용
+        : fallbackSkillDatabase // 백엔드 연동 실패 시 백업 데이터 사용
       
       skillSuggestions.value = searchResults
         .filter(skill => 
@@ -1612,7 +1677,22 @@ const viewPublicPortfolio = () => {
 }
 
 const goToProjectManagement = () => {
-  router.push('/myPage/projects')
+  showProjectSelectionModal.value = true
+}
+
+const closeProjectSelectionModal = () => {
+  showProjectSelectionModal.value = false
+}
+
+const onProjectsUpdated = async () => {
+  showProjectSelectionModal.value = false
+  showSaveToast.value = true
+  setTimeout(() => {
+    showSaveToast.value = false
+  }, 3000)
+  
+  // 프로젝트 데이터 다시 로드
+  await loadPortfolioData()
 }
 
 onMounted(() => {
@@ -2468,6 +2548,164 @@ onMounted(() => {
   background: #66BB6A;
 }
 
+/* 리뷰 섹션 스타일 */
+.review-count {
+  padding: 4px 12px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #4CAF50;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.review-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.1);
+  background: rgba(76, 175, 80, 0.02);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.reviewer-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.reviewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(76, 175, 80, 0.2);
+  flex-shrink: 0;
+}
+
+.reviewer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reviewer-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+.project-context {
+  font-size: 13px;
+  color: #4CAF50;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.stars .star {
+  font-size: 14px;
+  color: #ddd;
+}
+
+.stars .bi-star-fill {
+  color: #FFD700;
+}
+
+.rating-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  min-width: 28px;
+}
+
+.review-content {
+  margin: 12px 0;
+}
+
+.review-comment {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  margin: 0;
+  word-break: break-word;
+}
+
+.review-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  padding: 4px 10px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 12px;
+}
+
+.empty-section .empty-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  font-size: 24px;
+  color: #4CAF50;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: #999;
+  margin: 8px 0 0 0;
+  line-height: 1.4;
+}
+
 .save-toast {
   position: fixed;
   top: 80px;
@@ -2560,6 +2798,16 @@ onMounted(() => {
   .skill-proficiency-edit {
     justify-content: center;
   }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .review-rating {
+    align-self: flex-end;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2575,6 +2823,22 @@ onMounted(() => {
     flex-direction: column;
     text-align: center;
     gap: 15px;
+  }
+
+  .reviewer-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .reviewer-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .review-card {
+    padding: 16px;
   }
 }
 </style>
