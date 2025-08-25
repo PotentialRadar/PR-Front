@@ -35,11 +35,11 @@
     <div class="container">
       <div class="content-wrapper">
         <div class="sort-section">
-          <button class="create-project-button" @click="goToCreateProject">
+          <button v-if="userStore.isLoggedIn" class="create-project-button" @click="goToCreateProject">
             <i class="bi bi-plus-circle"></i>
             프로젝트 생성하기
           </button>
-          <SortOptions />
+          <SortOptions @sort-changed="handleSortChange" />
         </div>
 
         <div class="projects-section">
@@ -123,10 +123,11 @@ const {
   setCategory,
   goToPage,
   load, // load 함수 추가
+  sort, // Add sort from useProjects
 } = useProjects({
   q: route.query.q ?? '',
   category: route.query.category ?? null,
-  sort: route.query.sort ?? null,
+  sort: route.query.sort ?? 'createdAt,desc', // Pass sort from route query, default to latest
   page: Number(route.query.page ?? 1),
   size: 10, // 페이지 크기를 10으로 변경
 });
@@ -137,15 +138,22 @@ onActivated(() => {
 });
 
 // URL 쿼리 동기화 (새로고침/공유 시 유리)
-watch([page], () => {
+watch([page, sort], () => { // Add sort to watch
   router.replace({
     query: {
       ...route.query,
       page: page.value !== 1 ? page.value : undefined,
+      sort: sort.value !== 'createdAt,desc' ? sort.value : undefined, // Update sort query param
     },
   });
   window.scrollTo(0, 0); // 페이지 변경 시 맨 위로 스크롤
 });
+
+// Handle sort change from SortOptions component
+const handleSortChange = (newSort) => {
+  sort.value = newSort;
+  page.value = 1; // Reset page to 1 when sort changes
+};
 
 // 페이지 내 액션들
 const goToCreateProject = () => router.push({ name: 'ProjectCreate' });
@@ -178,21 +186,16 @@ const goToPortfolioSettings = () => {
   router.push({ name: 'PortfolioSettings' });
 };
 
-// API 연동된 지원 처리 함수 (userId: 2 하드코딩)
+// API 연동된 지원 처리 함수
 const handleApplicationSubmitted = async (applicationData) => {
-  // 임시 토큰 설정 (로그인 구현 전 테스트용)
-  localStorage.setItem('accessToken', 'dummy-token-for-user2');
-
   if (!selectedProject.value?.projectId) return;
 
   const payload = {
-    techPart: applicationData.applicationForm.part, // 백엔드 DTO에 맞게 필드명 변경
-    applicationMessage: applicationData.applicationForm.message, // 백엔드 DTO에 맞게 필드명 변경
-    userId: userStore.userId, // userId를 payload에 추가
+    techPart: applicationData.applicationForm.part,
+    applicationMessage: applicationData.applicationForm.message,
   };
 
   try {
-    // userId를 payload에 포함하여 API 호출
     await applyProject(selectedProject.value.projectId, payload);
     showSuccessToast.value = true;
     setTimeout(() => (showSuccessToast.value = false), 3000);
@@ -352,7 +355,7 @@ const handleLikeUpdate = ({ projectId, liked, likeCount }) => {
 
 .page-subtitle {
   font-size: 18px;
-  color: var(--color-grey-50, #808080);
+  color: var(#808080);
   margin: 0;
   font-weight: 400;
   max-width: 600px;

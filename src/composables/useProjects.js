@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { listProjects } from '@/api/projects';
 
-export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, size: _sz = 8 } = {}) {
+export function useProjects({ q: _q = '', category: _c = null, sort: _s = null, page: _p = 1, size: _sz = 8 } = {}) {
     const items = ref([]);
     const total = ref(0);
     const totalPages = ref(1);
@@ -11,6 +11,7 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
 
     const q = ref(_q);
     const category = ref(_c);
+    const sort = ref(_s); // Add sort ref
     const page = ref(_p);
     const size = ref(_sz);
 
@@ -25,6 +26,7 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
                 size: size.value,
                 category: category.value,
                 q: q.value,
+                sort: sort.value, // Include sort in params
                 _t: new Date().getTime(), // 캐시 방지를 위한 타임스탬프
             };
             // 값이 없는 파라미터는 전송하지 않음
@@ -63,8 +65,8 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
         }
     };
 
-    // q, category, page가 변경될 때마다 API를 다시 호출
-    watch([q, category, page], load, { deep: true });
+    // q, category, page, sort가 변경될 때마다 API를 다시 호출
+    watch([q, category, page, sort], load, { deep: true }); // Add sort to watch
 
     load();
 
@@ -79,5 +81,5 @@ export function useProjects({ q: _q = '', category: _c = null, page: _p = 1, siz
         }
     };
 
-    return { items, total, totalPages, loading, error, q, category, page, size, load, setCategory, goToPage };
+    return { items, total, totalPages, loading, error, q, category, sort, page, size, load, setCategory, goToPage }; // Return sort
 }

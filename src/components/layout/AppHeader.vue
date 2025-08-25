@@ -12,7 +12,7 @@
           <router-link to="/projects" class="nav-item">프로젝트</router-link>
           <router-link to="/ai-recommendations" class="nav-item ai-nav-item">AI 추천</router-link>
           <router-link to="/portfolios" class="nav-item">포트폴리오</router-link>
-          <router-link to="/new-project" class="nav-item">프로젝트 생성</router-link>
+          <router-link v-if="isLoggedIn" to="/new-project" class="nav-item">프로젝트 생성</router-link>
         </nav>
       </div>
 

@@ -116,6 +116,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import { useToast } from 'vue-toastification';
 import ProjectHeader from '@/components/projectComponents/ProjectHeader.vue';
 import TabNavigation from '@/components/projectComponents/TabNavigation.vue';
 import ProjectWorkContent from '@/components/projectComponents/ProjectWorkContent.vue';
@@ -131,8 +132,10 @@ import { applyProject } from '@/api/projectMember';
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const projectId = computed(() => Number(route.params.id));
+const toast = useToast();
+const isLoggedIn = computed(() => userStore.isLoggedIn);
 
+const projectId = computed(() => Number(route.params.id));
 const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
@@ -199,13 +202,9 @@ const load = async () => {
 };
 
 onMounted(load);
-watch(
-    () => route.params.id,
-    (v) => {
-      projectId.value = Number(v);
-      load();
-    }
-);
+watch(() => route.params.id, () => {
+  load();
+});
 
 // 탭 관리
 const activeTab = ref('content');
@@ -240,39 +239,35 @@ const userPortfolio = ref({
 });
 
 function openApplyModal() {
+  if (!isLoggedIn.value) {
+    toast.info('로그인이 필요합니다.');
+    return;
+  }
   showApplyModal.value = true;
 }
 function closeApplyModal() {
   showApplyModal.value = false;
 }
 
-
-
-// ... (기존 코드) ...
-
 // 실제 지원 API 호출
 async function handleApplicationSubmit(applicationData) {
-  // 임시 토큰 설정 (로그인 구현 전 테스트용)
-  localStorage.setItem('accessToken', 'dummy-token-for-user2');
-
   try {
     console.log('지원서 데이터:', applicationData);
 
     const payload = {
-      userId: userStore.userId, // applicationForm에서 userId 사용
       applicationMessage: applicationData.applicationForm.message,
-      techPart: applicationData.applicationForm.techPart // techPart 필드 사용
+      techPart: applicationData.applicationForm.techPart
     };
 
-    await applyProject(projectId.value, payload); // projectId는 ref로 이미 정의됨
+    await applyProject(projectId.value, payload);
 
     showSuccessToast.value = true;
-    setTimeout(() => (showSuccessToast.value = false), 3000);
-    closeApplyModal(); // 지원 성공 후 모달 닫기
+    setTimeout(() => (showSuccessToast.value = false), 1000);
+    closeApplyModal();
   } catch (error) {
     console.error('지원 실패:', error);
-    showFailToast.value = true; // Use showFailToast
-    setTimeout(() => (showFailToast.value = false), 3000); // Hide after 3 seconds
+    showFailToast.value = true;
+    setTimeout(() => (showFailToast.value = false), 1000);
   }
 }
 

@@ -89,7 +89,7 @@
 
     <div class="bottom-section">
       <button class="detail-button" @click="goToDetail">상세보기</button>
-      <button class="apply-button" @click="onApplyClick" v-if="project.status !== '마감'">지원하기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status !== '마감'">지원하기</button>
     </div>
   </div>
 </template>
@@ -110,6 +110,7 @@ const props = defineProps({
 const emit = defineEmits(['apply', 'like-updated']);
 const router = useRouter();
 const userStore = useUserStore();
+const isLoggedIn = computed(() => userStore.isLoggedIn);
 
 const isLiked = ref(false);
 const likeCount = ref(props.project.likeCount || 0);
@@ -136,14 +137,13 @@ const fetchLikeStatus = async () => {
 
 onMounted(() => {
   const projectId = props.project.projectId || props.project.id;
-  console.log(`[ProjectCard #${projectId}] 컴포넌트 마운트됨.`);
   likeCount.value = props.project.likeCount || 0;
+  console.log(`[ProjectCard #${projectId}] Initial likeCount prop:`, props.project.likeCount, `(displayed as ${likeCount.value})`);
   fetchLikeStatus();
 });
 
 watch(() => userStore.userId, (newUserId, oldUserId) => {
   const projectId = props.project.projectId || props.project.id;
-  console.log(`[ProjectCard #${projectId}] userId 변경 감지: ${oldUserId} -> ${newUserId}`);
   if (newUserId) {
     fetchLikeStatus();
   }

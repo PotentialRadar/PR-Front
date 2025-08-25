@@ -185,6 +185,7 @@ onMounted(() => {
 const loadFavoriteData = async () => {
   try {
     const projects = await getLikedProjects();
+    console.log('Liked Projects API Response:', JSON.stringify(projects, null, 2));
     favoriteProjects.value = projects;
   } catch (error) {
     console.error('좋아요 프로젝트 목록을 불러오는 데 실패했습니다:', error)

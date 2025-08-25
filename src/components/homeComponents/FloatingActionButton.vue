@@ -1,5 +1,5 @@
 <template>
-  <div class="tooltip-wrapper">
+  <div v-if="isLoggedIn" class="tooltip-wrapper">
     <div class="floating-button">
       <button class="action-button" @click="goToProjectCreate">
         <div class="button-background">
@@ -17,8 +17,13 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
+import { computed } from 'vue';
 
 const router = useRouter();
+const userStore = useUserStore();
+
+const isLoggedIn = computed(() => userStore.isLoggedIn);
 
 const goToProjectCreate = () => {
   router.push({ name: 'ProjectCreate' });
