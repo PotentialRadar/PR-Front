@@ -108,7 +108,7 @@
         </section>
 
         <!-- Contact Information Section -->
-        <section class="portfolio-section" v-if="portfolioData.contactInfo && portfolioData.contactInfo.showContact">
+        <section class="portfolio-section" v-if="hasContactInfo">
           <div class="section-border">
             <div class="section-header">
               <h5 class="section-title">연락처 정보</h5>
@@ -139,7 +139,7 @@
                 </div>
 
                 <!-- 전화번호 -->
-                <div v-if="portfolioData.contactInfo.phone && portfolioData.contactInfo.phone.trim()" class="contact-item">
+                <div v-if="portfolioData.contactInfo.phone && portfolioData.contactInfo.phone.trim() && portfolioData.contactInfo.showContact" class="contact-item">
                   <div class="contact-icon">
                     <i class="bi bi-telephone-fill"></i>
                   </div>
@@ -308,11 +308,11 @@ const educationData = computed(() => {
 // 연락처 정보가 있는지 확인
 const hasContactInfo = computed(() => {
   const contact = portfolioData.value.contactInfo
-  if (!contact || !contact.showContact) return false
+  if (!contact) return false
   
-  // 유효한 연락처 정보가 하나라도 있는지 확인
+  // 유효한 연락처 정보가 하나라도 있는지 확인 (전화번호는 showContact 여부에 관계없이 다른 정보들은 항상 표시)
   const hasValidEmail = contact.email && isValidEmail(contact.email)
-  const hasValidPhone = contact.phone && contact.phone.trim()
+  const hasValidPhone = contact.phone && contact.phone.trim() && contact.showContact // 전화번호만 showContact 조건 적용
   const hasValidGithub = contact.github && isValidUrl(contact.github)
   const hasValidLinkedin = contact.linkedin && isValidUrl(contact.linkedin)
   const hasValidWebsite = contact.website && isValidUrl(contact.website)

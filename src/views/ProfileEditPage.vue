@@ -476,7 +476,13 @@ const removeUploadedImage = () => {
 
 // 닉네임 변경 감지
 const onNicknameChange = () => {
-  nicknameAvailable.value = null;
+  // 원래 닉네임과 같으면 중복 확인 불필요
+  if (formData.name === originalNickname.value) {
+    nicknameAvailable.value = null;
+  } else {
+    // 다르면 중복 확인 초기화
+    nicknameAvailable.value = null;
+  }
 };
 
 // 닉네임 중복 확인
@@ -551,6 +557,14 @@ const saveProfile = async () => {
       return;
     }
 
+    // 닉네임 변경 시 중복 확인 필수
+    if (formData.name !== originalNickname.value) {
+      if (nicknameAvailable.value !== true) {
+        alert("닉네임 중복 확인을 완료해주세요.");
+        return;
+      }
+    }
+
     // 전화번호 처리 (빈 값이면 null, 있으면 하이픈 제거)
     const processedPhone = formData.phone && formData.phone.trim() 
       ? formData.phone.replace(/-/g, "") 
@@ -618,6 +632,9 @@ const saveProfile = async () => {
     originalData = JSON.parse(JSON.stringify(refreshedData));
     Object.assign(formData, refreshedData);
     originalNickname.value = refreshedData.name;
+    
+    // 닉네임 중복 확인 상태 초기화
+    nicknameAvailable.value = null;
 
     showSaveToast.value = true;
     setTimeout(() => (showSaveToast.value = false), 3000);
