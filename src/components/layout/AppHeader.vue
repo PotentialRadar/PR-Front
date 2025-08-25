@@ -375,43 +375,22 @@ onMounted(async () => {
   // 전역 객체에도 저장
   window.debugAppHeaderUserStore = userStore
   
-  // 로그인 상태 변화 감지하여 알림 초기화
+  // 로그인 + userId 동시 충족 시 초기화, 로그아웃/해제 시 정리
   watch(
-    () => userStore.isLoggedIn,
-    (newValue, oldValue) => {
-      console.log('👀 로그인 상태 변화 감지:', { newValue, oldValue, userId: userStore.userId })
-      
-      if (newValue && !oldValue) {
-        // 로그인 상태로 변경된 경우만 초기화
-        console.log('✅ 로그인 감지 - 실시간 알림 초기화')
-        // userStore에 userId가 설정될 때까지 기다림
-        const checkAndInit = () => {
-          if (userStore.userId) {
-            console.log('🆔 userId 확인됨 - 알림 시스템 시작')
-            initializeNotifications()
-          } else {
-            console.log('⏳ userId 대기 중...')
-            setTimeout(checkAndInit, 500)
-          }
-        }
-        checkAndInit()
-      } else if (!newValue && oldValue) {
-        // 로그아웃된 경우만 정리
+    [() => userStore.isLoggedIn, () => userStore.userId],
+    ([loggedIn, userId], [prevLoggedIn]) => {
+      console.log('👀 로그인 상태 변화 감지:', { loggedIn, userId })
+      if (loggedIn && userId) {
+        console.log('🆔 로그인+userId 확인 - 알림 시스템 시작')
+        initializeNotifications()
+      } else if (!loggedIn && prevLoggedIn) {
         console.log('❌ 로그아웃 감지 - 실시간 알림 정리')
         cleanupNotifications()
         resetNotifications()
       }
     },
-    { immediate: false } // immediate를 false로 변경하여 초기 실행 방지
+    { immediate: true }
   )
-  
-  // 컴포넌트 마운트 시 로그인 상태 확인 (초기화 지연)
-  setTimeout(() => {
-    if (userStore.isLoggedIn && userStore.userId) {
-      console.log('🔄 지연된 마운트 시 로그인 상태 확인됨 - 알림 초기화')
-      initializeNotifications()
-    }
-  }, 2000) // 2초 지연으로 App.vue의 checkLogin 완료 대기
 })
 
 onUnmounted(() => {
