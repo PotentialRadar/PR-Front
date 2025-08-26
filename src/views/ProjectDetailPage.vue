@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onActivated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { useToast } from 'vue-toastification';
@@ -180,7 +180,9 @@ const load = async () => {
         userId: data.teamLeaderId,
         name: `팀장 ${data.teamLeaderId}`,
         email: `leader${data.teamLeaderId}@example.com`
-      }
+      },
+      attachments: data.attachments || [],
+      recruitmentParts: data.recruitmentParts || []
     };
     
   } catch (e) {
@@ -202,6 +204,7 @@ const load = async () => {
 };
 
 onMounted(load);
+onActivated(load);
 watch(() => route.params.id, () => {
   load();
 });
