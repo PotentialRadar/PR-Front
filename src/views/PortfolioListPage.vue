@@ -329,7 +329,6 @@ onActivated(async () => {
 
 watch([page], () => {
   router.replace({ query: { ...route.query, page: page.value !== 1 ? page.value : undefined } })
-  performSearch(currentSearchParams.value)
 })
 
 const handleSearch = async (resetPage = true) => {
@@ -351,7 +350,12 @@ const handleSearch = async (resetPage = true) => {
 const performSearch = async (searchParams) => {
   loading.value = true
   try {
-    const finalParams = { ...searchParams, page: page.value - 1, size: 20 }
+    const finalParams = { 
+      ...searchParams, 
+      page: page.value - 1, 
+      size: 20,
+      sort: sortByToParam(sortBy.value)
+    }
     const result = await searchUsers(finalParams)
     
     
@@ -394,53 +398,50 @@ const updateFilterResultCounts = async () => {
     console.log('기술 스택:', popularTechStacks.value)
     console.log('경력 수준:', experienceRanges.value)
 
-    // 각 기술 파트별 결과 수 계산 - 단독으로 검색
-    for (const part of techParts.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        techParts: [part]
+    // 기술 파트별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      techParts.value.map(async (part) => {
+        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techParts: [part] })
+        filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0
+        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount ?? 0}`)
+      })
+    ).then(results => results.forEach((r, i) => { 
+      if (r.status === 'rejected') {
+        const part = techParts.value[i]
+        console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, r.reason)
+        filterResultCounts.value[`techPart-${part}`] = 0 
       }
-      try {
-        const result = await getUserCountPreview(params)
-        filterResultCounts.value[`techPart-${part}`] = result.totalCount
-        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount}`)
-      } catch (error) {
-        console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, error)
-        filterResultCounts.value[`techPart-${part}`] = 0
-      }
-    }
+    }))
 
-    // 각 기술 스택별 결과 수 계산 - 단독으로 검색
-    for (const stack of popularTechStacks.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        techStacks: [stack]
+    // 기술 스택별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      popularTechStacks.value.map(async (stack) => {
+        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techStacks: [stack] })
+        filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0
+        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount ?? 0}`)
+      })
+    ).then(results => results.forEach((r, i) => { 
+      if (r.status === 'rejected') {
+        const stack = popularTechStacks.value[i]
+        console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
+        filterResultCounts.value[`techStack-${stack}`] = 0 
       }
-      try {
-        const result = await getUserCountPreview(params)
-        filterResultCounts.value[`techStack-${stack}`] = result.totalCount
-        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount}`)
-      } catch (error) {
-        console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, error)
-        filterResultCounts.value[`techStack-${stack}`] = 0
-      }
-    }
+    }))
 
-    // 각 경력별 결과 수 계산 - 단독으로 검색
-    for (const experience of experienceRanges.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        experienceRanges: [experience.value]
+    // 경력별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      experienceRanges.value.map(async (exp) => {
+        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, experienceRanges: [exp.value] })
+        filterResultCounts.value[`experience-${exp.value}`] = result.totalCount ?? 0
+        console.log(`✅ 경력 수준 "${exp.label}" 결과 수: ${result.totalCount ?? 0}`)
+      })
+    ).then(results => results.forEach((r, i) => { 
+      if (r.status === 'rejected') {
+        const exp = experienceRanges.value[i]
+        console.error(`❌ 경력 수준 "${exp.label}" 결과 수 조회 실패:`, r.reason)
+        filterResultCounts.value[`experience-${exp.value}`] = 0 
       }
-      try {
-        const result = await getUserCountPreview(params)
-        filterResultCounts.value[`experience-${experience.value}`] = result.totalCount
-        console.log(`✅ 경력 수준 "${experience.label}" 결과 수: ${result.totalCount}`)
-      } catch (error) {
-        console.error(`❌ 경력 수준 "${experience.label}" 결과 수 조회 실패:`, error)
-        filterResultCounts.value[`experience-${experience.value}`] = 0
-      }
-    }
+    }))
 
     console.log('✅ 필터 결과 수 업데이트 완료 (Portfolio):', filterResultCounts.value)
   } catch (error) {
@@ -512,6 +513,14 @@ const viewPortfolio = (portfolioId) => {
 const setSortBy = (sortType) => {
   sortBy.value = sortType
   handleSearch()
+}
+
+const sortByToParam = (v) => {
+  switch (v) {
+    case 'recent': return 'createdAt,desc'
+    case 'popularity': return 'popularity,desc'
+    default: return undefined
+  }
 }
 
 const getSkillLevelClass = (skill) => {

@@ -423,53 +423,59 @@ const updateFilterResultCounts = async () => {
     console.log('기술 파트:', techParts.value);
     console.log('기술 스택:', popularTechStacks.value);
 
-    // 각 기술 파트별 결과 수 계산 - 단독으로 검색
-    for (const part of techParts.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        techParts: [part]
-      };
-      try {
+    // 기술 파트별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      techParts.value.map(async (part) => {
+        const params = { keyword: searchQuery.value.trim() || null, techParts: [part] };
         const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`techPart-${part}`] = result.totalCount;
-        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount}`);
-      } catch (error) {
-        console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, error);
-        filterResultCounts.value[`techPart-${part}`] = 0;
-      }
-    }
+        filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0;
+        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount ?? 0}`);
+      })
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const part = techParts.value[i]
+          console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`techPart-${part}`] = 0; 
+        }
+      });
+    });
 
-    // 각 기술 스택별 결과 수 계산 - 단독으로 검색
-    for (const stack of popularTechStacks.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        techStacks: [stack]
-      };
-      try {
+    // 기술 스택별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      popularTechStacks.value.map(async (stack) => {
+        const params = { keyword: searchQuery.value.trim() || null, techStacks: [stack] };
         const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`techStack-${stack}`] = result.totalCount;
-        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount}`);
-      } catch (error) {
-        console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, error);
-        filterResultCounts.value[`techStack-${stack}`] = 0;
-      }
-    }
+        filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0;
+        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount ?? 0}`);
+      })
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const stack = popularTechStacks.value[i]
+          console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`techStack-${stack}`] = 0; 
+        }
+      });
+    });
 
-    // 각 상태별 결과 수 계산 - 단독으로 검색
-    for (const status of filteredProjectStatuses.value) {
-      const params = {
-        keyword: searchQuery.value.trim() || null,
-        statuses: [status.value]
-      };
-      try {
+    // 상태별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      filteredProjectStatuses.value.map(async (status) => {
+        const params = { keyword: searchQuery.value.trim() || null, statuses: [status.value] };
         const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`status-${status.value}`] = result.totalCount;
-        console.log(`✅ 상태 "${status.label}" 결과 수: ${result.totalCount}`);
-      } catch (error) {
-        console.error(`❌ 상태 "${status.label}" 결과 수 조회 실패:`, error);
-        filterResultCounts.value[`status-${status.value}`] = 0;
-      }
-    }
+        filterResultCounts.value[`status-${status.value}`] = result.totalCount ?? 0;
+        console.log(`✅ 상태 "${status.label}" 결과 수: ${result.totalCount ?? 0}`);
+      })
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const status = filteredProjectStatuses.value[i]
+          console.error(`❌ 상태 "${status.label}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`status-${status.value}`] = 0; 
+        }
+      });
+    });
 
     console.log('✅ 필터 결과 수 업데이트 완료:', filterResultCounts.value);
   } catch (error) {
