@@ -26,6 +26,10 @@ export const verifyEmailCode = (email, code) =>
 export const checkNickname = (nickname) =>
   api.get("/user/check-nickname", { params: { nickname } });
 
+export const getTechTags = () => api.get("/search/tags");
+
+export const getTechParts = () => api.get("/tech-parts");
+
 export const getFavoriteProjects = userId =>
   api.get(`${BASE_URL}/${userId}/likes/projects`); // Changed axios to api
 

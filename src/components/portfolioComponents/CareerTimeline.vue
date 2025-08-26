@@ -7,7 +7,7 @@
         </div>
       </div>
       
-      <div class="timeline-list">
+      <div v-if="careerItems.length > 0" class="timeline-list">
         <div 
           v-for="(item, index) in careerItems" 
           :key="index"
@@ -16,7 +16,7 @@
         >
           <div class="timeline-marker" :class="`marker-${index}`">
             <!-- Current position marker -->
-            <div v-if="index === 0" class="current-marker">
+            <div v-if="item.isCurrent" class="current-marker">
               <div class="outer-ring">
                 <div class="inner-dot"></div>
               </div>
@@ -31,34 +31,80 @@
             <h3 class="company-name">{{ item.company }}</h3>
             <p class="job-position">{{ item.position }}</p>
             <p class="duration">{{ item.duration }}</p>
+            <p v-if="item.description" class="job-description">{{ item.description }}</p>
           </div>
         </div>
+      </div>
+      
+      <div v-else class="empty-state">
+        <p class="empty-message">경력 정보가 없습니다.</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 
-// Career data
-const careerItems = ref([
-  {
-    company: 'NHN 계열사',
-    position: 'UX/UI designer',
-    duration: '2022.6 - 재직중 | 3년 2개월'
-  },
-  {
-    company: '디지털 에이전시',
-    position: 'UI designer',
-    duration: '2018.7 - 2021.10 | 3년 4개월'
-  },
-  {
-    company: '소프트웨어 개발 기업',
-    position: 'UI designer',
-    duration: '2016.8 - 2017.10 | 1년 3개월'
+// Props
+const props = defineProps({
+  careers: {
+    type: Array,
+    default: () => []
   }
-])
+})
+
+// 경력 기간 포맷팅 함수
+const formatCareerPeriod = (career) => {
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const [year, month] = dateString.split('-')
+    return `${year}.${month}`
+  }
+
+  const startFormatted = formatDate(career.startDate)
+  
+  if (career.isCurrent) {
+    return `${startFormatted} - 재직중`
+  }
+  
+  const endFormatted = formatDate(career.endDate)
+  return `${startFormatted} - ${endFormatted}`
+}
+
+// 경력 기간 계산 함수 (개월 수)
+const calculateDuration = (startDate, endDate, isCurrent) => {
+  if (!startDate) return ''
+  
+  const start = new Date(startDate + '-01')
+  const end = isCurrent ? new Date() : new Date(endDate + '-01')
+  
+  const diffTime = Math.abs(end - start)
+  const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30))
+  
+  const years = Math.floor(diffMonths / 12)
+  const months = diffMonths % 12
+  
+  if (years > 0) {
+    return months > 0 ? `${years}년 ${months}개월` : `${years}년`
+  }
+  return `${months}개월`
+}
+
+// Career items computed property
+const careerItems = computed(() => {
+  if (!props.careers || props.careers.length === 0) {
+    return []
+  }
+
+  return props.careers.map(career => ({
+    company: career.company,
+    position: career.position,
+    duration: `${formatCareerPeriod(career)} | ${calculateDuration(career.startDate, career.endDate, career.isCurrent)}`,
+    description: career.description,
+    isCurrent: career.isCurrent
+  }))
+})
 </script>
 
 <style scoped>
@@ -128,10 +174,10 @@ const careerItems = ref([
 }
 
 .timeline-item {
-  height: 94px;
   width: 100%;
-  border-left: 2px solid rgba(76, 175, 80, 0.3);
   position: relative;
+  border-left: 2px solid rgba(76, 175, 80, 0.3);
+  padding: 6px 0 20px 56px;
 }
 
 .timeline-item.no-border {
@@ -140,8 +186,9 @@ const careerItems = ref([
 
 .timeline-marker {
   position: absolute;
-  left: -12px;
-  top: -8px;
+  left: 0;
+  top: 10px;
+  transform: translateX(-50%);
   z-index: 2;
 }
 
@@ -188,9 +235,6 @@ const careerItems = ref([
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  left: 5px;
-  top: 5px;
 }
 
 .square-marker {
@@ -216,12 +260,9 @@ const careerItems = ref([
 
 .timeline-content {
   display: flex;
-  width: calc(100% - 60px);
+  width: 100%;
   flex-direction: column;
   align-items: flex-start;
-  position: absolute;
-  left: 41px;
-  top: -10px;
 }
 
 .company-name {
@@ -251,6 +292,42 @@ const careerItems = ref([
   font-style: normal;
   font-weight: 400;
   line-height: 20px;
+  margin: 0 0 8px 0;
+}
+
+.job-description {
+  color: #38383A;
+  font-family: 'Lato', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 40px 20px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.empty-message {
+  color: #6F6F72;
+  text-align: center;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.2px;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
   margin: 0;
   padding-bottom: 16px;
   opacity: 0.8;
@@ -264,11 +341,7 @@ const careerItems = ref([
   .timeline-list {
     padding: 0 16px;
   }
-  
-  .timeline-content {
-    width: calc(100% - 50px);
-    left: 35px;
-  }
+  .timeline-item { padding-left: 50px; }
   
   .career-header {
     padding: 15.75px 15px 16px 4px;
@@ -288,10 +361,7 @@ const careerItems = ref([
     padding: 0 12px;
   }
 
-  .timeline-content {
-    width: calc(100% - 45px);
-    left: 30px;
-  }
+  .timeline-item { padding-left: 45px; }
 
   .company-name {
     font-size: 14px;

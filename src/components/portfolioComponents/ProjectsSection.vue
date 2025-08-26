@@ -4,17 +4,26 @@
       <div class="section-header">
         <span class="section-title">withPR</span>
         <span class="divider">|</span>
-        <span class="projects-count">총 <span class="highlight">{{ projects.length }}개 프로젝트</span></span>
+        <span class="projects-count">총 <span class="highlight">{{ processedProjects.length }}개 프로젝트</span></span>
       </div>
       
-      <div v-if="projects.length === 0" class="empty-state">
-        <p class="empty-message">등록한 프로젝트가 없습니다.</p>
+      <div v-if="processedProjects.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-folder-x"></i>
+        </div>
+        <h3 class="empty-title">공개한 프로젝트가 없습니다</h3>
+        <p class="empty-description">
+          마이페이지 > 내 포트폴리오 > 프로젝트 선택에서 공개할 프로젝트를 선택하세요.
+        </p>
+        <router-link v-if="props.isOwnProfile" to="/myPage/projects" class="go-select-btn">
+          프로젝트 선택하러 가기
+        </router-link>
       </div>
       
       <div v-else class="projects-content">
         <div class="projects-grid">
           <div 
-            v-for="(project, index) in projects" 
+            v-for="(project, index) in processedProjects" 
             :key="index"
             class="project-card-wrapper"
           >
@@ -52,43 +61,92 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 
-// Projects data
-const projects = ref([
-  {
-    title: '무해한 도전',
-    role: 'UI/UX 디자이너',
-    description: '일상에서 쉽게 제로웨이스트를 \'발견\'하고\n\'실천\'하도록 도와주고, 제로웨이스트에',
-    duration: '2022.02.14 - 2022.05.22',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/d0cdae957cc71d34de8f77ab256b0f73c8852b9e?width=560',
-    badges: [
-      { text: '최고동료', color: '#4CAF50' },
-      { text: '박수 3번', color: '#388E3C' }
-    ]
+// Props
+const props = defineProps({
+  projects: {
+    type: Array,
+    default: () => []
   },
-  {
-    title: 'KEEPON',
-    role: 'UI/UX 디자이너',
-    description: '기프티콘을 적재적소에 쓰게 도와주는 쿠\n폰 정리 서비스',
-    duration: '2021.12.06 - 2022.03.13',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/6efe99920c5ccaffa73edfb850230ed31e81623a?width=560',
-    badges: [
-      { text: '출시', color: '#0AA592' }
-    ]
-  },
-  {
-    title: '글리터',
-    role: 'UI/UX 디자이너',
-    description: '타인과 글감을 공유하며 익명으로 가볍게\n글을 쓰고 나눌 수 있는 서비스',
-    duration: '2021.08.02 - 2021.11.20',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/650424f37bb5f8660d402c7ae3129d748ca9c220?width=560',
-    badges: [
-      { text: '최고동료', color: '#4CAF50' },
-      { text: '박수 3번', color: '#388E3C' }
-    ]
+  isOwnProfile: {
+    type: Boolean,
+    default: false
   }
-])
+})
+
+// 프로젝트 기간 포맷팅 함수
+const formatProjectPeriod = (startDate, endDate) => {
+  if (!startDate) return ''
+  
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\. /g, '.').replace(/\.$/, '')
+  }
+
+  const start = formatDate(startDate)
+  const end = endDate ? formatDate(endDate) : '진행중'
+  
+  return `${start} - ${end}`
+}
+
+// 프로젝트 상태에 따른 뱃지 색상
+const getStatusBadgeColor = (status) => {
+  switch(status?.toLowerCase()) {
+    case 'completed': return '#4CAF50'
+    case 'in_progress': return '#2196F3'
+    case 'planning': return '#FF9800'
+    case 'cancelled': return '#f44336'
+    default: return '#757575'
+  }
+}
+
+// 역할에 따른 뱃지 색상
+const getRoleBadgeColor = (role) => {
+  if (!role) return '#9C27B0'
+  const lower = role.toLowerCase()
+  switch(lower) {
+    case 'frontend developer':
+    case 'front-end developer': return '#61DAFB'
+    case 'backend developer':
+    case 'back-end developer': return '#68217A'
+    case 'full-stack developer':
+    case 'fullstack developer': return '#4CAF50'
+    case 'ui/ux designer':
+    case 'designer': return '#FF6B6B'
+    case 'project manager':
+    case 'pm': return '#FF9800'
+    // 한국어 역할 라벨 매핑
+    case '팀장': return '#FF9800'
+    case '팀원': return '#4CAF50'
+    default: return '#9C27B0'
+  }
+}
+
+// 처리된 프로젝트 데이터
+const processedProjects = computed(() => {
+  return props.projects.map(project => ({
+    ...project,
+    duration: formatProjectPeriod(project.startDate, project.endDate),
+    image: project.image || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + project.title,
+    badges: [
+      {
+        text: project.status || 'Unknown',
+        color: getStatusBadgeColor(project.status)
+      },
+      {
+        text: project.role || 'Member',
+        color: getRoleBadgeColor(project.role)
+      }
+    ]
+  }))
+})
+
 </script>
 
 <style scoped>
@@ -155,17 +213,40 @@ const projects = ref([
 
 .empty-state {
   display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 1000px;
-  padding: 0 24px;
+  padding: 40px 24px;
   justify-content: center;
   align-items: center;
   position: relative;
   box-sizing: border-box;
-  min-height: 120px;
+  min-height: 200px;
+  text-align: center;
+  gap: 16px;
 }
 
-.empty-message {
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #4CAF50;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0;
+}
+
+.empty-description {
   color: #6F6F72;
   text-align: center;
   font-size: 15px;
@@ -174,8 +255,27 @@ const projects = ref([
   line-height: 24px;
   letter-spacing: -0.2px;
   margin: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
+  max-width: 300px;
+}
+
+.go-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 2px dashed rgba(76, 175, 80, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.go-select-btn:hover {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
 }
 
 .projects-content {
