@@ -12,7 +12,12 @@
           <i class="bi bi-folder-x"></i>
         </div>
         <h3 class="empty-title">공개한 프로젝트가 없습니다</h3>
-        <p class="empty-description">아직 공개된 프로젝트가 없습니다.</p>
+        <p class="empty-description">
+          마이페이지 > 내 포트폴리오 > 프로젝트 선택에서 공개할 프로젝트를 선택하세요.
+        </p>
+        <router-link v-if="props.isOwnProfile" to="/myPage/projects" class="go-select-btn">
+          프로젝트 선택하러 가기
+        </router-link>
       </div>
       
       <div v-else class="projects-content">
@@ -63,6 +68,10 @@ const props = defineProps({
   projects: {
     type: Array,
     default: () => []
+  },
+  isOwnProfile: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -99,7 +108,9 @@ const getStatusBadgeColor = (status) => {
 
 // 역할에 따른 뱃지 색상
 const getRoleBadgeColor = (role) => {
-  switch(role?.toLowerCase()) {
+  if (!role) return '#9C27B0'
+  const lower = role.toLowerCase()
+  switch(lower) {
     case 'frontend developer':
     case 'front-end developer': return '#61DAFB'
     case 'backend developer':
@@ -110,6 +121,9 @@ const getRoleBadgeColor = (role) => {
     case 'designer': return '#FF6B6B'
     case 'project manager':
     case 'pm': return '#FF9800'
+    // 한국어 역할 라벨 매핑
+    case '팀장': return '#FF9800'
+    case '팀원': return '#4CAF50'
     default: return '#9C27B0'
   }
 }
@@ -242,6 +256,26 @@ const processedProjects = computed(() => {
   letter-spacing: -0.2px;
   margin: 0;
   max-width: 300px;
+}
+
+.go-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 2px dashed rgba(76, 175, 80, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.go-select-btn:hover {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
 }
 
 .projects-content {

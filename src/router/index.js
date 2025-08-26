@@ -21,7 +21,6 @@ import SiderDashBoardLayout from '../components/dashboard/SiderDashBoardLayout.v
 // 새로운 대시보드 스타일 컴포넌트들
 import MyPortfolioPage from '@/views/MyPortfolioPage.vue';
 import ProjectManagePage from '@/views/ProjectManagePage.vue';
-import PortfolioProjectsPage from '@/views/PortfolioProjectsPage.vue';
 
 const routes = [
   {
@@ -130,7 +129,7 @@ const routes = [
         // 포트폴리오 프로젝트 선택 페이지
         path: 'projects',
         name: 'PortfolioProjects',
-        component: PortfolioProjectsPage,
+        component: MyProjectListPage,
       },
       {
         // 내 프로젝트 관리 (전체 목록)

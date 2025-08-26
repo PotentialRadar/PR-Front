@@ -511,13 +511,15 @@
         <section class="portfolio-section">
           <div class="section-header">
             <h5 class="section-title">프로젝트</h5>
-            <button @click="goToProjectManagement" class="section-edit-btn">
-              <i class="bi bi-gear"></i>
-              관리
-            </button>
+            <div class="section-actions">
+              <button @click="goToProjectManagement" class="section-edit-btn">
+                <i class="bi bi-gear"></i>
+                관리
+              </button>
+            </div>
           </div>
           
-          <div v-if="portfolioData.projects.length > 0" class="section-content">
+          <div v-if="portfolioData.projects && portfolioData.projects.length > 0" class="section-content">
             <div class="projects-grid">
               <div 
                 v-for="project in portfolioData.projects.slice(0, 6)" 
@@ -543,7 +545,7 @@
                 </div>
               </div>
               
-              <div v-if="portfolioData.projects.length > 6" class="more-projects-card">
+              <div v-if="portfolioData.projects && portfolioData.projects.length > 6" class="more-projects-card">
                 <span>+{{ portfolioData.projects.length - 6 }}개 더</span>
                 <button @click="goToProjectManagement" class="view-all-btn">전체 보기</button>
               </div>
@@ -706,10 +708,16 @@ const careerErrors = reactive({})
 // 리뷰 데이터를 가져오는 API 함수
 const getUserReviews = async (userId) => {
   try {
+    console.log('리뷰 데이터 요청 시작:', userId)
     const response = await api.get(`/reviews/users/${userId}`)
-    return response.data
+    console.log('리뷰 데이터 응답:', response.data)
+    return response.data || []
   } catch (error) {
     console.error('리뷰 데이터 로드 실패:', error)
+    if (error.response) {
+      console.error('응답 상태:', error.response.status)
+      console.error('응답 데이터:', error.response.data)
+    }
     return []
   }
 }
@@ -755,11 +763,23 @@ const careerData = computed(() => {
 const loadPortfolioData = async () => {
   loading.value = true
   try {
+    console.log('포트폴리오 데이터 로드 시작...')
+    
+    // 인증 토큰 확인
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      console.error('인증 토큰이 없습니다.')
+      throw new Error('로그인이 필요합니다.')
+    }
+    
     // 포트폴리오 데이터와 전체 기술 스택 목록을 병렬로 로드
     const [portfolioResponse, allTechStacksResponse] = await Promise.all([
       portfolioApi.getPortfolio(),
       techStackApi.getAllTechStacks()
     ])
+    
+    console.log('포트폴리오 응답:', portfolioResponse.data)
+    console.log('기술스택 응답:', allTechStacksResponse.data)
     
     const portfolio = portfolioResponse.data
     
@@ -769,22 +789,27 @@ const loadPortfolioData = async () => {
       name: portfolio.nickname || '사용자',
       jobTitle: portfolio.jobTitle || '',
       avatar: portfolio.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`,
-      category: portfolio.techPart || ''
+      category: (portfolio.techPartName || portfolio.techPart || '')
     }
     
     // 기본 값 설정
     portfolioData.introduction = portfolio.bio || ''
-    portfolioData.projects = portfolio.projects?.map(project => ({
-      id: project.projectId,
-      title: project.title,
-      description: project.description,
-      role: project.role === 'LEADER' ? '팀장' : '팀원',
-      status: project.status,
-      techPart: project.techPart,
-      startDate: project.startDate,
-      endDate: project.endDate,
-      techStacks: project.techStacks || []
-    })) || []
+    // 공통 매퍼로 프로젝트 통일
+    portfolioData.projects = portfolio.projects?.map(project => {
+      // 지연 로딩을 피하기 위해 인라인 매핑 유지
+      const role = (project?.role || '').toUpperCase() === 'LEADER' || (project?.role || '').toUpperCase() === 'PM' || (project?.role || '').toUpperCase() === 'PROJECT_MANAGER' ? '팀장' : '팀원'
+      return {
+        id: project.projectId,
+        title: project.title,
+        description: project.description,
+        role,
+        status: project.status,
+        techPart: project.techPart,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        techStacks: project.techStacks || []
+      }
+    }) || []
     
     // 기술 스택 데이터 설정
     portfolioData.skills = portfolio.techStacks?.map(ts => ({
@@ -816,7 +841,12 @@ const loadPortfolioData = async () => {
     })) || []
     
     // 리뷰 정보 설정
-    portfolioData.reviews = await getUserReviews(portfolio.userId)
+    try {
+      portfolioData.reviews = await getUserReviews(portfolio.userId)
+    } catch (reviewError) {
+      console.error('리뷰 로드 중 오류:', reviewError)
+      portfolioData.reviews = []
+    }
     
     // 전체 기술 스택 목록 설정 (검색용) - ID와 이름 모두 포함
     allTechStacks.value = allTechStacksResponse.data?.map(ts => ({
@@ -827,6 +857,22 @@ const loadPortfolioData = async () => {
     
   } catch (error) {
     console.error('포트폴리오 데이터 로드 실패:', error)
+    
+    // 상세한 에러 정보 출력
+    if (error.response) {
+      console.error('HTTP 오류 상태:', error.response.status)
+      console.error('HTTP 오류 메시지:', error.response.data)
+    } else if (error.request) {
+      console.error('네트워크 오류:', error.request)
+    } else {
+      console.error('요청 설정 오류:', error.message)
+    }
+    
+    // 인증 오류인 경우 로그인 페이지로 리다이렉트
+    if (error.response?.status === 401 || error.message.includes('로그인이 필요')) {
+      console.error('인증 오류 - 로그인 페이지로 이동')
+      // router.push('/login') // 필요시 활성화
+    }
     
     // 백엔드 연결 실패 시 기본값 설정 (목업 데이터 대신)
     portfolioData.userId = 1
@@ -1691,8 +1737,33 @@ const onProjectsUpdated = async () => {
     showSaveToast.value = false
   }, 3000)
   
-  // 프로젝트 데이터 다시 로드
-  await loadPortfolioData()
+  // 프로젝트 데이터만 다시 로드 (더 효율적)
+  try {
+    const portfolioResponse = await portfolioApi.getPortfolio()
+    const portfolio = portfolioResponse.data
+    
+    // 프로젝트 데이터만 업데이트
+    portfolioData.projects = portfolio.projects?.map(project => {
+      const role = (project?.role || '').toUpperCase() === 'LEADER' || (project?.role || '').toUpperCase() === 'PM' || (project?.role || '').toUpperCase() === 'PROJECT_MANAGER' ? '팀장' : '팀원'
+      return {
+        id: project.projectId,
+        title: project.title,
+        description: project.description,
+        role,
+        status: project.status,
+        techPart: project.techPart,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        techStacks: project.techStacks || []
+      }
+    }) || []
+    
+    console.log('프로젝트 선택 반영됨:', portfolioData.projects.length, '개')
+  } catch (error) {
+    console.error('프로젝트 업데이트 실패:', error)
+    // 실패 시 전체 로드로 폴백
+    await loadPortfolioData()
+  }
 }
 
 onMounted(() => {

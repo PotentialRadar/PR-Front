@@ -174,10 +174,10 @@ const careerItems = computed(() => {
 }
 
 .timeline-item {
-  height: 94px;
   width: 100%;
-  border-left: 2px solid rgba(76, 175, 80, 0.3);
   position: relative;
+  border-left: 2px solid rgba(76, 175, 80, 0.3);
+  padding: 6px 0 20px 56px;
 }
 
 .timeline-item.no-border {
@@ -186,8 +186,9 @@ const careerItems = computed(() => {
 
 .timeline-marker {
   position: absolute;
-  left: -12px;
-  top: -8px;
+  left: 0;
+  top: 10px;
+  transform: translateX(-50%);
   z-index: 2;
 }
 
@@ -234,9 +235,6 @@ const careerItems = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  left: 5px;
-  top: 5px;
 }
 
 .square-marker {
@@ -262,12 +260,9 @@ const careerItems = computed(() => {
 
 .timeline-content {
   display: flex;
-  width: calc(100% - 60px);
+  width: 100%;
   flex-direction: column;
   align-items: flex-start;
-  position: absolute;
-  left: 41px;
-  top: -10px;
 }
 
 .company-name {
@@ -346,11 +341,7 @@ const careerItems = computed(() => {
   .timeline-list {
     padding: 0 16px;
   }
-  
-  .timeline-content {
-    width: calc(100% - 50px);
-    left: 35px;
-  }
+  .timeline-item { padding-left: 50px; }
   
   .career-header {
     padding: 15.75px 15px 16px 4px;
@@ -370,10 +361,7 @@ const careerItems = computed(() => {
     padding: 0 12px;
   }
 
-  .timeline-content {
-    width: calc(100% - 45px);
-    left: 30px;
-  }
+  .timeline-item { padding-left: 45px; }
 
   .company-name {
     font-size: 14px;

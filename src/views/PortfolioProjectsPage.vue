@@ -135,8 +135,11 @@
           </button>
         </div>
         <div class="dialog-content">
-          <p>{{ selectedCount }}개의 프로젝트가 포트폴리오에 표시됩니다.</p>
-          <p>변경사항을 저장하시겠습니까?</p>
+          <p v-if="selectedCount === 0">프로젝트를 0개로 공개할까요? 공개 페이지에 표시되지 않습니다.</p>
+          <template v-else>
+            <p>{{ selectedCount }}개의 프로젝트가 포트폴리오에 표시됩니다.</p>
+            <p>변경사항을 저장하시겠습니까?</p>
+          </template>
         </div>
         <div class="dialog-actions">
           <button @click="cancelSave" class="cancel-btn">취소</button>
@@ -251,6 +254,10 @@ const saveSelection = () => {
   if (!hasChanges.value) {
     showToast('변경사항이 없습니다.', 'info')
     return
+  }
+  // 0개 선택 시 경고 안내 후 확인 받기
+  if (selectedProjectIds.value.length === 0) {
+    showToast('프로젝트를 0개로 공개할 예정입니다.', 'warning')
   }
   showConfirmDialog.value = true
 }

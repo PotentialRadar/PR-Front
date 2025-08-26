@@ -52,6 +52,19 @@
           </div>
         </section>
 
+        <!-- 본인 프로필 안내 배너 -->
+        <section v-if="portfolioData.isOwnProfile" class="portfolio-section">
+          <div class="section-border">
+            <div class="section-header">
+              <h5 class="section-title">공지</h5>
+            </div>
+            <div class="introduction-content">
+              <p class="introduction-text">이 화면은 다른 사용자가 보는 공개 포트폴리오입니다.</p>
+              <router-link to="/myPage/portfolio" class="back-button" style="margin-left:12px;">편집하기</router-link>
+            </div>
+          </div>
+        </section>
+
         <!-- Portfolio Statistics Section -->
         <section class="portfolio-section" v-if="portfolioData.userInfo.reputationScore > 0 || portfolioData.userInfo.reviewCount > 0">
           <div class="section-border">
@@ -254,7 +267,7 @@
 
         <CareerTimeline :careers="portfolioData.careers" />
         <SkillsSection :skills="portfolioData.skills" />
-        <ProjectsSection :projects="portfolioData.projects" />
+        <ProjectsSection :projects="portfolioData.projects" :isOwnProfile="portfolioData.isOwnProfile" />
         <ReviewSection :reviews="portfolioData.reviews" />
 
       </div>
@@ -266,6 +279,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { portfolioApi } from '@/api/portfolio.js'
+import api from '@/api/axios.js'
+import { mapProjectRole } from '@/utils/portfolioMapper.js'
 import PortfolioHeader from '@/components/portfolioComponents/PortfolioHeader.vue'
 import CareerTimeline from '@/components/portfolioComponents/CareerTimeline.vue'
 import SkillsSection from '@/components/portfolioComponents/SkillsSection.vue'
@@ -277,6 +292,22 @@ const router = useRouter()
 
 const loading = ref(true)
 const portfolioNotFound = ref(false)
+
+// 경력 구간 라벨 매핑
+const mapExperienceRange = (value) => {
+  if (!value) return null
+  const v = String(value).toUpperCase()
+  switch (v) {
+    case 'FRESHER': return '신입'
+    case 'LT_1': return '1년 미만'
+    case 'Y1_3': return '1-3년차'
+    case 'Y3_5': return '3-5년차'
+    case 'Y5_10': return '5-10년차'
+    case 'GE_10': return '10년 이상'
+    case 'ETC': return '기타'
+    default: return value
+  }
+}
 
 const portfolioData = ref({
   userId: null,
@@ -351,18 +382,36 @@ const loadPortfolioData = async (userId) => {
       return
     }
 
-    // 현재 로그인한 사용자 ID 확인 (실제로는 인증 정보에서 가져와야 함)
-    const currentUserId = null // TODO: 실제 로그인 사용자 ID로 교체
+    // 현재 로그인한 사용자 ID 확인 (로컬 스토리지 기준)
+    const storedId = localStorage.getItem('userId')
+    const currentUserId = storedId ? parseInt(storedId) : null
     
+    // 프로젝트 선택 상태가 제공된다면, 선택된 프로젝트만 노출
+    const rawProjects = Array.isArray(userData.projects) ? userData.projects : []
+    // 선택 ID 필드가 존재하면(빈 배열 포함) 그것을 기준으로 필터
+    const selectedIds = Array.isArray(userData.selectedProjectIds)
+      ? new Set(userData.selectedProjectIds)
+      : null
+    const hasSelectionFlag = rawProjects.some(p => Object.prototype.hasOwnProperty.call(p, 'selectedInPortfolio'))
+    let visibleProjects = rawProjects
+    if (selectedIds !== null) {
+      visibleProjects = rawProjects.filter(p => selectedIds.has(p.projectId))
+    } else if (hasSelectionFlag) {
+      visibleProjects = rawProjects.filter(p => p.selectedInPortfolio)
+    } else {
+      // 선택 정보가 전혀 없는 공개 응답이면, 보수적으로 전체 노출(백엔드 수정 권장)
+      visibleProjects = rawProjects
+    }
+
     // 백엔드 데이터 구조를 프론트엔드 형식에 맞게 변환
     portfolioData.value = {
       userId: userData.userId,
-      isOwnProfile: parseInt(userId) === currentUserId,
+      isOwnProfile: currentUserId !== null && parseInt(userId) === currentUserId,
       userInfo: {
         name: userData.nickname || '사용자',
         jobTitle: userData.jobTitle || '',
         avatar: userData.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
-        category: userData.techPartName || '',
+        category: userData.techPartName || userData.techPart || '',
         email: userData.email || '',
         phone: userData.phone || '',
         githubUrl: userData.githubUrl || '',
@@ -370,7 +419,7 @@ const loadPortfolioData = async (userId) => {
         websiteUrl: userData.websiteUrl || '',
         reputationScore: userData.reputationScore || 0,
         reviewCount: userData.reviewCount || 0,
-        experienceRange: userData.experienceRange || null,
+        experienceRange: mapExperienceRange(userData.experienceRange) || null,
         isPortfolioOpen: userData.isPortfolioOpen,
         isContactOpen: userData.isContactOpen,
         isSearchOpen: userData.isSearchOpen
@@ -409,23 +458,35 @@ const loadPortfolioData = async (userId) => {
         isCurrent: exp.isCurrent || false,
         description: exp.summary || ''
       })) || [],
-      projects: userData.projects?.map(project => ({
+      projects: visibleProjects.map(project => ({
         id: project.projectId,
         title: project.title,
         description: project.description,
-        role: project.role,
+        role: mapProjectRole(project.role),
         techPart: project.techPart,
         startDate: project.startDate,
         endDate: project.endDate,
         status: project.status,
         techStacks: project.techStacks || []
       })) || [],
-      reviews: [] // 리뷰 기능은 추후 추가
+      reviews: [] // 아래에서 실제 리뷰를 로드하여 채움
     }
 
     // 매핑된 데이터 확인
     console.log('✅ 매핑된 포트폴리오 데이터:', portfolioData.value)
     console.log('💼 매핑된 경력 데이터:', portfolioData.value.careers)
+
+    // 리뷰 데이터 로드 (공개 포트폴리오에서도 동일하게 노출)
+    try {
+      const reviewsResponse = await api.get(`/reviews/users/${userData.userId}`)
+      const loadedReviews = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : []
+      portfolioData.value.reviews = loadedReviews
+      // 표시되는 개수와 실제 렌더링 개수를 일치시킴
+      portfolioData.value.userInfo.reviewCount = loadedReviews.length
+    } catch (reviewError) {
+      console.error('리뷰 데이터 로드 실패:', reviewError)
+      portfolioData.value.reviews = []
+    }
 
   } catch (error) {
     console.error('포트폴리오 데이터 로드 실패:', error)

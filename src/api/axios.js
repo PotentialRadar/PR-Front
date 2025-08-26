@@ -1,11 +1,16 @@
 // src/api/axios.js
 import axios from 'axios';
 
+// 개발 환경에서는 Vite proxy(`/api` -> 백엔드) 사용을 위해 상대 경로 사용
+// 프로덕션에서는 환경변수로 주입된 절대 경로를 사용할 수 있음
 const api = axios.create({
-  baseURL: `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api`,
+  baseURL: import.meta.env.PROD
+    ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api`
+    : '/api',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000,
 });
 
 api.interceptors.request.use(
