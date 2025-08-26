@@ -138,22 +138,30 @@ const formatDeadline = (deadline) => {
 // 프로젝트 목록 API 호출
 const fetchProjects = async () => {
   try {
-    const response = await api.get('/projects')
-    const apiProjects = response.data || []
+    const response = await api.get('/projects');
+    const responseData = response.data;
+
+    // API 응답이 페이징 객체일 수 있으므로 content를 확인
+    const apiProjects = Array.isArray(responseData) ? responseData : responseData?.content;
+
+    // 최종적으로 배열인지 한 번 더 확인
+    if (!Array.isArray(apiProjects)) {
+      console.error('Error: Project data is not an array.', apiProjects);
+      projects.value = [];
+      return;
+    }
     
     // API 데이터를 ProjectCard에 맞게 변환
     projects.value = apiProjects.map(project => ({
       ...project,
       id: project.projectId, // key를 위한 id 보장
-      // ProjectCard가 자체적으로 계산하므로 중복 계산 제거
-      // deadline: formatDeadline(project.recruitDeadline), 
       category: mapCategoryFromTechStacks(project.techStacks),
-    }))
+    }));
   } catch (error) {
-    // API 실패 시 빈 배열 유지
-    projects.value = []
+    console.error('Error fetching projects:', error);
+    projects.value = [];
   }
-}
+};
 
 // 기술스택 기반 카테고리 매핑
 const mapCategoryFromTechStacks = (techStacks) => {

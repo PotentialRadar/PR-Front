@@ -1,49 +1,45 @@
 <template>
   <div class="sort-options">
-    <div 
+            <div 
       class="sort-option" 
-      :class="{ selected: selectedSort === 'latest' }" 
-      @click="setSort('latest')"
+      :class="{ selected: currentSelectedSort === 'createdAt,desc' }" 
+      @click="setSort('createdAt,desc')"
     >
       최신순
     </div>
     <div 
       class="sort-option" 
-      :class="{ selected: selectedSort === 'recommended' }" 
-      @click="setSort('recommended')"
-    >
-      추천순
-    </div>
-    <div 
-      class="sort-option" 
-      :class="{ selected: selectedSort === 'popular' }" 
-      @click="setSort('popular')"
+      :class="{ selected: currentSelectedSort === 'likeCount,desc' }" 
+      @click="setSort('likeCount,desc')"
     >
       인기순
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'SortOptions',
-  data() {
-    return {
-      selectedSort: 'recommended' 
-    }
-  },
-  methods: {
-    setSort(sortType) {
-      this.selectedSort = sortType;
-      this.$emit('sort-changed', this.selectedSort);
-    }
-  },
-  watch: {
-    selectedSort(newValue) {
-      this.$emit('sort-changed', newValue) 
-    }
+<script setup>
+import { ref, watch } from 'vue';
+
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: 'createdAt,desc' // Default to latest
   }
-}
+});
+
+const emit = defineEmits(['update:modelValue', 'sort-changed']);
+
+const currentSelectedSort = ref(props.modelValue);
+
+watch(() => props.modelValue, (newValue) => {
+  currentSelectedSort.value = newValue;
+});
+
+const setSort = (sortType) => {
+  currentSelectedSort.value = sortType;
+  emit('update:modelValue', sortType); // For v-model
+  emit('sort-changed', sortType); // For direct event listener
+};
 </script>
 
 <style scoped>
