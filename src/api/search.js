@@ -29,7 +29,9 @@ export const searchProjects = async (params = {}) => {
     queryParams.append('page', params.page || 0)
     queryParams.append('size', params.size || 20)
     
-    const response = await api.get(`/search/projects?${queryParams.toString()}`)
+            if (params.sort) queryParams.append('sort', params.sort)
+    
+    const response = await api.get(`/projects?${queryParams.toString()}`)
     return response.data
   } catch (error) {
     console.error('프로젝트 검색 API 오류:', error)
