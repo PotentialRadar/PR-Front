@@ -5,7 +5,7 @@
         <h5 class="section-title">기술 스택</h5>
       </div>
       
-      <div class="skills-container">
+      <div v-if="skills && skills.length > 0" class="skills-container">
         <div class="skills-grid">
           <div 
             v-for="(skill, index) in skills" 
@@ -15,41 +15,49 @@
             <div class="skill-content">
               <span class="skill-name">{{ skill.name }}</span>
             </div>
-            <div v-if="skill.level" class="skill-level">
-              <span class="level-indicator">{{ skill.level }}</span>
+            <div v-if="skill.proficiency" class="skill-level">
+              <span class="level-indicator">{{ getProficiencyLevel(skill.proficiency) }}</span>
+            </div>
+            <div v-if="skill.proficiency" class="skill-rating">
+              <div class="stars">
+                <span 
+                  v-for="star in 5" 
+                  :key="star"
+                  class="star"
+                  :class="{ filled: star <= skill.proficiency }"
+                >
+                  ★
+                </span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+      
+      <div v-else class="empty-state">
+        <p class="empty-message">기술 스택 정보가 없습니다.</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+// Props
+const props = defineProps({
+  skills: {
+    type: Array,
+    default: () => []
+  }
+})
 
-// Skills data - 더 자연스러운 배치를 위해 position 제거
-const skills = ref([
-  // Design Tools
-  { name: 'Figma', level: 'A' },
-  { name: 'Sketch', level: 'A' },
-  { name: 'Adobe XD', level: 'C' },
-  { name: 'Zeplin', level: 'C' },
-  { name: 'Protopie', level: null },
-  
-  // Development
-  { name: 'HTML', level: null },
-  { name: 'CSS', level: null },
-  { name: 'JavaScript', level: 'B' },
-  
-  // Creative Suite
-  { name: 'Adobe Photoshop', level: null },
-  { name: 'Adobe Illustrator', level: null },
-  
-  // Other Tools
-  { name: 'Notion', level: null },
-  { name: 'Slack', level: null },
-])
+// 숙련도 레벨을 문자로 변환
+const getProficiencyLevel = (proficiency) => {
+  if (proficiency >= 5) return 'S'
+  if (proficiency >= 4) return 'A'
+  if (proficiency >= 3) return 'B'
+  if (proficiency >= 2) return 'C'
+  return 'D'
+}
 </script>
 
 <style scoped>
@@ -173,6 +181,51 @@ const skills = ref([
   font-weight: 700;
   line-height: 1;
   text-align: center;
+}
+
+.skill-rating {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  font-size: 12px;
+  color: #e0e0e0;
+  transition: color 0.2s ease;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 40px 20px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.empty-message {
+  color: #6F6F72;
+  text-align: center;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.2px;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

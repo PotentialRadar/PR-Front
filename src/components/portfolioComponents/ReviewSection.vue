@@ -6,19 +6,50 @@
         <p class="section-description">withPR에서 프로젝트 함께한 동료의 메세지입니다.</p>
       </div>
       
-      <div class="review-list">
+      <div v-if="processedReviews.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-chat-heart"></i>
+        </div>
+        <h3 class="empty-title">받은 리뷰가 없습니다</h3>
+        <p class="empty-description">프로젝트에 참여하여 동료들과 함께 작업해보세요!</p>
+      </div>
+      
+      <div v-else class="review-list">
         <div 
-          v-for="(review, index) in reviewItems" 
-          :key="index"
+          v-for="(review, index) in processedReviews" 
+          :key="review.reviewId || index"
           class="review-item"
         >
-          <div class="review-icon">
-            <img src="https://api.builder.io/api/v1/image/assets/TEMP/0ce35b28adf2d5fbb374f32a14d9bd1319b33017?width=64" alt="Review icon" />
+          <div class="review-header">
+            <div class="reviewer-info">
+              <div class="review-icon">
+                <img 
+                  :src="review.reviewerAvatar" 
+                  :alt="review.reviewerName || '익명'"
+                  @error="handleImageError($event)"
+                />
+              </div>
+              <div class="reviewer-details">
+                <h6 class="reviewer-name">{{ review.reviewerName || '익명' }}</h6>
+                <p class="project-context" v-if="review.projectTitle">{{ review.projectTitle }}</p>
+              </div>
+            </div>
+            <div class="review-rating" v-if="review.rating">
+              <div class="stars">
+                <i 
+                  v-for="star in 5" 
+                  :key="star"
+                  :class="['bi', star <= review.rating ? 'bi-star-fill' : 'bi-star']"
+                  class="star"
+                ></i>
+              </div>
+              <span class="rating-text">{{ review.rating.toFixed(1) }}</span>
+            </div>
           </div>
           
           <div class="review-content">
             <div class="review-message">
-              <p class="message-text">{{ review.message }}</p>
+              <p class="message-text">{{ review.comment || review.message }}</p>
             </div>
             <div class="review-meta">
               <span class="review-time">{{ review.timeAgo }}</span>
@@ -31,19 +62,54 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 
-// Review data
-const reviewItems = ref([
-  {
-    message: '이미 withPR에 참여해 본 경험치를 토대로 팀의 방향성을 잘 제시해주십니다. 경험치를 통한 방향 제시가 저희 팀의 한계점을 둘 수 있다는 점도 스스로 인지하고 계시면서 조심스럽게 의견제시를 하시는 모습도 멋져보였어요 !',
-    timeAgo: '3년 전'
-  },
-  {
-    message: '디자인의 많은 부분을 책임져 주시면서 여러가지 아이디어도 제시해주셔서 감사합니다 👍👍',
-    timeAgo: '3년 전'
+// Props
+const props = defineProps({
+  reviews: {
+    type: Array,
+    default: () => []
   }
-])
+})
+
+// 날짜 포맷팅 함수
+const formatReviewDate = (dateString) => {
+  if (!dateString) return ''
+  
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now - date)
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) {
+    return '어제'
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7)
+    return `${weeks}주 전`
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30)
+    return `${months}개월 전`
+  } else {
+    const years = Math.floor(diffDays / 365)
+    return `${years}년 전`
+  }
+}
+
+// 처리된 리뷰 데이터
+const processedReviews = computed(() => {
+  return props.reviews.map(review => ({
+    ...review,
+    reviewerAvatar: review.reviewerProfileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.reviewerId || 'anonymous'}`,
+    timeAgo: formatReviewDate(review.createdAt)
+  }))
+})
+
+// 이미지 에러 핸들링
+const handleImageError = (event) => {
+  event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=anonymous`
+}
 </script>
 
 <style scoped>
@@ -100,6 +166,52 @@ const reviewItems = ref([
   margin: 0 0 0 4px;
 }
 
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1000px;
+  padding: 40px 24px;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  min-height: 200px;
+  text-align: center;
+  gap: 16px;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #4CAF50;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0;
+}
+
+.empty-description {
+  color: #6F6F72;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.2px;
+  margin: 0;
+  max-width: 300px;
+}
+
 .review-list {
   display: flex;
   width: 100%;
@@ -116,7 +228,7 @@ const reviewItems = ref([
 .review-item {
   width: 100%;
   max-width: 400px;
-  min-height: 170px;
+  min-height: 200px;
   flex-shrink: 0;
   height: auto;
   border-radius: 12px;
@@ -137,6 +249,21 @@ const reviewItems = ref([
   border-color: rgba(76, 175, 80, 0.4);
 }
 
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.reviewer-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
 .review-icon {
   display: flex;
   width: 40px;
@@ -146,15 +273,65 @@ const reviewItems = ref([
   align-items: center;
   border-radius: 50%;
   background: rgba(76, 175, 80, 0.1);
-  padding: 8px;
+  padding: 2px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .review-icon img {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.reviewer-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+.project-context {
+  font-size: 13px;
+  color: #4CAF50;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.stars .star {
+  font-size: 14px;
+  color: #ddd;
+}
+
+.stars .bi-star-fill {
+  color: #FFD700;
+}
+
+.rating-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  min-width: 28px;
 }
 
 .review-content {

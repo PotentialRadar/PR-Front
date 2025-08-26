@@ -126,8 +126,14 @@ const routes = [
         component: ProfileEditPage,
       },
       {
-        // 내 프로젝트 관리 (단일 페이지)
+        // 포트폴리오 프로젝트 선택 페이지
         path: 'projects',
+        name: 'PortfolioProjects',
+        component: MyProjectListPage,
+      },
+      {
+        // 내 프로젝트 관리 (전체 목록)
+        path: 'all-projects',
         name: 'MyProjects',
         component: () => import('@/views/MyProjectListPage.vue'),
       },
