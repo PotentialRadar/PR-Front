@@ -147,6 +147,34 @@
       지원에 실패했습니다. 다시 시도해주세요.
     </div>
 
+    <!-- AI 추천 피드백 섹션 -->
+    <div v-if="showAIFeedback && isFromAIRecommendation" class="ai-feedback-overlay">
+      <div class="ai-feedback-card">
+        <div class="ai-feedback-header">
+          <div class="ai-badge">🤖 AI 추천</div>
+          <button @click="showAIFeedback = false" class="close-btn">✕</button>
+        </div>
+        <div class="ai-feedback-content">
+          <h3>이 추천이 어떠셨나요?</h3>
+          <p>AI가 추천한 이 프로젝트가 당신의 관심사와 잘 맞나요?</p>
+          <div class="feedback-buttons">
+            <button @click="submitAIFeedback('THUMBS_UP')" class="feedback-btn thumbs-up">
+              👍 관심있어요
+            </button>
+            <button @click="submitAIFeedback('THUMBS_DOWN')" class="feedback-btn thumbs-down">
+              👎 관심없어요
+            </button>
+            <button @click="submitAIFeedback('NOT_INTERESTED')" class="feedback-btn not-interested">
+              🚫 이런 추천 그만 받기
+            </button>
+          </div>
+          <div class="feedback-skip">
+            <button @click="showAIFeedback = false" class="skip-btn">나중에</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -166,6 +194,7 @@ import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberR
 import { getProject } from '@/api/projects';
 import { projects } from '@/components/data/projects';
 import { applyProject } from '@/api/projectMember';
+import api from '@/api/axios';
 
 const route = useRoute();
 const router = useRouter();
@@ -177,6 +206,12 @@ const projectId = computed(() => Number(route.params.id));
 const project = ref(null);
 const loading = ref(false);
 const error = ref(null);
+
+// AI 추천 관련
+const isFromAIRecommendation = computed(() => route.query.from === 'ai-recommendation');
+const recommendationHistoryId = computed(() => route.query.historyId);
+const showAIFeedback = ref(false);
+const feedbackSubmitted = ref(false);
 
 // 프로젝트 소유자 여부 확인
 const isProjectOwner = computed(() => {
@@ -257,8 +292,42 @@ const load = async () => {
 };
 
 onMounted(async () => {
-  await load();
-  await checkProjectInvitation(); // 프로젝트 로드 후 초대 확인
+  try {
+    await load();
+    console.log('✅ load() 완료');
+    
+    await checkProjectInvitation(); // 프로젝트 로드 후 초대 확인
+    console.log('✅ checkProjectInvitation() 완료');
+    
+    // 디버깅: URL 파라미터 확인
+    console.log('🔍 URL 파라미터 확인:', {
+      from: route.query.from,
+      historyId: route.query.historyId,
+      isFromAIRecommendation: isFromAIRecommendation.value,
+      recommendationHistoryId: recommendationHistoryId.value
+    });
+    
+    // AI 추천에서 온 경우 피드백 섹션 표시 (3초 후)
+    if (isFromAIRecommendation.value) {
+      // sessionStorage로 이미 피드백을 요청했는지 확인
+      const feedbackKey = `ai_feedback_shown_${projectId.value}`;
+      const alreadyShown = sessionStorage.getItem(feedbackKey);
+      
+      if (alreadyShown) {
+        console.log('⏭️ 이미 이 탭에서 피드백을 요청함 - 모달 표시 안 함');
+      } else {
+        console.log('✅ AI 추천에서 왔음 - 3초 후 피드백 모달 표시 예정');
+        sessionStorage.setItem(feedbackKey, 'true');
+        setTimeout(() => {
+          triggerAIFeedback();
+        }, 3000);
+      }
+    } else {
+      console.log('❌ AI 추천이 아님 - 피드백 모달 표시 안 함');
+    }
+  } catch (error) {
+    console.error('❌ onMounted 중 오류:', error);
+  }
 });
 onActivated(async () => {
   await load();
@@ -267,7 +336,7 @@ onActivated(async () => {
 watch(
     () => route.params.id,
     async (v) => {
-      projectId.value = Number(v);
+      // projectId는 computed이므로 직접 수정하지 않음
       await load();
       await checkProjectInvitation(); // 프로젝트 변경 시에도 초대 확인
     }
@@ -451,6 +520,70 @@ function handleViewPortfolio(author) {
     router.push('/portfolio');
   }
 }
+
+// AI 추천 피드백 제출
+const submitAIFeedback = async (action) => {
+  if (!recommendationHistoryId.value) {
+    console.error('추천 이력 ID가 없습니다.');
+    return;
+  }
+  
+  try {
+    const feedbackData = {
+      recommendationHistoryId: recommendationHistoryId.value,
+      feedbackAction: action
+    };
+    
+    console.log('📝 AI 추천 피드백 제출:', feedbackData);
+    
+    // 액션을 기존 API 형식에 맞게 변환
+    const actionPath = action === 'THUMBS_UP' ? 'like' : 'dislike';
+    const response = await api.post(`/recommend/feedback/${recommendationHistoryId.value}/${actionPath}`, {}, {
+      headers: {
+        'User-Id': userStore.userId?.toString()
+      }
+    });
+    
+    // 기존 API는 단순 문자열 응답
+    if (response.status === 200) {
+      feedbackSubmitted.value = true;
+      showAIFeedback.value = false;
+      
+      const messages = {
+        'THUMBS_UP': '👍 피드백 감사합니다! 비슷한 프로젝트를 더 추천해드릴게요.',
+        'THUMBS_DOWN': '👎 피드백이 반영되었습니다.',
+        'NOT_INTERESTED': '🚫 해당 유형의 추천을 줄이도록 하겠습니다.'
+      };
+      
+      toast.success(messages[action] || '피드백이 기록되었습니다.', {
+        position: 'top-center',
+        timeout: 3000
+      });
+    }
+  } catch (error) {
+    console.error('❌ AI 추천 피드백 제출 실패:', error);
+    toast.error('피드백 제출에 실패했습니다.', {
+      position: 'top-center',
+      timeout: 3000
+    });
+  }
+};
+
+// 피드백 섹션 표시 (스크롤 이벤트 등으로 트리거)
+const triggerAIFeedback = () => {
+  console.log('🎯 triggerAIFeedback 호출됨:', {
+    isFromAIRecommendation: isFromAIRecommendation.value,
+    feedbackSubmitted: feedbackSubmitted.value,
+    showAIFeedback: showAIFeedback.value
+  });
+  
+  if (isFromAIRecommendation.value && !feedbackSubmitted.value) {
+    console.log('✅ 피드백 모달 표시 중...');
+    showAIFeedback.value = true;
+  } else {
+    console.log('❌ 피드백 모달 표시 조건 불만족');
+  }
+};
 
 // ESC로 모달 닫기
 document.addEventListener('keydown', (e) => {
@@ -1182,6 +1315,163 @@ document.addEventListener('keydown', (e) => {
 
   .action-btn {
     min-height: 48px;
+  }
+}
+
+/* AI 추천 피드백 스타일 */
+.ai-feedback-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ai-feedback-card {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.ai-badge {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.ai-feedback-content {
+  padding: 24px;
+}
+
+.ai-feedback-content h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.ai-feedback-content p {
+  margin: 0 0 24px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.feedback-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.feedback-btn {
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.feedback-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-btn.thumbs-up:hover {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.feedback-btn.thumbs-down:hover {
+  border-color: #dc3545;
+  background: #fff8f8;
+}
+
+.feedback-btn.not-interested:hover {
+  border-color: #ffc107;
+  background: #fffef8;
+}
+
+.feedback-skip {
+  text-align: center;
+}
+
+.skip-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  transition: color 0.2s ease;
+}
+
+.skip-btn:hover {
+  color: #333;
+}
+
+@media (max-width: 480px) {
+  .ai-feedback-overlay {
+    padding: 16px;
+  }
+  
+  .ai-feedback-content {
+    padding: 20px;
+  }
+  
+  .feedback-buttons {
+    gap: 10px;
+  }
+  
+  .feedback-btn {
+    font-size: 0.9rem;
   }
 }
 </style>
