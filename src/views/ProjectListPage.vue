@@ -227,7 +227,14 @@ const isSearchMode = ref(false);
 
 // Filter Options Data
 const techParts = computed(() => techTagStore.techParts);
-const popularTechStacks = computed(() => techTagStore.getPopularTechStacksTop20());
+const popularTechStacks = computed(() => {
+  const stacks = techTagStore.getPopularTechStacksTop20();
+  return stacks.sort((a, b) => {
+    const countA = getFilterResultCount('techStack', a);
+    const countB = getFilterResultCount('techStack', b);
+    return countB - countA;
+  });
+});
 const projectStatuses = ref([
   { value: 'RECRUITING', label: '모집중' },
   { value: 'IN_PROGRESS', label: '진행중' },
@@ -235,11 +242,7 @@ const projectStatuses = ref([
 ]);
 const filteredProjectStatuses = computed(() => projectStatuses.value.filter(status => status.value !== 'CANCELLED'));
 
-const { items: projects, totalPages, page, loading, error, goToPage, load } = useProjects({
-  q: route.query.q ?? '',
-  page: Number(route.query.page ?? 1),
-  size: 8,
-});
+// useProjects import removed - using local state management instead
 
 const loadTechTags = async () => {
   try {
@@ -271,7 +274,6 @@ onActivated(async () => {
     console.log('기술 파트:', techParts.value);
     console.log('기술 스택:', popularTechStacks.value);
     
-    handleSearch(false);
     // 초기 필터 결과 수 로딩
     setTimeout(() => updateFilterResultCounts(), 1000);
   } catch (error) {
@@ -284,50 +286,9 @@ watch([page], () => {
   performSearch(currentSearchParams.value);
 });
 
-// 검색 상태 관리
-const currentSearchParams = ref({});
-const isSearchMode = ref(false);
+// 검색 상태 관리 (이미 위에서 선언되어 있음)
 
 const handleSearch = async (resetPage = true) => {
-  if (resetPage) {
-    page.value = 1;
-  }
-  const searchParams = {
-    keyword: searchQuery.value.trim() || null,
-    techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
-    techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
-    statuses: selectedStatuses.value.length > 0 ? selectedStatuses.value : null
-  };
-  currentSearchParams.value = searchParams;
-  isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
-  
-  await performSearch(searchParams);
-};
-
-const performSearch = async (searchParams) => {
-  loading.value = true;
-  error.value = null;
-  try {
-    const finalParams = {
-      ...searchParams,
-      page: page.value - 1,
-      size: 8,
-      sort: sort.value,
-    };
-    const result = await searchProjects(finalParams);
-    projects.value = result.content || [];
-    totalPages.value = result.totalPages || 1;
-  } catch (err) {
-    console.error('검색 실패:', err);
-    error.value = '검색 중 오류가 발생했습니다.';
-    projects.value = [];
-    totalPages.value = 1;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleSearch = (resetPage = true) => {
   if (resetPage) {
     page.value = 1;
   }
@@ -355,7 +316,34 @@ const handleSearch = (resetPage = true) => {
   Object.keys(nextQuery).forEach(key => nextQuery[key] === undefined && delete nextQuery[key]);
   
   router.replace({ query: nextQuery });
+  
+  await performSearch(searchParams);
 };
+
+const performSearch = async (searchParams) => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const finalParams = {
+      ...searchParams,
+      page: page.value - 1,
+      size: 8,
+      sort: sort.value,
+    };
+    const result = await searchProjects(finalParams);
+    projects.value = result.content || [];
+    totalPages.value = result.totalPages || 1;
+  } catch (err) {
+    console.error('검색 실패:', err);
+    error.value = '검색 중 오류가 발생했습니다.';
+    projects.value = [];
+    totalPages.value = 1;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// handleSearch 함수 중복 제거됨 (위에서 이미 정의되어 있음)
 
 const selectPopularKeyword = (keyword) => {
   searchQuery.value = keyword;
@@ -370,7 +358,6 @@ const handleSortChange = (newSort) => {
 const goToPage = (p) => {
   if (p >= 1 && p <= totalPages.value) {
     page.value = p;
-    handleSearch(false); // Don't reset filters, just change page
   }
 };
 
@@ -401,22 +388,7 @@ const clearSearch = () => {
 
 // --- Lifecycle & Watchers ---
 
-const loadInitialData = async () => {
-  await Promise.all([
-    techTagStore.loadTechTags(),
-    getPopularKeywords().then(res => {
-      popularKeywords.value = res.keywords || ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
-    }).catch(err => {
-      console.error('❌ 인기 키워드 로드 실패:', err);
-      popularKeywords.value = ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
-    })
-  ]);
-  updateFilterResultCounts();
-};
-
-onActivated(() => {
-  loadInitialData();
-});
+// loadInitialData 중복 제거됨 (위에서 이미 정의되어 있음)
 
 // Watch for route query changes to update component state
 watch(

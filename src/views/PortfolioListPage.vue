@@ -98,11 +98,20 @@
             <h2 class="section-title">{{ portfolios.length }}개의 포트폴리오</h2>
           </div>
           <div class="sort-options">
-            <select v-model="sortBy" class="sort-select">
-              <option value="recent">최신순</option>
-              <option value="name">이름순</option>
-              <option value="experience">경력순</option>
-            </select>
+            <div 
+              class="sort-option" 
+              :class="{ selected: sortBy === 'recent' }" 
+              @click="setSortBy('recent')"
+            >
+              최신순
+            </div>
+            <div 
+              class="sort-option" 
+              :class="{ selected: sortBy === 'popularity' }" 
+              @click="setSortBy('popularity')"
+            >
+              인기순
+            </div>
           </div>
         </div>
 
@@ -149,7 +158,7 @@
                       </div>
                       <div class="profile-info">
                         <h3 class="profile-name">{{ portfolio.name }}</h3>
-                        <p class="profile-title">{{ portfolio.jobTitle }}</p>
+                        <p v-if="portfolio.jobTitle" class="profile-title">{{ portfolio.jobTitle }}</p>
                         <div class="category-badge">{{ portfolio.category }}</div>
                       </div>
                     </div>
@@ -173,7 +182,6 @@
                           v-for="skill in portfolio.skills" 
                           :key="skill" 
                           class="skill-tag"
-                          :class="getSkillType(skill)"
                         >
                           {{ skill }}
                         </span>
@@ -227,7 +235,7 @@ import { useTechTagStore } from '@/stores/techTagStore'
 
 import PageHeader from '@/components/common/PageHeader.vue'
 
-import { searchUsers, getPopularKeywords, getUserCountPreview } from '@/api/search'
+import { searchUsers, getPopularUserKeywords, getUserCountPreview } from '@/api/search'
 
 const router = useRouter()
 const route = useRoute()
@@ -249,7 +257,14 @@ const selectPopularKeyword = (keyword) => {
 
 // 필터 옵션 데이터
 const techParts = computed(() => techTagStore.techParts)
-const popularTechStacks = computed(() => techTagStore.getPopularTechStacksTop20())
+const popularTechStacks = computed(() => {
+  const stacks = techTagStore.getPopularTechStacksTop20();
+  return stacks.sort((a, b) => {
+    const countA = getFilterResultCount('techStack', a);
+    const countB = getFilterResultCount('techStack', b);
+    return countB - countA;
+  });
+})
 const experienceRanges = ref([
   { value: 'FRESHER', label: '신입' },
   { value: 'LT_1', label: '1년 미만' },
@@ -268,6 +283,7 @@ const page = ref(1)
 const totalPages = ref(1)
 const totalPortfolios = ref(0)
 const pageSize = ref(12)
+const sortBy = ref('recent')
 
 // 검색 상태 관리
 const currentSearchParams = ref({})
@@ -283,11 +299,11 @@ const loadTechTags = async () => {
 
 const loadPopularKeywords = async () => {
   try {
-    const response = await getPopularKeywords()
+    const response = await getPopularUserKeywords()
     popularKeywords.value = response.keywords || []
-    console.log('✅ 인기 키워드 로드 성공:', popularKeywords.value)
+    console.log('✅ 포트폴리오 인기 키워드 로드 성공:', popularKeywords.value)
   } catch (error) {
-    console.error('❌ 인기 키워드 로드 실패:', error)
+    console.error('❌ 포트폴리오 인기 키워드 로드 실패:', error)
     // 실패시 기본값 제공
     popularKeywords.value = ['React', 'Vue.js', 'Node.js', 'Python']
   }
@@ -338,12 +354,13 @@ const performSearch = async (searchParams) => {
     const finalParams = { ...searchParams, page: page.value - 1, size: 20 }
     const result = await searchUsers(finalParams)
     
+    
     portfolios.value = result.content?.map(user => ({
       userId: user.userId,
       id: user.userId,
       nickname: user.nickname || `User ${user.userId}`,
       name: user.nickname || `User ${user.userId}`,
-      jobTitle: user.techPart || '개발자',
+      jobTitle: user.jobTitle || null,
       category: user.techPart || 'General',
       skills: user.techStacks || [],
       profileImage: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
@@ -492,21 +509,21 @@ const viewPortfolio = (portfolioId) => {
   router.push(`/portfolio/${portfolioId}`)
 }
 
-const getSkillType = (skill) => {
-  const frontendSkills = ['React', 'Vue.js', 'Angular', 'JavaScript', 'TypeScript', 'Next.js', 'Nuxt.js', 'Tailwind CSS']
-  const backendSkills = ['Node.js', 'Python', 'Java', 'PHP', 'C#', 'Go', 'Ruby', 'PostgreSQL', 'MongoDB']
-  const designSkills = ['Figma', 'Adobe XD', 'Sketch', 'Photoshop', 'Illustrator', 'Prototyping', 'User Research']
-  const cloudSkills = ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Jenkins', 'Terraform']
-  const mobileSkills = ['Flutter', 'React Native', 'iOS', 'Android', 'Firebase', 'Swift']
-  const aiSkills = ['TensorFlow', 'PyTorch', 'OpenCV', 'NLP', 'Machine Learning', 'Deep Learning']
+const setSortBy = (sortType) => {
+  sortBy.value = sortType
+  handleSearch()
+}
 
-  if (frontendSkills.includes(skill)) return 'frontend'
-  if (backendSkills.includes(skill)) return 'backend'
-  if (designSkills.includes(skill)) return 'design'
-  if (cloudSkills.includes(skill)) return 'cloud'
-  if (mobileSkills.includes(skill)) return 'mobile'
-  if (aiSkills.includes(skill)) return 'ai'
-  return 'general'
+const getSkillLevelClass = (skill) => {
+  const proficiency = typeof skill === 'object' ? skill.proficiency : null
+  
+  if (!proficiency) return 'skill-level-0'
+  
+  if (proficiency >= 5) return 'skill-level-5'
+  if (proficiency >= 4) return 'skill-level-4' 
+  if (proficiency >= 3) return 'skill-level-3'
+  if (proficiency >= 2) return 'skill-level-2'
+  return 'skill-level-1'
 }
 </script>
 
@@ -578,7 +595,6 @@ const getSkillType = (skill) => {
 
 .popular-searches {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 12px;
   margin-top: 16px;
@@ -736,14 +752,37 @@ const getSkillType = (skill) => {
   color: #262626;
   margin: 0;
 }
-.sort-select {
-  padding: 8px 16px;
-  border: 2px solid rgba(76, 175, 80, 0.2);
-  border-radius: 8px;
-  font-size: 14px;
-  background: #fff;
-  color: #4CAF50;
+.sort-options {
+  display: flex;
+  border-radius: 20px;
+  background: #F0F0F0;
+  padding: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+}
+
+.sort-option {
+  padding: 8px 18px;
+  border-radius: 17px;
   cursor: pointer;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.sort-option.selected {
+  background: #FFF;
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sort-option:hover:not(.selected) {
+  background-color: #e8e8e8;
+  color: #555;
 }
 .portfolios-section {
   width: 100%;
@@ -1006,4 +1045,120 @@ const getSkillType = (skill) => {
   border-color: #4CAF50;
 }
 .pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
+
+/* 하트 버튼 스타일 */
+.like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  color: #ccc;
+  font-size: 18px;
+}
+
+.like-btn:hover {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.like-btn.liked {
+  color: #e74c3c;
+}
+
+.like-btn.liked:hover {
+  color: #c0392b;
+}
+
+/* 기술 스택 섹션 */
+.skills-section {
+  margin-bottom: 16px;
+}
+
+.skills-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.skills-header i {
+  font-size: 16px;
+}
+
+.skills-title {
+  color: #666;
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  transition: all 0.2s ease;
+}
+
+.skill-tag:hover {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+/* 기술 스택 실력 레벨별 색상 */
+.skill-tag.skill-level-0 {
+  background: rgba(158, 158, 158, 0.1);
+  color: #9E9E9E;
+  border-color: rgba(158, 158, 158, 0.2);
+}
+
+.skill-tag.skill-level-1 {
+  background: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+  border-color: rgba(244, 67, 54, 0.2);
+}
+
+.skill-tag.skill-level-2 {
+  background: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+  border-color: rgba(255, 152, 0, 0.2);
+}
+
+.skill-tag.skill-level-3 {
+  background: rgba(255, 193, 7, 0.1);
+  color: #FFC107;
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.skill-tag.skill-level-4 {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.skill-tag.skill-level-5 {
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196F3;
+  border-color: rgba(33, 150, 243, 0.2);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.skill-level-badge {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.8;
+}
 </style>

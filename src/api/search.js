@@ -31,7 +31,7 @@ export const searchProjects = async (params = {}) => {
     
             if (params.sort) queryParams.append('sort', params.sort)
     
-    const response = await api.get(`/projects?${queryParams.toString()}`)
+    const response = await api.get(`/search/projects?${queryParams.toString()}`)
     return response.data
   } catch (error) {
     console.error('프로젝트 검색 API 오류:', error)
@@ -93,7 +93,7 @@ export const getTechTags = async () => {
 }
 
 /**
- * 인기 키워드 조회 API
+ * 인기 키워드 조회 API (프로젝트용)
  * @returns {Promise} 인기 키워드 목록
  */
 export const getPopularKeywords = async () => {
@@ -102,6 +102,20 @@ export const getPopularKeywords = async () => {
     return response.data
   } catch (error) {
     console.error('인기 키워드 조회 API 오류:', error)
+    throw error
+  }
+}
+
+/**
+ * 포트폴리오 전용 인기 키워드 조회 API
+ * @returns {Promise} 포트폴리오 인기 키워드 목록
+ */
+export const getPopularUserKeywords = async () => {
+  try {
+    const response = await api.get('/search/popular/user-keywords')
+    return response.data
+  } catch (error) {
+    console.error('포트폴리오 인기 키워드 조회 API 오류:', error)
     throw error
   }
 }
