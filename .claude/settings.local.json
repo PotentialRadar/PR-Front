@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)",
+      "Read(/C:\\PotentialRadar\\PR-Back\\src\\main\\java\\com\\potential_radar\\PR\\user\\controller/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

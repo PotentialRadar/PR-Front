@@ -891,6 +891,8 @@ const loadPortfolioData = async () => {
   }
 }
 
+// 더 이상 필요없음 - 각 섹션별로 개별 API를 사용하므로 데이터 손실 없음
+
 const startEdit = async (field) => {
   editMode.value = field
   
@@ -974,8 +976,10 @@ const saveEdit = async (field) => {
       // 다른 필드들은 개별 API 사용
       switch (field) {
         case 'introduction':
-          await portfolioApi.updatePortfolio({ bio: editData.introduction })
+          // 자기소개만 업데이트하는 전용 API 사용 (다른 데이터에 영향 없음)
+          await portfolioApi.updateBio(editData.introduction)
           portfolioData.introduction = editData.introduction
+          console.log('자기소개만 안전하게 업데이트 완료')
           break
         case 'education':
           await saveEducations()
@@ -1737,13 +1741,14 @@ const onProjectsUpdated = async () => {
     showSaveToast.value = false
   }, 3000)
   
-  // 프로젝트 데이터만 다시 로드 (더 효율적)
+  // 프로젝트 데이터만 안전하게 다시 로드 (다른 데이터에 영향 없음)
   try {
-    const portfolioResponse = await portfolioApi.getPortfolio()
-    const portfolio = portfolioResponse.data
+    console.log('선택된 프로젝트만 다시 로드...')
+    const projectsResponse = await portfolioApi.getSelectedProjects()
+    const projects = projectsResponse.data
     
-    // 프로젝트 데이터만 업데이트
-    portfolioData.projects = portfolio.projects?.map(project => {
+    // 프로젝트 데이터만 업데이트 (교육/경력/기술스택은 그대로 유지)
+    portfolioData.projects = projects?.map(project => {
       const role = (project?.role || '').toUpperCase() === 'LEADER' || (project?.role || '').toUpperCase() === 'PM' || (project?.role || '').toUpperCase() === 'PROJECT_MANAGER' ? '팀장' : '팀원'
       return {
         id: project.projectId,
@@ -1758,11 +1763,12 @@ const onProjectsUpdated = async () => {
       }
     }) || []
     
-    console.log('프로젝트 선택 반영됨:', portfolioData.projects.length, '개')
+    console.log('프로젝트만 안전하게 업데이트 완료:', portfolioData.projects.length, '개')
+    console.log('교육/경력/기술스택 데이터는 그대로 유지됨')
   } catch (error) {
     console.error('프로젝트 업데이트 실패:', error)
-    // 실패 시 전체 로드로 폴백
-    await loadPortfolioData()
+    // 실패해도 전체 로드는 하지 않음 (다른 데이터 보호)
+    console.error('프로젝트 업데이트에 실패했지만 다른 데이터는 보호됨')
   }
 }
 
