@@ -21,7 +21,11 @@ export const deleteProject = (projectId) => api.delete(`${ROOT}/${projectId}`);
 export const uploadProjectFile = (file) => {
     const form = new FormData();
     form.append('file', file);
-    return api.post(`${ROOT}/upload-file`, form); // Content-Type 자동
+    return api.post(`${ROOT}/upload-file`, form, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
 };
 
 // 프로젝트 상태 변경

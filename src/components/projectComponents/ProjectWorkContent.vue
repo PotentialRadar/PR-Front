@@ -129,8 +129,12 @@ export default {
       defaultAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
     }
   },
+  mounted() {
+    console.log('ProjectWorkContent received attachments:', this.attachments);
+  },
   methods: {
     isImage(url) {
+      console.log('Checking if image:', url, /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url));
       return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url)
     },
     getFileIcon(fileName) {
@@ -185,6 +189,7 @@ export default {
       document.body.removeChild(link)
     },
     previewImage(file) {
+      console.log('Previewing image:', file.url);
       this.previewImageUrl = file.url
       this.previewImageName = file.name || this.extractFileName(file.url)
       this.showImagePreview = true

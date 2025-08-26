@@ -117,20 +117,15 @@ const likeCount = ref(props.project.likeCount || 0);
 
 const fetchLikeStatus = async () => {
   const projectId = props.project.projectId || props.project.id;
-  console.log(`[ProjectCard #${projectId}] fetchLikeStatus 호출. 현재 userId: ${userStore.userId}`);
 
   if (userStore.userId && projectId) {
     try {
-      console.log(`[ProjectCard #${projectId}] API 요청 전송: checkIsLiked('PROJECT', ${projectId})`);
       const response = await checkIsLiked('PROJECT', projectId);
-      console.log(`[ProjectCard #${projectId}] API 응답 받음:`, response);
       isLiked.value = response.isLiked;
     } catch (error) {
-      console.error(`[ProjectCard #${projectId}] checkIsLiked API 호출 실패:`, error);
       isLiked.value = false;
     }
   } else {
-    console.log(`[ProjectCard #${projectId}] userId 또는 projectId가 없어서 API 호출을 건너뜁니다.`);
     isLiked.value = false;
   }
 };
@@ -138,7 +133,7 @@ const fetchLikeStatus = async () => {
 onMounted(() => {
   const projectId = props.project.projectId || props.project.id;
   likeCount.value = props.project.likeCount || 0;
-  console.log(`[ProjectCard #${projectId}] Initial likeCount prop:`, props.project.likeCount, `(displayed as ${likeCount.value})`);
+
   fetchLikeStatus();
 });
 

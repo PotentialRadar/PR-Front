@@ -7,14 +7,6 @@
       </div>
     </div>
 
-    <div v-if="showSuccess" class="success-overlay">
-      <div class="success-card">
-        <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
-        <h3 class="success-title">프로젝트가 성공적으로 {{ isEditMode ? '수정' : '등록' }}되었습니다!</h3>
-        <button @click="resetForm" class="success-button">새 프로젝트 작성</button>
-      </div>
-    </div>
-
     <!-- 페이지 헤더 -->
     <PageHeader 
       :title="isEditMode ? '프로젝트 수정' : '새로운 프로젝트'"
@@ -113,7 +105,7 @@
                       min="1"
                       max="99"
                       v-model.number="row.count"
-                      :class="{ error: getError('parts').value && (!row.count || row.count < 1) }"
+                      :class="[{ error: getError('parts').value && (!row.count || row.count < 1) }]"
                       placeholder="인원"
                   />
                   <span class="unit">명</span>
@@ -209,9 +201,10 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, onActivated } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import { useToast } from 'vue-toastification';
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useFormValidation } from '@/composables/useFormValidation.js';
 import { getProject, createProject, updateProject, uploadProjectFile } from '@/api/projects';
@@ -219,18 +212,16 @@ import { PART_OPTIONS } from '@/constants/parts';
 import TechStackSelector from '@/components/common/TechStackSelector.vue';
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue';
 
-// const DEV_FORCE_USER_ID = 1; // Removed or commented out
-
 export default {
-  name: 'ProjectFormPage', // Renamed for clarity
+  name: 'ProjectFormPage',
   components: { TechStackSelector, FileUploadArea, PageHeader },
   props: {
-    projectId: { // Accept projectId as a prop
+    projectId: {
       type: String,
       default: null
     }
   },
-  setup(props) {
+      setup(props) {
     const {
       errors, isSubmitting, submitAttempted,
       validateField, validateForm, clearErrors,
@@ -238,11 +229,11 @@ export default {
     } = useFormValidation();
 
     const router = useRouter();
-    const route = useRoute();
     const userStore = useUserStore();
+    const toast = useToast();
 
     const isEditMode = computed(() => !!props.projectId);
-    const showSuccess = ref(false);
+    const originalAttachments = ref([]); // 수정 시작 시의 원본 첨부파일 목록
 
     const formData = reactive({
       projectTitle: '',
@@ -250,7 +241,7 @@ export default {
       startDate: '',
       endDate: '',
       techStack: [],
-      files: [],
+      files: [], // FileUploadArea와 연동되는 모델. File 객체 또는 {name, url, size, isExisting: true} 형태
       recruitDeadline: '',
     });
 
@@ -261,10 +252,24 @@ export default {
         partRows.value.reduce((sum, r) => sum + (Number(r.count) || 0), 0)
     );
 
-    onMounted(async () => {
+    const resetForm = () => {
+      formData.projectTitle = '';
+      formData.projectDescription = '';
+      formData.startDate = '';
+      formData.endDate = '';
+      formData.techStack = [];
+      formData.files = [];
+      formData.recruitDeadline = '';
+      partRows.value = [{ part: 'FRONTEND', count: 1 }];
+      originalAttachments.value = [];
+      clearErrors();
+      submitAttempted.value = false;
+    };
+
+    onMounted(() => {
+      resetForm();
       if (isEditMode.value) {
-        try {
-          const res = await getProject(props.projectId);
+        getProject(props.projectId).then(res => {
           const p = res.data;
           formData.projectTitle = p.title;
           formData.projectDescription = p.description;
@@ -273,11 +278,26 @@ export default {
           formData.endDate = p.endDate.split('T')[0];
           formData.techStack = p.techStacks.map(t => ({ id: t.techStackName, name: t.techStackName }));
           partRows.value = p.recruitmentParts.map(part => ({ part: part.partName, count: part.recruitCount }));
-        } catch (e) {
+          
+          if (p.attachments && p.attachments.length > 0) {
+            originalAttachments.value = p.attachments; // 원본 목록 저장
+            // FileUploadArea에 표시하기 위한 데이터 형식으로 변환
+            formData.files = p.attachments.map(att => ({ ...att, isExisting: true }));
+          }
+
+        }).catch(e => {
           console.error('Failed to fetch project data for editing:', e);
-          alert('프로젝트 정보를 불러오는데 실패했습니다.');
+          toast.error('프로젝트 정보를 불러오는데 실패했습니다.');
           router.back();
-        }
+        });
+      }
+    });
+
+    onActivated(() => {
+      // Only reset form if not in edit mode (i.e., creating a new project)
+      // and if the form is not already clean (e.g., after a successful submission)
+      if (!isEditMode.value) {
+        resetForm();
       }
     });
 
@@ -292,30 +312,36 @@ export default {
       files: []
     };
 
-    
-
     const submitForm = async () => {
-      const uid = userStore.userId; // Directly use userStore.userId
-      if (!uid && !isEditMode.value) { // User ID needed only for creation
-        alert('로그인 후에 프로젝트를 등록할 수 있습니다.');
+      const uid = userStore.userId;
+      if (!uid && !isEditMode.value) {
+        toast.warning('로그인 후에 프로젝트를 등록할 수 있습니다.');
         router.push('/login');
         return;
       }
 
       submitAttempted.value = true;
       if (!validateForm({ ...formData, parts: partRows.value }, validationSchema)) {
+        toast.error('입력 내용을 다시 확인해주세요.');
         return;
       }
 
       isSubmitting.value = true;
       try {
-        let fileUrl = null;
-        if (formData.files?.length && formData.files[0] instanceof File) {
-          const uploadRes = await uploadProjectFile(formData.files[0]);
-          fileUrl = uploadRes.data;
-        }
+        const finalAttachments = [];
 
-        
+        for (const file of formData.files) {
+          if (file.isExisting) {
+            finalAttachments.push({
+              name: file.name,
+              url: file.url,
+              size: file.size
+            });
+          } else if (file instanceof File) {
+            const uploadRes = await uploadProjectFile(file);
+            finalAttachments.push(uploadRes.data);
+          }
+        }
 
         const techStacks = formData.techStack
           .filter(s => s.techStackName && s.techStackName.trim())
@@ -337,11 +363,11 @@ export default {
           recruitDeadline: formData.recruitDeadline,
           startDate: formData.startDate,
           endDate: formData.endDate,
-          fileUrl,
           status: 'RECRUITING',
           techStacks,
           recruitmentParts: parts,
-          recruitCount: totalRecruitCount.value
+          recruitCount: totalRecruitCount.value,
+          attachments: finalAttachments
         };
 
         if (isEditMode.value) {
@@ -349,20 +375,21 @@ export default {
         } else {
           await createProject(projectData, uid);
         }
+        
+        toast.success(`프로젝트가 성공적으로 ${isEditMode.value ? '수정' : '등록'}되었습니다!`);
+        
+        if (isEditMode.value) {
+            router.push(`/projects/${props.projectId}`);
+        } else {
+            router.push(`/projects`);
+        }
 
-        showSuccess.value = true;
-        clearErrors();
-        router.push(isEditMode.value ? `/myPage/projects/${props.projectId}/manage` : '/projects');
       } catch (error) {
         console.error('Submission error:', error);
-        alert(`프로젝트 ${isEditMode.value ? '수정' : '등록'} 중 오류가 발생했습니다.`);
+        toast.error(`프로젝트 ${isEditMode.value ? '수정' : '등록'} 중 오류가 발생했습니다.`);
       } finally {
         isSubmitting.value = false;
       }
-    };
-
-    const resetForm = () => {
-      // ... (resetForm logic)
     };
 
     return {
@@ -370,7 +397,7 @@ export default {
       PART_OPTIONS,
       partRows, addPartRow, removePartRow, totalRecruitCount,
       validationSchema,
-      errors, isSubmitting, submitAttempted, showSuccess,
+      errors, isSubmitting, submitAttempted,
       hasErrors, hasError, getError,
       validateField, submitForm, resetForm
     };
@@ -881,7 +908,7 @@ export default {
     gap: 16px;
   }
   
-  .page-title {
+.page-title {
     font-size: 32px;
     letter-spacing: -0.5px;
   }
