@@ -329,7 +329,9 @@ onActivated(async () => {
 
 watch([page], () => {
   router.replace({ query: { ...route.query, page: page.value !== 1 ? page.value : undefined } })
+  performSearch(currentSearchParams.value)
 })
+
 
 const handleSearch = async (resetPage = true) => {
   if (resetPage) {
