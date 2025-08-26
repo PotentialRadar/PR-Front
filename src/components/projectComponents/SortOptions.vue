@@ -9,8 +9,8 @@
     </div>
     <div 
       class="sort-option" 
-      :class="{ selected: currentSelectedSort === 'likes,desc' }" 
-      @click="setSort('likes,desc')"
+      :class="{ selected: currentSelectedSort === 'likeCount,desc' }" 
+      @click="setSort('likeCount,desc')"
     >
       인기순
     </div>
