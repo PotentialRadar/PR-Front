@@ -31,7 +31,7 @@ export const searchProjects = async (params = {}) => {
     
             if (params.sort) queryParams.append('sort', params.sort)
     
-    const response = await api.get(`/projects?${queryParams.toString()}`)
+    const response = await api.get(`/search/projects?${queryParams.toString()}`)
     return response.data
   } catch (error) {
     console.error('프로젝트 검색 API 오류:', error)
@@ -93,7 +93,7 @@ export const getTechTags = async () => {
 }
 
 /**
- * 인기 키워드 조회 API
+ * 인기 키워드 조회 API (프로젝트용)
  * @returns {Promise} 인기 키워드 목록
  */
 export const getPopularKeywords = async () => {
@@ -107,7 +107,21 @@ export const getPopularKeywords = async () => {
 }
 
 /**
- * 필터별 결과 수 미리보기 API
+ * 포트폴리오 전용 인기 키워드 조회 API
+ * @returns {Promise} 포트폴리오 인기 키워드 목록
+ */
+export const getPopularUserKeywords = async () => {
+  try {
+    const response = await api.get('/search/popular/user-keywords')
+    return response.data
+  } catch (error) {
+    console.error('포트폴리오 인기 키워드 조회 API 오류:', error)
+    throw error
+  }
+}
+
+/**
+ * 프로젝트 필터별 결과 수 미리보기 API
  * @param {Object} params - 검색 파라미터
  * @returns {Promise} 결과 수 정보
  */
@@ -130,6 +144,35 @@ export const getProjectCountPreview = async (params = {}) => {
     return response.data
   } catch (error) {
     console.error('프로젝트 결과 수 미리보기 API 오류:', error)
+    throw error
+  }
+}
+
+/**
+ * 사용자(포트폴리오) 필터별 결과 수 미리보기 API
+ * @param {Object} params - 검색 파라미터
+ * @returns {Promise} 결과 수 정보
+ */
+export const getUserCountPreview = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams()
+    
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    if (params.nickname) queryParams.append('nickname', params.nickname)
+    if (params.techParts?.length) {
+      params.techParts.forEach(part => queryParams.append('techParts', part))
+    }
+    if (params.techStacks?.length) {
+      params.techStacks.forEach(stack => queryParams.append('techStacks', stack))
+    }
+    if (params.experienceRanges?.length) {
+      params.experienceRanges.forEach(range => queryParams.append('experienceRanges', range))
+    }
+    
+    const response = await api.get(`/search/users/count-preview?${queryParams.toString()}`)
+    return response.data
+  } catch (error) {
+    console.error('사용자 결과 수 미리보기 API 오류:', error)
     throw error
   }
 }
