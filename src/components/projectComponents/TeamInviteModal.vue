@@ -132,6 +132,7 @@
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useUserStore } from '@/stores/userStore'
+import api from '@/api/axios'
 
 const props = defineProps({
   projectId: {
@@ -174,19 +175,13 @@ const searchUser = async () => {
   
   try {
     // 사용자 검색 API 호출 (기존 사용자 검색 API 활용)
-    const response = await fetch(`http://localhost:8080/api/users/search?query=${encodeURIComponent(searchQuery.value)}`, {
-      method: 'GET',
+    const response = await api.get(`/users/search?query=${encodeURIComponent(searchQuery.value)}`, {
       headers: {
-        'Content-Type': 'application/json',
         'User-Id': userStore.userId.toString()
       }
     })
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const users = await response.json()
+    const users = response.data
     searchResults.value = users.map(user => ({
       id: user.userId,
       name: user.nickname,
@@ -217,25 +212,17 @@ const inviteUser = async (user) => {
       throw new Error('로그인이 필요합니다.');
     }
     
-    const response = await fetch('http://localhost:8080/api/invitations/send', {
-      method: 'POST',
+    const response = await api.post('/invitations/send', {
+      projectId: props.projectId,
+      inviteeId: user.id,
+      message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
+    }, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
-      },
-      body: JSON.stringify({
-        projectId: props.projectId,
-        inviteeId: user.id,
-        message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
-      })
+      }
     })
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const result = await response.json()
+    const result = response.data
     
     if (result.success) {
       // 초대 목록에 추가
@@ -280,19 +267,13 @@ const inviteByEmail = async () => {
   
   try {
     // 이메일로 사용자 검색 후 초대
-    const searchResponse = await fetch(`http://localhost:8080/api/users/search?query=${encodeURIComponent(inviteEmail.value)}`, {
-      method: 'GET',
+    const searchResponse = await api.get(`/users/search?query=${encodeURIComponent(inviteEmail.value)}`, {
       headers: {
-        'Content-Type': 'application/json',
         'User-Id': userStore.userId.toString()
       }
     })
     
-    if (!searchResponse.ok) {
-      throw new Error(`HTTP error! status: ${searchResponse.status}`)
-    }
-    
-    const users = await searchResponse.json()
+    const users = searchResponse.data
     const user = users.find(u => u.email === inviteEmail.value)
     
     if (!user) {
@@ -306,25 +287,17 @@ const inviteByEmail = async () => {
       throw new Error('로그인이 필요합니다.');
     }
     
-    const inviteResponse = await fetch('http://localhost:8080/api/invitations/send', {
-      method: 'POST',
+    const inviteResponse = await api.post('/invitations/send', {
+      projectId: props.projectId,
+      inviteeId: user.userId,
+      message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
+    }, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
-      },
-      body: JSON.stringify({
-        projectId: props.projectId,
-        inviteeId: user.userId,
-        message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
-      })
+      }
     })
     
-    if (!inviteResponse.ok) {
-      throw new Error(`HTTP error! status: ${inviteResponse.status}`)
-    }
-    
-    const result = await inviteResponse.json()
+    const result = inviteResponse.data
     
     if (result.success) {
       const invite = {

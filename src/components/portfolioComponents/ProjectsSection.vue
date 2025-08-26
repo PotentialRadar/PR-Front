@@ -146,7 +146,6 @@ const processedProjects = computed(() => {
     ]
   }))
 })
-
 </script>
 
 <style scoped>

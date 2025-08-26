@@ -63,7 +63,7 @@
     <div class="recruitment-parts-section">
       <div class="section-title">모집인원 (파트별)</div>
       <div class="parts-container">
-        <div v-if="project.recruitmentParts && project.recruitmentParts.length">
+        <div v-if="project.recruitmentParts && project.recruitmentParts.length" class="parts-list">
           <div v-for="(part, index) in project.recruitmentParts" :key="index" class="part-item-card">
             <span class="part-name">{{ getPartLabel(part.partName) }}</span>
             <span class="part-count">{{ part.recruitCount }}명</span>
@@ -495,6 +495,14 @@ export default {
 .no-recruitment {
   font-size: 13px;
   color: #888;
+}
+
+/* 모집인원을 옆으로 나란히 배열 */
+.parts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
 }
 
 </style>

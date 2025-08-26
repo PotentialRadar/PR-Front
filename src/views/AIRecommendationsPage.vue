@@ -62,6 +62,21 @@
           </button>
         </div>
 
+        <!-- 팀원 추천용 프로젝트 선택 (팀원 추천 탭에서만 표시) -->
+        <div v-if="activeTab === 'members' && isTeamLeader && userProjects.length > 1" class="project-selector">
+          <label for="project-select">추천받을 프로젝트 선택:</label>
+          <select 
+            id="project-select" 
+            v-model="selectedProjectId" 
+            @change="onProjectChange"
+            class="project-select"
+          >
+            <option v-for="project in userProjects" :key="project.projectId" :value="project.projectId">
+              {{ project.title }} ({{ project.status === 'RECRUITING' ? '모집중' : project.status }})
+            </option>
+          </select>
+        </div>
+
 
         <!-- 로딩 상태 -->
         <div v-if="isLoading" class="loading-state">
@@ -178,7 +193,7 @@
               <div class="info-grid">
                 <div class="info-item">
                   <span class="info-label">진행기간</span>
-                  <span class="info-value">{{ formatDateRange(project.startDate, project.endDate) }}</span>
+                  <span class="info-value">{{ formatDuration(project.startDate, project.endDate) }}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">모집인원</span>
@@ -191,7 +206,7 @@
                 <div class="info-item">
                   <span class="info-label">마감일정</span>
                   <span class="info-value" :class="{ 'urgent': isUrgent(project.recruitDeadline) }">
-                    {{ formatDate(project.recruitDeadline) }}
+                    {{ formatDeadline(project.recruitDeadline) }}
                   </span>
                 </div>
               </div>
@@ -279,9 +294,11 @@
               <div class="member-header">
                 <div class="member-profile">
                   <img 
-                    :src="member.profileImage || '/default-avatar.png'" 
+                    :src="getMemberProfileImage(member)" 
                     :alt="member.name || member.nickname"
                     class="member-avatar"
+                    @error="handleMemberImageError($event, member.userId)"
+                    loading="lazy"
                   />
                   <div class="member-basic-info">
                     <h3 class="member-name">{{ member.name || member.nickname }}</h3>
@@ -352,8 +369,13 @@
                     LinkedIn
                   </a>
                 </div>
-                <button class="contact-button" @click.stop="contactMember(member)">
-                  초대하기
+                <button 
+                  class="contact-button" 
+                  :class="{ 'invited': invitedMembers.has(member.userId) }"
+                  @click.stop="contactMember(member)"
+                  :disabled="invitedMembers.has(member.userId)"
+                >
+                  {{ invitedMembers.has(member.userId) ? '초대됨' : '초대하기' }}
                 </button>
               </div>
             </div>
@@ -396,10 +418,11 @@ const popularProjects = ref([])
 const activeTab = ref('projects') // 'projects' 또는 'members'
 const userProjects = ref([]) // 사용자가 팀장인 프로젝트들
 const isTeamLeader = ref(false) // 팀장 여부
+const selectedProjectId = ref(null) // 선택된 프로젝트 ID
+const invitedMembers = ref(new Set()) // 이미 초대된 멤버 ID 추적
 
 // 계산된 속성
 const userTechNames = computed(() => userTechStacks.value.map(tech => tech.name?.toLowerCase()).filter(Boolean))
-
 
 // 메서드
 const loadRecommendations = async () => {
@@ -413,12 +436,16 @@ const loadRecommendations = async () => {
     const requestData = {
       userId: userStore.userId, // 실제 로그인한 사용자 ID 사용
       techStacks: userTechStacks.value,
-      includeLikes: true // 좋아요 기반 추천 포함
+      includeLikes: true, // 좋아요 기반 추천 포함
+      topN: 10, // AI 추천 페이지에서는 더 많은 추천 제공
+      minScore: 0.25, // 매칭 점수 최소값 (더 높은 품질)
+      minOverlap: 0.15, // 최소 기술스택 겹침 비율
+      strict: false // 엄격한 매칭 해제
     }
 
     console.log('🎯 AI 추천 요청:', requestData)
 
-    const response = await api.post('/recommend/projects', requestData)
+    const response = await api.post('/recommend/projects?topN=10&minScore=0.25&minOverlap=0.15&strict=false', requestData)
     const data = response.data
     console.log('📦 AI 추천 응답:', data)
     
@@ -426,6 +453,13 @@ const loadRecommendations = async () => {
     
     if (recommendations.value.length > 0) {
       console.log(`✅ ${recommendations.value.length}개의 프로젝트 추천 완료`)
+      
+      // 프로젝트 매칭률 로그 출력
+      console.log('📊 프로젝트 추천 매칭률 결과:')
+      recommendations.value.forEach((project, index) => {
+        const matchPercentage = Math.round((project.matchScore || 0) * 100)
+        console.log(`  ${index + 1}. ${project.title} - ${matchPercentage}% 매칭`)
+      })
     } else {
       console.log('⚠️ 추천 가능한 프로젝트가 없음')
       toast.info('현재 추천 가능한 프로젝트가 없습니다. 기술스택을 조정해보세요.', {
@@ -464,10 +498,18 @@ const checkTeamLeaderStatus = async () => {
     )
     isTeamLeader.value = recruitingProjects.length > 0
     
+    // 첫 번째 모집중인 프로젝트를 기본 선택
+    if (recruitingProjects.length > 0) {
+      selectedProjectId.value = recruitingProjects[0].projectId
+    } else if (userProjects.value.length > 0) {
+      selectedProjectId.value = userProjects.value[0].projectId
+    }
+    
     console.log('👑 팀장 상태 확인:', {
       isTeamLeader: isTeamLeader.value,
       totalProjects: userProjects.value.length,
       recruitingProjects: recruitingProjects.length,
+      selectedProjectId: selectedProjectId.value,
       recruitingProjectTitles: recruitingProjects.map(p => p.title)
     })
     
@@ -490,20 +532,27 @@ const loadMemberRecommendations = async () => {
   try {
     console.log('🔍 사용자 프로젝트 데이터:', userProjects.value)
     
-    // 모집중인 첫 번째 프로젝트 찾기
-    const recruitingProject = userProjects.value.find(project => 
-      project.status === 'RECRUITING' || project.status === '모집중'
+    // 선택된 프로젝트 찾기
+    const selectedProject = userProjects.value.find(project => 
+      project.projectId === selectedProjectId.value
     ) || userProjects.value[0]
     
-    console.log('📋 선택된 프로젝트:', recruitingProject)
+    if (!selectedProject) {
+      console.log('❌ 선택된 프로젝트가 없음')
+      memberRecommendations.value = []
+      return
+    }
+    
+    console.log('📋 선택된 프로젝트:', selectedProject)
     
     const requestData = {
-      projectId: recruitingProject?.projectId || recruitingProject?.id || null,
-      requiredSkills: recruitingProject?.techStacks?.map(tech => 
+      projectId: selectedProject.projectId,
+      requiredSkills: selectedProject?.techStacks?.map(tech => 
         tech.techStackName || tech.name
       ).filter(Boolean) || [],
       teamSize: 4,
-      experienceLevel: "any"
+      experienceLevel: "any",
+      excludeUserId: userStore.userId  // 팀장 본인을 백엔드에서 제외
     }
 
     console.log('👥 팀원 추천 요청:', requestData)
@@ -517,7 +566,15 @@ const loadMemberRecommendations = async () => {
     
     if (memberRecommendations.value.length > 0) {
       console.log(`✅ ${memberRecommendations.value.length}명의 팀원 추천 완료`)
-      // 첫 번째 팀원의 기술스택 구조 확인
+      
+      // 팀원 매칭률 로그 출력
+      console.log('📊 팀원 추천 매칭률 결과:')
+      memberRecommendations.value.forEach((member, index) => {
+        const matchPercentage = Math.round((member.matchScore || 0) * 100)
+        console.log(`  ${index + 1}. ${member.nickname || member.name} - ${matchPercentage}% 매칭`)
+      })
+      
+      // 첫 번째 팀원의 기술스택 구조 확인 (디버깅용)
       console.log('🔍 첫 번째 팀원 기술스택:', memberRecommendations.value[0].userTechStacks)
     } else {
       console.log('⚠️ 추천 가능한 팀원이 없음')
@@ -529,9 +586,8 @@ const loadMemberRecommendations = async () => {
     
   } catch (error) {
     console.error('❌ 팀원 추천 오류:', error)
-    // 일단 목 데이터로 대체
-    memberRecommendations.value = getMockMemberRecommendations()
-    toast.warning('팀원 추천 API가 준비 중입니다. 목 데이터를 표시합니다.', {
+    memberRecommendations.value = []
+    toast.error('팀원 추천을 불러오는데 실패했습니다.', {
       position: 'top-center',
       timeout: 3000
     })
@@ -540,41 +596,13 @@ const loadMemberRecommendations = async () => {
   }
 }
 
-// 임시 목 데이터 생성
-const getMockMemberRecommendations = () => {
-  return [
-    {
-      userId: 1,
-      nickname: "김개발",
-      techPart: "풀스택 개발자",
-      bio: "React와 Node.js를 주로 사용하는 5년차 개발자입니다. 팀워크를 중시하며 새로운 기술 학습을 좋아합니다.",
-      experienceRange: "3-5년",
-      reputationScore: "4.8",
-      techStacks: ["React", "Node.js", "TypeScript", "PostgreSQL", "AWS"],
-      matchScore: 0.85,
-      githubUrl: "https://github.com/kimdev",
-      linkedinUrl: "https://linkedin.com/in/kimdev",
-      profileImage: null,
-      explanation: {
-        simple_explanation: "React와 TypeScript 경험이 풍부하여 프로젝트에 큰 도움이 될 것 같습니다."
-      }
-    },
-    {
-      userId: 2,
-      nickname: "박프론트",
-      techPart: "프론트엔드 개발자",
-      bio: "사용자 경험을 중시하는 프론트엔드 개발자입니다. Vue.js와 React 모두 능숙하게 다룹니다.",
-      experienceRange: "2-3년",
-      reputationScore: "4.5",
-      techStacks: ["Vue.js", "React", "JavaScript", "CSS", "Figma"],
-      matchScore: 0.72,
-      githubUrl: "https://github.com/parkfront",
-      profileImage: null,
-      explanation: {
-        simple_explanation: "프론트엔드 전문성과 UI/UX 감각이 뛰어나 프로젝트 품질 향상에 기여할 수 있습니다."
-      }
-    }
-  ]
+
+// 프로젝트 변경 시 호출
+const onProjectChange = () => {
+  console.log('📋 프로젝트 변경됨:', selectedProjectId.value)
+  memberRecommendations.value = [] // 기존 추천 초기화
+  invitedMembers.value.clear() // 초대 상태 초기화
+  loadMemberRecommendations()
 }
 
 // 팀원 추천 탭 전환
@@ -591,10 +619,72 @@ const goToMemberProfile = (userId) => {
   router.push(`/profile/${userId}`)
 }
 
+// 팀원 프로필 이미지 처리 함수들
+const getMemberProfileImage = (member) => {
+  // 1순위: member.profileImage가 있고 실제 이미지 URL인 경우 (더미 URL 제외)
+  if (member.profileImage && 
+      member.profileImage.startsWith('http') && 
+      !member.profileImage.includes('example.com') &&
+      !member.profileImage.includes('placeholder')) {
+    return member.profileImage
+  }
+  
+  // 2순위: dicebear API 사용 (항상 안전함)
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+}
+
+const handleMemberImageError = (event, userId) => {
+  console.warn(`팀원 프로필 이미지 로드 실패 (사용자 ${userId}):`, event.target.src)
+  
+  // Fallback 1: 더미 URL이나 기타 실패한 경우 dicebear avataaars로
+  if (!event.target.src.includes('dicebear.com')) {
+    console.log(`Fallback 1: dicebear avataaars 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+    return
+  }
+  
+  // Fallback 2: avataaars 실패시 initials 시도
+  if (event.target.src.includes('avataaars')) {
+    console.log(`Fallback 2: dicebear initials 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=User${userId}&backgroundColor=4f46e5,7c3aed,db2777,dc2626,ea580c`
+    return
+  }
+  
+  // Fallback 3: initials 실패시 shapes 시도
+  if (event.target.src.includes('initials')) {
+    console.log(`Fallback 3: dicebear shapes 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${userId}&backgroundColor=22c55e,3b82f6,8b5cf6,f59e0b,ef4444`
+    return
+  }
+  
+  // Fallback 4: shapes 실패시 최종 대안
+  if (event.target.src.includes('shapes')) {
+    console.log(`Fallback 4: 최종 대안 시도 (사용자 ${userId})`)
+    event.target.src = `https://ui-avatars.com/api/?name=User${userId}&background=4CAF50&color=fff&size=60`
+    return
+  }
+  
+  // 모든 API 실패 시
+  console.error(`모든 이미지 fallback 실패 (사용자 ${userId}) - 최종 처리`)
+  
+  // 이미지를 숨기는 대신 CSS 배경으로 처리
+  event.target.style.opacity = '0'
+  event.target.style.background = 'linear-gradient(135deg, #4CAF50, #81C784)'
+  event.target.alt = 'U'
+}
+
 // 멤버에게 팀원 초대 보내기
 const contactMember = async (member) => {
+  if (!userStore.isLoggedIn) {
+    toast.error('로그인이 필요합니다.', {
+      position: 'top-center',
+      timeout: 3000
+    })
+    return
+  }
+
   if (userProjects.value.length === 0) {
-    toast.error('초대할 프로젝트가 없습니다.', {
+    toast.error('초대할 수 있는 프로젝트가 없습니다.', {
       position: 'top-center',
       timeout: 3000
     })
@@ -602,19 +692,41 @@ const contactMember = async (member) => {
   }
 
   try {
-    // 프로젝트가 여러 개인 경우 선택 모달 표시 (일단 첫 번째 프로젝트로)
-    const project = userProjects.value[0]
+    // 선택된 프로젝트 사용 (없으면 첫 번째 프로젝트)
+    const selectedProject = userProjects.value.find(p => p.projectId === selectedProjectId.value) 
+                          || userProjects.value[0]
+    
+    if (!selectedProject) {
+      toast.error('선택된 프로젝트를 찾을 수 없습니다.', {
+        position: 'top-center',
+        timeout: 3000
+      })
+      return
+    }
+
+    // 자기 자신에게 초대 보내는 것 방지
+    if (member.userId === userStore.userId) {
+      toast.warning('자기 자신을 초대할 수 없습니다.', {
+        position: 'top-center',
+        timeout: 3000
+      })
+      return
+    }
     
     const inviteData = {
-      projectId: project.projectId,
-      inviteeUserId: member.userId,
-      message: `${project.title} 프로젝트에 참여해보시겠어요? AI가 당신과 잘 맞는 팀원으로 추천했습니다! 🚀`
+      projectId: selectedProject.projectId,
+      inviteeId: member.userId,
+      message: `${selectedProject.title} 프로젝트에 참여해보시겠어요? AI가 ${Math.round((member.matchScore || 0) * 100)}% 매칭으로 추천했습니다! 🚀`
     }
 
     console.log('📧 팀원 초대 요청:', inviteData)
     
-    // 서비스 내 알림으로 초대 발송
-    const response = await api.post('/team-invitations', inviteData)
+    // 팀원 초대 API 호출 (TeamMemberRecommendation과 동일한 방식)
+    const response = await api.post('/invitations/send', inviteData, {
+      headers: {
+        'User-Id': userStore.userId.toString()
+      }
+    })
     
     toast.success(`${member.name || member.nickname}님에게 팀원 초대를 보냈습니다! 🎉`, {
       position: 'top-center',
@@ -623,11 +735,24 @@ const contactMember = async (member) => {
     
     console.log('✅ 팀원 초대 성공:', response.data)
     
+    // 초대된 멤버를 추적 목록에 추가
+    invitedMembers.value.add(member.userId)
+    
   } catch (error) {
     console.error('❌ 팀원 초대 실패:', error)
     
     if (error.response?.status === 409) {
       toast.warning('이미 초대된 사용자입니다.', {
+        position: 'top-center',
+        timeout: 3000
+      })
+    } else if (error.response?.status === 400) {
+      toast.error('잘못된 초대 요청입니다.', {
+        position: 'top-center',
+        timeout: 3000
+      })
+    } else if (error.response?.status === 404) {
+      toast.error('사용자를 찾을 수 없습니다.', {
         position: 'top-center',
         timeout: 3000
       })
@@ -679,18 +804,25 @@ const getMemberTechStacks = (member) => {
   }
 }
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', { 
-    month: 'short', 
-    day: 'numeric' 
-  })
+const formatDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return '-'
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  if (isNaN(start) || isNaN(end)) return '-'
+  
+  const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1
+  if (diff < 7) return `${diff}일`
+  if (diff < 30) return `${Math.round(diff / 7)}주`
+  if (diff < 365) return `${Math.round(diff / 30)}개월`
+  return `${Math.round(diff / 365)}년`
 }
 
-const formatDateRange = (startDate, endDate) => {
-  const start = formatDate(startDate)
-  const end = formatDate(endDate)
-  return `${start} ~ ${end}`
+const formatDeadline = (deadline) => {
+  if (!deadline) return '-'
+  const today = new Date()
+  const dday = Math.ceil((new Date(deadline) - today) / (1000 * 60 * 60 * 24))
+  if (dday >= 0) return `D-${dday}`
+  return '마감'
 }
 
 const isUrgent = (deadline) => {
@@ -735,8 +867,18 @@ const loadPopularProjects = async () => {
     const data = response.data
     console.log('📊 전체 프로젝트 데이터:', data)
     
+    // 페이지네이션된 응답 처리: content 배열 추출
+    const projectsArray = data?.content || data || []
+    console.log('📋 추출된 프로젝트 배열:', projectsArray.length, '개')
+    
+    if (!Array.isArray(projectsArray)) {
+      console.warn('⚠️ 프로젝트 데이터가 배열이 아닙니다:', typeof projectsArray)
+      popularProjects.value = []
+      return
+    }
+    
     // viewCount 기준으로 정렬하여 인기 프로젝트 선별
-    const sortedProjects = [...data]
+    const sortedProjects = [...projectsArray]
       .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
     
     popularProjects.value = sortedProjects.slice(0, 12) // 상위 12개
@@ -744,6 +886,11 @@ const loadPopularProjects = async () => {
     
   } catch (error) {
     console.error('❌ 인기 프로젝트 로드 실패:', error)
+    console.error('에러 상세:', error.response?.data || error.message)
+    
+    // 에러 발생시 빈 배열로 설정
+    popularProjects.value = []
+    
     toast.error('인기 프로젝트를 불러오는 중 오류가 발생했습니다.', {
       position: 'top-center',
       timeout: 3000
@@ -759,20 +906,36 @@ onMounted(async () => {
     
     // 로그인 상태 체크 (이미 로그인된 경우 스킵)
     if (!userStore.isLoggedIn) {
-      await userStore.checkLogin()
+      try {
+        await userStore.checkLogin()
+        console.log('✅ 로그인 상태 체크 완료:', userStore.isLoggedIn)
+      } catch (error) {
+        console.warn('⚠️ 로그인 상태 체크 실패:', error)
+        // 로그인 체크 실패해도 페이지는 계속 진행 (비로그인 사용자용)
+      }
     }
     
     // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
-    loadPopularProjects()
+    await loadPopularProjects()
     
-    // 팀장 상태 확인 (로그인된 경우)
-    if (userStore.isLoggedIn) {
-      await checkTeamLeaderStatus()
+    // 팀장 상태 확인 (로그인된 경우만)
+    if (userStore.isLoggedIn && userStore.userId) {
+      try {
+        await checkTeamLeaderStatus()
+      } catch (error) {
+        console.error('❌ 팀장 상태 확인 실패:', error)
+        // 팀장 상태 확인 실패해도 계속 진행
+        isTeamLeader.value = false
+        userProjects.value = []
+      }
+    } else {
+      console.log('👤 비로그인 사용자 - 팀장 상태 체크 생략')
+      isTeamLeader.value = false
+      userProjects.value = []
     }
     
     // 저장된 기술스택 불러오기 (로그인 상태에서만)
-    if (userStore.isLoggedIn) {
-      // 먼저 실제 DB에서 기술스택 조회
+    if (userStore.isLoggedIn && userStore.userId) {
       try {
         console.log('🔧 DB에서 기술스택 조회 시도')
         const dbTechStacks = await userStore.fetchTechStacks()
@@ -783,16 +946,17 @@ onMounted(async () => {
             level: tech.skillLevel || tech.level || 3
           }))
           console.log('✅ DB에서 기술스택 로드 성공:', userTechStacks.value)
-          loadRecommendations()
+          await loadRecommendations()
         } else {
+          console.log('⚠️ DB에 기술스택 없음 - localStorage 확인')
           // DB에 기술스택이 없으면 localStorage 확인
           const savedTechStacks = localStorage.getItem('userTechStacks')
           if (savedTechStacks) {
             try {
               userTechStacks.value = JSON.parse(savedTechStacks)
-              loadRecommendations()
+              await loadRecommendations()
             } catch (error) {
-              console.error('기술스택 데이터 파싱 오류:', error)
+              console.error('❌ 기술스택 데이터 파싱 오류:', error)
               localStorage.removeItem('userTechStacks')
               userTechStacks.value = []
             }
@@ -802,26 +966,13 @@ onMounted(async () => {
           }
         }
       } catch (error) {
-        console.error('❌ DB 기술스택 조회 실패:', error)
-        // DB 조회 실패 시 localStorage fallback
-        const savedTechStacks = localStorage.getItem('userTechStacks')
-        if (savedTechStacks) {
-          try {
-            userTechStacks.value = JSON.parse(savedTechStacks)
-            loadRecommendations()
-          } catch (parseError) {
-            console.error('기술스택 데이터 파싱 오류:', parseError)
-            localStorage.removeItem('userTechStacks')
-            userTechStacks.value = []
-          }
-        } else {
-          userTechStacks.value = []
-        }
+        console.error('❌ 기술스택 로딩 실패:', error)
+        userTechStacks.value = []
+        // 기술스택 로딩 실패해도 페이지는 계속 진행
       }
     } else {
-      // 로그인되지 않은 상태에서는 기술스택 정리
-      localStorage.removeItem('userTechStacks')
-      localStorage.removeItem('projectFeedbacks')
+      console.log('👤 비로그인 사용자 - 기술스택 로딩 생략')
+      // 비로그인 상태에서는 기술스택 관련 데이터 초기화
       userTechStacks.value = []
     }
     
@@ -834,6 +985,19 @@ onMounted(async () => {
     
   } catch (error) {
     console.error('❌ AI 추천 페이지 초기화 실패:', error)
+    
+    // 초기화 실패시 기본값 설정
+    isTeamLeader.value = false
+    userProjects.value = []
+    userTechStacks.value = []
+    popularProjects.value = []
+    recommendations.value = []
+    
+    // 사용자에게 알림
+    toast.error('페이지 로드 중 오류가 발생했습니다. 새로고침해주세요.', {
+      position: 'top-center',
+      timeout: 5000
+    })
   }
 })
 
@@ -1450,6 +1614,44 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
+/* 프로젝트 선택 스타일 */
+.project-selector {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.project-selector label {
+  display: block;
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.project-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.project-select:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.project-select:hover {
+  border-color: #adb5bd;
+}
 
 /* 팀원 추천 스타일 */
 .members-grid {
@@ -1496,6 +1698,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   flex: 1;
+  position: relative; /* fallback 아바타 위치를 위해 추가 */
 }
 
 .member-avatar {
@@ -1504,7 +1707,16 @@ onUnmounted(() => {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #f8f9fa;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  transition: all 0.2s ease;
 }
+
+.member-avatar:hover {
+  transform: scale(1.05);
+  border-color: #4CAF50;
+}
+
+/* 이제 dicebear API만 사용하므로 fallback CSS는 불필요 */
 
 .member-basic-info {
   flex: 1;
@@ -1629,7 +1841,23 @@ onUnmounted(() => {
 
 .contact-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.contact-button.invited {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.contact-button.invited:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.contact-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* 반응형 디자인 - 팀원 추천 */

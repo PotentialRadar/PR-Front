@@ -30,10 +30,55 @@
           <template v-else>
             <div class="header-section">
               <ProjectHeader :project="project" />
-              <!-- 지원하기 버튼 -->
-              <div class="action-button-container">
+              
+              <!-- 초대받은 상태 배너 -->
+              <div v-if="hasProjectInvitation" class="invitation-banner">
+                <div class="invitation-header">
+                  <div class="invitation-badge">
+                    <svg class="invitation-icon" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
+                    </svg>
+                    <span>초대받음</span>
+                  </div>
+                  <div class="invitation-status">
+                    <span class="status-dot"></span>
+                    <span>대기중</span>
+                  </div>
+                </div>
+                
+                <div class="invitation-content">
+                  <div class="invitation-main-text">
+                    <h3>{{ receivedInvitation.inviterName }}님의 팀 초대</h3>
+                    <p>이 프로젝트의 팀원으로 초대받았습니다</p>
+                  </div>
+                </div>
+                
+                <div class="invitation-actions">
+                  <button 
+                    class="action-btn accept-btn" 
+                    @click="handleInvitationResponse('ACCEPTED')"
+                  >
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    수락하기
+                  </button>
+                  <button 
+                    class="action-btn decline-btn" 
+                    @click="handleInvitationResponse('REJECTED')"
+                  >
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    거절하기
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 지원하기 버튼 (초대받지 않은 경우만) -->
+              <div v-else-if="!isProjectOwner" class="action-button-container">
                 <button
-                  v-if="isLoggedIn && !isProjectOwner && project?.status === '모집중'"
+                  v-if="isLoggedIn && project?.status === '모집중'"
                   class="apply-button"
                   @click="openApplyModal"
                 >
@@ -211,11 +256,22 @@ const load = async () => {
   }
 };
 
-onMounted(load);
-onActivated(load);
-watch(() => route.params.id, () => {
-  load();
+onMounted(async () => {
+  await load();
+  await checkProjectInvitation(); // 프로젝트 로드 후 초대 확인
 });
+onActivated(async () => {
+  await load();
+  await checkProjectInvitation(); // 프로젝트 로드 후 초대 확인
+});
+watch(
+    () => route.params.id,
+    async (v) => {
+      projectId.value = Number(v);
+      await load();
+      await checkProjectInvitation(); // 프로젝트 변경 시에도 초대 확인
+    }
+);
 
 // 탭 관리
 const activeTab = ref('content');
@@ -249,6 +305,17 @@ const userPortfolio = ref({
   lastUpdated: '2024-07-20',
 });
 
+// 초대 관련 상태
+const receivedInvitation = ref(null); // 현재 프로젝트에 대한 초대
+const invitationLoading = ref(false);
+
+// 현재 프로젝트에 대한 초대가 있는지 확인
+const hasProjectInvitation = computed(() => {
+  return receivedInvitation.value && 
+         receivedInvitation.value.status === 'PENDING' &&
+         receivedInvitation.value.projectId === projectId.value;
+});
+
 function openApplyModal() {
   if (!isLoggedIn.value) {
     toast.info('로그인이 필요합니다.');
@@ -256,6 +323,83 @@ function openApplyModal() {
   }
   showApplyModal.value = true;
 }
+
+// 현재 사용자의 초대 목록에서 이 프로젝트 초대를 찾기
+async function checkProjectInvitation() {
+  if (!userStore.isLoggedIn || !userStore.userId) {
+    return;
+  }
+  
+  invitationLoading.value = true;
+  try {
+    const token = localStorage.getItem('accessToken');
+    const response = await fetch('/api/invitations/received', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'User-Id': userStore.userId.toString()
+      }
+    });
+    
+    if (response.ok) {
+      const invitations = await response.json();
+      // 현재 프로젝트에 대한 PENDING 상태의 초대 찾기
+      const invitation = invitations.find(inv => 
+        inv.projectId === projectId.value && 
+        inv.status === 'PENDING'
+      );
+      receivedInvitation.value = invitation || null;
+    }
+  } catch (error) {
+    console.error('초대 정보 조회 실패:', error);
+  } finally {
+    invitationLoading.value = false;
+  }
+}
+
+// 초대 수락/거절 처리
+async function handleInvitationResponse(status) {
+  if (!receivedInvitation.value) return;
+  
+  try {
+    const token = localStorage.getItem('accessToken');
+    const response = await fetch('/api/invitations/respond', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'User-Id': userStore.userId.toString()
+      },
+      body: JSON.stringify({
+        invitationId: receivedInvitation.value.invitationId,
+        status: status // 'ACCEPTED' or 'REJECTED'
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      toast.success(
+        status === 'ACCEPTED' ? '초대를 수락했습니다! 🎉' : '초대를 거절했습니다.',
+        { position: 'top-center', timeout: 3000 }
+      );
+      
+      // 초대 상태 업데이트
+      receivedInvitation.value.status = status;
+      
+      // 수락한 경우 페이지 새로고침해서 최신 프로젝트 정보 반영
+      if (status === 'ACCEPTED') {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
+    } else {
+      toast.error(result.message || '초대 응답에 실패했습니다.');
+    }
+  } catch (error) {
+    console.error('초대 응답 실패:', error);
+    toast.error('초대 응답 처리 중 오류가 발생했습니다.');
+  }
+}
+
 function closeApplyModal() {
   showApplyModal.value = false;
 }
@@ -547,6 +691,130 @@ document.addEventListener('keydown', (e) => {
   }
 }
 
+/* 초대 배너 스타일링 */
+.invitation-banner {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 40px;
+  margin-bottom: 32px;
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.invitation-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2196f3, #21cbf3, #2196f3);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.invitation-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.invitation-icon {
+  font-size: 48px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.invitation-text {
+  flex: 1;
+}
+
+.invitation-text h3 {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1565c0;
+  letter-spacing: -0.5px;
+}
+
+.invitation-text p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #424242;
+  line-height: 1.5;
+}
+
+.invitation-message {
+  font-style: italic;
+  color: #666 !important;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+  margin-top: 16px !important;
+}
+
+.invitation-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.accept-button,
+.decline-button {
+  flex: 1;
+  max-width: 200px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.accept-button {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.accept-button:hover {
+  background: linear-gradient(135deg, #45a049, #5cb860);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(76, 175, 80, 0.3);
+}
+
+.decline-button {
+  background: linear-gradient(135deg, #f44336, #ef5350);
+  color: white;
+}
+
+.decline-button:hover {
+  background: linear-gradient(135deg, #e53935, #ef5350);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(244, 67, 54, 0.3);
+}
+
+.accept-button:active,
+.decline-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 /* 반응형 디자인 */
 @media (max-width: 1200px) {
   .content-wrapper {
@@ -556,6 +824,39 @@ document.addEventListener('keydown', (e) => {
 
   .main-content {
     max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .invitation-banner {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .invitation-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .invitation-icon {
+    font-size: 40px;
+  }
+
+  .invitation-text h3 {
+    font-size: 20px;
+  }
+
+  .invitation-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .accept-button,
+  .decline-button {
+    max-width: none;
+    width: 100%;
   }
 }
 
@@ -724,6 +1025,163 @@ document.addEventListener('keydown', (e) => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* 새로운 초대 UI 스타일 추가 */
+.invitation-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4CAF50, #66bb6a, #4CAF50);
+  animation: shimmerNew 3s ease-in-out infinite;
+}
+
+@keyframes shimmerNew {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.invitation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.invitation-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c8 100%);
+  color: #2e7d2e;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #81c784;
+}
+
+.invitation-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.invitation-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  border-radius: 50%;
+  animation: pulseNew 2s infinite;
+}
+
+@keyframes pulseNew {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.invitation-content {
+  margin-bottom: 24px;
+}
+
+.invitation-main-text h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.025em;
+}
+
+.invitation-main-text p {
+  margin: 0;
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+
+.invitation-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 44px;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.accept-btn {
+  background: #4CAF50;
+  color: white;
+  border: 1px solid #4CAF50;
+}
+
+.accept-btn:hover {
+  background: #45a049;
+  border-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.decline-btn {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.decline-btn:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #9ca3af;
+}
+
+/* 반응형 디자인 업데이트 */
+@media (max-width: 768px) {
+  .invitation-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .invitation-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-btn {
+    min-height: 48px;
   }
 }
 </style>

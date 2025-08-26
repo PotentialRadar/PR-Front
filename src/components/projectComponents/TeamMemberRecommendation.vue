@@ -30,10 +30,11 @@
         <!-- 프로필 헤더 -->
         <div class="member-header">
           <img 
-            :src="member.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`" 
+            :src="getProfileImage(member)" 
             :alt="member.name"
             class="profile-image"
-            @error="$event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`"
+            @error="handleImageError($event, member.userId)"
+            loading="lazy"
           />
           <div class="member-info">
             <h4 class="member-name">{{ member.name }}</h4>
@@ -140,6 +141,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
+import api from '@/api/axios'
 
 // Router and stores
 const router = useRouter()
@@ -165,131 +167,6 @@ const recommendedMembers = ref([])
 // 추천 설정 (고정값)
 const RECOMMENDATION_COUNT = 4
 
-// 목업 데이터 (portfolioData.js와 동일한 사용자들을 사용)
-const mockMembers = [
-  {
-    userId: 1,
-    name: "김개발자",
-    email: "kim.developer@example.com",
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
-    matchScore: 0.87,
-    userTechStacks: [
-      {name: "React", level: 4},
-      {name: "TypeScript", level: 3},
-      {name: "JavaScript", level: 5}
-    ],
-    explanation: {
-      main_reason: "React와 TypeScript 경험이 프로젝트와 87% 일치합니다",
-      detailed_reasons: [
-        "React 4년 경험으로 프론트엔드 개발에 적합",
-        "TypeScript 활용 경험으로 안정적인 코드 작성 가능"
-      ],
-      matched_skills: ["React", "TypeScript"],
-      growth_opportunities: ["Node.js"],
-      simple_explanation: "React + TypeScript 전문가로 프론트엔드 리드 가능",
-      experience_match: "중급 이상의 숙련된 개발자입니다"
-    },
-    experience: "4년",
-    portfolioCount: 8,
-    completedProjects: 4,
-    averageRating: 4.6,
-    lastActiveDate: "2025-08-15",
-    isAvailable: true,
-    currentProjectCount: 1
-  },
-  {
-    userId: 3,
-    name: "이백엔드",
-    email: "lee.backend@example.com", 
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=3",
-    matchScore: 0.73,
-    userTechStacks: [
-      {name: "Node.js", level: 5},
-      {name: "Python", level: 4},
-      {name: "PostgreSQL", level: 3}
-    ],
-    explanation: {
-      main_reason: "Node.js 전문가로 백엔드 API 개발에 최적화",
-      detailed_reasons: [
-        "Node.js 5년 경험으로 서버 개발 전문",
-        "PostgreSQL 데이터베이스 설계 및 최적화 경험"
-      ],
-      matched_skills: ["Node.js"],
-      growth_opportunities: ["TypeScript", "React"],
-      simple_explanation: "Node.js 전문가로 안정적인 백엔드 구축 가능",
-      experience_match: "고급 개발자로 팀 리드 경험 보유"
-    },
-    experience: "5년",
-    portfolioCount: 15,
-    completedProjects: 2,
-    averageRating: 4.8,
-    lastActiveDate: "2025-08-14",
-    isAvailable: true,
-    currentProjectCount: 0
-  },
-  {
-    userId: 4,
-    name: "정모바일",
-    email: "jung.mobile@example.com",
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", 
-    matchScore: 0.65,
-    userTechStacks: [
-      {name: "Flutter", level: 4},
-      {name: "React Native", level: 3},
-      {name: "Firebase", level: 4}
-    ],
-    explanation: {
-      main_reason: "모바일 개발 전문가로 크로스플랫폼 경험 풍부",
-      detailed_reasons: [
-        "Flutter로 안드로이드/iOS 동시 개발 가능",
-        "Firebase 연동으로 실시간 기능 구현 경험"
-      ],
-      matched_skills: ["React Native"],
-      growth_opportunities: ["React", "TypeScript"],
-      simple_explanation: "모바일 전문가로 앱 확장 시 핵심 역할 가능",
-      experience_match: "중급 개발자로 모바일 앱 개발 리드 경험"
-    },
-    experience: "3년",
-    portfolioCount: 6,
-    completedProjects: 2,
-    averageRating: 4.2,
-    lastActiveDate: "2025-08-16",
-    isAvailable: true,
-    currentProjectCount: 0
-  },
-  {
-    userId: 5,
-    name: "최AI",
-    email: "choi.ai@example.com",
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=5",
-    matchScore: 0.78,
-    userTechStacks: [
-      {name: "Python", level: 5},
-      {name: "TensorFlow", level: 4},
-      {name: "PyTorch", level: 3}
-    ],
-    explanation: {
-      main_reason: "AI/ML 전문가로 프로젝트에 차별화된 기능 추가 가능",
-      detailed_reasons: [
-        "Python 5년 경험으로 백엔드 및 데이터 처리 가능",
-        "TensorFlow를 활용한 AI 기능 구현 경험",
-        "머신러닝 모델 개발 및 배포 경험"
-      ],
-      matched_skills: ["Python"],
-      growth_opportunities: ["Node.js", "FastAPI"],
-      simple_explanation: "AI 전문가로 프로젝트에 차별화된 기능 추가 가능",
-      experience_match: "고급 개발자로 혁신적 기능 개발 리드 가능"
-    },
-    experience: "4년",
-    portfolioCount: 12,
-    completedProjects: 2,
-    averageRating: 4.7,
-    lastActiveDate: "2025-08-17",
-    isAvailable: true,
-    currentProjectCount: 1
-  }
-]
-
 // Methods
 const fetchRecommendations = async () => {
   isLoading.value = true
@@ -302,34 +179,41 @@ const fetchRecommendations = async () => {
     
     // 실제 API 호출과 최소 로딩 시간을 병렬로 실행
     const [apiResponse] = await Promise.all([
-      fetch(`http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/recommend/members`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: props.projectId,
-          requiredSkills: props.requiredSkills,
-          teamSize: RECOMMENDATION_COUNT,
-          experienceLevel: "any"
-        })
+      api.post('/recommend/members', {
+        projectId: props.projectId,
+        requiredSkills: props.requiredSkills,
+        teamSize: RECOMMENDATION_COUNT,
+        experienceLevel: "any",
+        excludeUserId: userStore.userId  // 팀장 본인을 백엔드에서 제외
       }),
       minLoadingTime
     ])
     
-    if (!apiResponse.ok) {
-      throw new Error(`API 호출 실패: ${apiResponse.status}`)
+    const apiData = apiResponse.data
+    console.log('✅ API 응답 받음 (팀장 제외됨):', apiData)
+    
+    // 백엔드에서 이미 팀장을 제외했으므로 별도 필터링 불필요
+    const filteredData = Array.isArray(apiData) ? apiData : []
+    
+    console.log(`🔍 최종 추천 멤버:`, filteredData.length, '명')
+    
+    // 매칭률 로그 출력
+    if (filteredData.length > 0) {
+      console.log('📊 팀원 추천 매칭률 결과:')
+      filteredData.forEach((member, index) => {
+        const matchPercentage = Math.round((member.matchScore || 0) * 100)
+        console.log(`  ${index + 1}. ${member.name || member.nickname} - ${matchPercentage}% 매칭`)
+      })
     }
     
-    const apiData = await apiResponse.json()
-    console.log('✅ API 응답 받음:', apiData)
-    recommendedMembers.value = apiData
+    recommendedMembers.value = filteredData
     
   } catch (error) {
-    console.error('❌ API 호출 실패, 목업 데이터 사용:', error)
+    console.error('❌ API 호출 실패:', error)
     
-    // Fallback: 목업 데이터 사용 (최소 로딩 시간 보장)
+    // 최소 로딩 시간 보장 후 빈 배열
     await minLoadingTime
-    const availableMembers = mockMembers.filter(member => member.isAvailable)
-    recommendedMembers.value = availableMembers.slice(0, RECOMMENDATION_COUNT)
+    recommendedMembers.value = []
   } finally {
     isLoading.value = false
   }
@@ -362,21 +246,17 @@ const inviteMember = async (member) => {
     }
     
     // API 호출 (TeamInviteModal에서 사용하는 것과 동일한 API)
-    const response = await fetch('http://localhost:8080/api/invitations/send', {
-      method: 'POST',
+    const response = await api.post('/invitations/send', {
+      projectId: props.projectId,
+      inviteeId: member.userId,
+      message: `AI 추천을 통해 ${member.name}님을 팀에 초대합니다!`
+    }, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
         'User-Id': userStore.userId.toString()
-      },
-      body: JSON.stringify({
-        projectId: props.projectId,
-        inviteeId: member.userId,
-        message: `AI 추천을 통해 ${member.name}님을 팀에 초대합니다!`
-      })
+      }
     });
 
-    const result = await response.json();
+    const result = response.data;
     
     if (result.success) {
       toast.success(`${member.name}님에게 팀 초대를 보냈습니다! 📧`, {
@@ -403,6 +283,59 @@ const viewProfile = (member) => {
   router.push(`/portfolio/${member.userId}`)
 }
 
+// 프로필 이미지 처리 함수들
+const getProfileImage = (member) => {
+  // 1순위: member.profileImage가 있고 실제 이미지 URL인 경우 (더미 URL 제외)
+  if (member.profileImage && 
+      member.profileImage.startsWith('http') && 
+      !member.profileImage.includes('example.com') &&
+      !member.profileImage.includes('placeholder')) {
+    return member.profileImage
+  }
+  
+  // 2순위: dicebear API 사용 (항상 안전함)
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+}
+
+const handleImageError = (event, userId) => {
+  console.warn(`프로필 이미지 로드 실패 (사용자 ${userId}):`, event.target.src)
+  
+  // Fallback 1: 더미 URL이나 기타 실패한 경우 dicebear avataaars로
+  if (!event.target.src.includes('dicebear.com')) {
+    console.log(`Fallback 1: dicebear avataaars 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+    return
+  }
+  
+  // Fallback 2: avataaars 실패시 initials 시도
+  if (event.target.src.includes('avataaars')) {
+    console.log(`Fallback 2: dicebear initials 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=User${userId}&backgroundColor=4f46e5,7c3aed,db2777,dc2626,ea580c`
+    return
+  }
+  
+  // Fallback 3: initials 실패시 shapes 시도
+  if (event.target.src.includes('initials')) {
+    console.log(`Fallback 3: dicebear shapes 시도 (사용자 ${userId})`)
+    event.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${userId}&backgroundColor=22c55e,3b82f6,8b5cf6,f59e0b,ef4444`
+    return
+  }
+  
+  // Fallback 4: shapes 실패시 최종 대안
+  if (event.target.src.includes('shapes')) {
+    console.log(`Fallback 4: 최종 대안 시도 (사용자 ${userId})`)
+    event.target.src = `https://ui-avatars.com/api/?name=User${userId}&background=4CAF50&color=fff&size=48`
+    return
+  }
+  
+  // 모든 API 실패 시
+  console.error(`모든 이미지 fallback 실패 (사용자 ${userId}) - 최종 처리`)
+  
+  // 이미지를 숨기는 대신 CSS 배경으로 처리
+  event.target.style.opacity = '0'
+  event.target.style.background = 'linear-gradient(135deg, #4CAF50, #81C784)'
+  event.target.alt = 'U'
+}
 
 // Lifecycle
 onMounted(() => {
@@ -508,6 +441,7 @@ onMounted(() => {
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 16px;
+  position: relative; /* fallback 아바타 위치를 위해 추가 */
 }
 
 .profile-image {
@@ -516,7 +450,16 @@ onMounted(() => {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e9ecef;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  transition: all 0.2s ease;
 }
+
+.profile-image:hover {
+  transform: scale(1.05);
+  border-color: #4CAF50;
+}
+
+/* 이제 dicebear API만 사용하므로 fallback CSS는 불필요 */
 
 .member-info {
   flex: 1;
