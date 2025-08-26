@@ -22,60 +22,14 @@
 
     <div class="container">
       <div class="content-wrapper">
-        <!-- 필터 섹션 -->
-        <div class="filters-section">
-          <div class="filters-card">
-            <div class="filter-group">
-              <label class="filter-label">분야별 검색</label>
-              <div class="category-filters">
-                <button 
-                  v-for="category in categories" 
-                  :key="category"
-                  :class="['category-btn', { 'active': selectedCategory === category }]"
-                  @click="setCategory(category)"
-                >
-                  {{ category }}
-                </button>
-              </div>
-            </div>
-            
-            <div class="filter-group">
-              <label class="filter-label">스킬 필터</label>
-              <div class="skill-filters">
-                <button 
-                  v-for="skill in popularSkills" 
-                  :key="skill"
-                  :class="['skill-btn', { 'active': selectedSkills.includes(skill) }]"
-                  @click="toggleSkill(skill)"
-                >
-                  {{ skill }}
-                </button>
-              </div>
-            </div>
-            
-            <div class="filter-group">
-              <label class="filter-label">검색</label>
-              <div class="search-box">
-                <i class="bi bi-search"></i>
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="이름이나 스킬로 검색..."
-                  class="search-input"
-                />
-                <button v-if="searchQuery" @click="clearSearch" class="clear-btn">
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 검색 섹션 -->
+        <EnhancedSearchSection type="portfolio" @perform-search="handleSearch" />
 
         <!-- 포트폴리오 섹션 -->
         <div class="portfolios-section">
           <div class="section-header">
             <h2 class="section-title">
-              {{ filteredPortfolios.length }}개의 포트폴리오
+              {{ portfolios.length }}개의 포트폴리오
             </h2>
             <div class="sort-options">
               <select v-model="sortBy" class="sort-select">
@@ -85,9 +39,9 @@
             </div>
           </div>
           
-          <div v-if="filteredPortfolios.length > 0" class="portfolios-grid">
+          <div v-if="!loading && portfolios.length > 0" class="portfolios-grid">
             <div 
-              v-for="portfolio in sortedPortfolios" 
+              v-for="portfolio in portfolios" 
               :key="portfolio.id" 
               class="portfolio-card"
               @click="viewPortfolio(portfolio.id)"
@@ -144,7 +98,7 @@
             </div>
           </div>
           
-          <div v-else class="empty-state">
+          <div v-else-if="!loading && portfolios.length === 0" class="empty-state">
             <div class="empty-icon">
               <i class="bi bi-search"></i>
             </div>
@@ -155,6 +109,12 @@
               필터 초기화
             </button>
           </div>
+          
+          <!-- 로딩 상태 -->
+          <div v-if="loading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>포트폴리오를 검색하는 중...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -162,96 +122,115 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/common/PageHeader.vue'
+import EnhancedSearchSection from '@/components/projectComponents/EnhancedSearchSection.vue'
+import { searchUsers } from '@/api/search'
 import { 
-  getPortfolioList, 
-  getPopularSkills, 
-  getOverallStats,
-  filterByCategory,
-  filterBySkills,
-  searchPortfolios
+  getOverallStats
 } from '@/components/data/portfolioData.js'
 
 const router = useRouter()
 
 // 반응형 데이터
-const selectedCategory = ref('전체')
-const selectedSkills = ref([])
-const searchQuery = ref('')
+const portfolios = ref([])
+const loading = ref(false)
+const error = ref(null)
+const currentPage = ref(1)
+const totalPages = ref(1)
 const sortBy = ref('recent')
 
+// 검색 상태
+const currentSearchParams = ref({})
+const isSearchMode = ref(false)
+
 // 데이터 로드
-const portfolios = ref(getPortfolioList())
-const popularSkills = getPopularSkills(8)
 const overallStats = getOverallStats()
 
-// 카테고리 데이터
-const categories = ['전체', 'Frontend', 'Backend', 'Design', 'Mobile', 'AI/ML', 'DevOps']
-
-// 계산된 속성들
-const filteredPortfolios = computed(() => {
-  let filtered = portfolios.value
-
-  // 카테고리 필터
-  if (selectedCategory.value !== '전체') {
-    filtered = filtered.filter(p => p.category === selectedCategory.value)
-  }
-
-  // 스킬 필터
-  if (selectedSkills.value.length > 0) {
-    filtered = filtered.filter(p => 
-      selectedSkills.value.some(skill => p.skills.includes(skill))
-    )
-  }
-
-  // 검색 필터
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(p => 
-      p.name.toLowerCase().includes(query) ||
-      p.jobTitle.toLowerCase().includes(query) ||
-      p.skills.some(skill => skill.toLowerCase().includes(query))
-    )
-  }
-
-  return filtered
+// 초기 데이터 로드
+onMounted(async () => {
+  await loadInitialData()
 })
 
-const sortedPortfolios = computed(() => {
-  const sorted = [...filteredPortfolios.value]
+// 초기 데이터 로드 함수
+const loadInitialData = async () => {
+  loading.value = true
+  try {
+    const result = await searchUsers({
+      page: 0,
+      size: 20
+    })
+    
+    portfolios.value = result.content?.map(user => ({
+      id: user.userId,
+      name: user.nickname || `User ${user.userId}`,
+      jobTitle: user.techParts?.join(', ') || '개발자',
+      category: user.techParts?.[0] || 'General',
+      skills: user.techStacks || [],
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      isLiked: false
+    })) || []
+    
+    totalPages.value = result.totalPages || 1
+    console.log('포트폴리오 데이터 로드 완료:', portfolios.value)
+  } catch (error) {
+    console.error('포트폴리오 로드 실패:', error)
+    error.value = '포트폴리오를 불러오는 중 오류가 발생했습니다.'
+    portfolios.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 검색 처리
+const handleSearch = async (searchParams) => {
+  currentSearchParams.value = searchParams
+  isSearchMode.value = Object.values(searchParams).some(value => value !== null && value !== undefined)
   
-  switch (sortBy.value) {
-    case 'name':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name))
-    default: // recent
-      return sorted.sort((a, b) => b.id - a.id)
-  }
-})
-
-// 메서드들
-const setCategory = (category) => {
-  selectedCategory.value = category
-}
-
-const toggleSkill = (skill) => {
-  const index = selectedSkills.value.indexOf(skill)
-  if (index > -1) {
-    selectedSkills.value.splice(index, 1)
+  if (isSearchMode.value) {
+    await performSearch(searchParams)
   } else {
-    selectedSkills.value.push(skill)
+    // 필터가 모두 제거된 경우 초기 데이터 로드
+    await loadInitialData()
   }
 }
 
-const clearSearch = () => {
-  searchQuery.value = ''
+const performSearch = async (searchParams) => {
+  loading.value = true
+  try {
+    const result = await searchUsers({
+      ...searchParams,
+      page: currentPage.value - 1, // API는 0부터 시작
+      size: 20
+    })
+    
+    portfolios.value = result.content?.map(user => ({
+      id: user.userId,
+      name: user.nickname || `User ${user.userId}`,
+      jobTitle: user.techParts?.join(', ') || '개발자',
+      category: user.techParts?.[0] || 'General',
+      skills: user.techStacks || [],
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      isLiked: false,
+      experienceRange: user.experienceRange
+    })) || []
+    
+    totalPages.value = result.totalPages || 1
+    console.log('검색 결과:', result)
+  } catch (error) {
+    console.error('검색 실패:', error)
+    error.value = '검색 중 오류가 발생했습니다.'
+    portfolios.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const resetFilters = () => {
-  selectedCategory.value = '전체'
-  selectedSkills.value = []
-  searchQuery.value = ''
+  currentSearchParams.value = {}
+  isSearchMode.value = false
+  loadInitialData()
 }
 
 const toggleLike = (portfolioId) => {
@@ -933,6 +912,37 @@ const getSkillType = (skill) => {
   background: linear-gradient(135deg, #66BB6A 0%, #81C784 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+/* 로딩 상태 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #666;
+  font-size: 16px;
+  margin: 0;
 }
 
 /* 반응형 디자인 */

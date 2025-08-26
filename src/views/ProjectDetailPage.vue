@@ -251,6 +251,7 @@ function closeApplyModal() {
 
 // 실제 지원 API 호출
 async function handleApplicationSubmit(applicationData) {
+
   try {
     console.log('지원서 데이터:', applicationData);
 
