@@ -38,10 +38,10 @@
       <hr class="module-divider" />
 
       <div class="filter-area">
+        <div class="filter-hint">선택한 항목 중 하나라도 일치하는 결과를 반환합니다.</div>
         <div class="filter-row">
           <div class="filter-label">
             💼 기술 파트
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -57,7 +57,6 @@
         <div class="filter-row">
           <div class="filter-label">
             ⚡ 기술 스택
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -73,7 +72,6 @@
         <div class="filter-row">
           <div class="filter-label">
             📊 프로젝트 상태
-            <div class="filter-hint">선택한 항목 중 하나라도 일치</div>
           </div>
           <div class="filter-content">
             <div class="filter-chips">
@@ -229,7 +227,14 @@ const isSearchMode = ref(false);
 
 // Filter Options Data
 const techParts = computed(() => techTagStore.techParts);
-const popularTechStacks = computed(() => techTagStore.getPopularTechStacksTop20());
+const popularTechStacks = computed(() => {
+  const stacks = techTagStore.getPopularTechStacksTop20();
+  return stacks.sort((a, b) => {
+    const countA = getFilterResultCount('techStack', a);
+    const countB = getFilterResultCount('techStack', b);
+    return countB - countA;
+  });
+});
 const projectStatuses = ref([
   { value: 'RECRUITING', label: '모집중' },
   { value: 'IN_PROGRESS', label: '진행중' },
@@ -237,32 +242,53 @@ const projectStatuses = ref([
 ]);
 const filteredProjectStatuses = computed(() => projectStatuses.value.filter(status => status.value !== 'CANCELLED'));
 
-// --- Methods ---
+// useProjects import removed - using local state management instead
 
-const performSearch = async (searchParams) => {
-  loading.value = true;
-  error.value = null;
+const loadTechTags = async () => {
   try {
-    const finalParams = {
-      ...searchParams,
-      page: page.value - 1,
-      size: 8,
-      sort: sort.value,
-    };
-    const result = await searchProjects(finalParams);
-    projects.value = result.content || [];
-    totalPages.value = result.totalPages || 1;
-  } catch (err) {
-    console.error('검색 실패:', err);
-    error.value = '검색 중 오류가 발생했습니다.';
-    projects.value = [];
-    totalPages.value = 1;
-  } finally {
-    loading.value = false;
+    await techTagStore.loadTechTags();
+  } catch (error) {
+    console.error('❌ 기술 태그 로드 실패:', error);
   }
 };
 
-const handleSearch = (resetPage = true) => {
+const loadPopularKeywords = async () => {
+  try {
+    const response = await getPopularKeywords();
+    popularKeywords.value = response.keywords || [];
+    console.log('✅ 인기 키워드 로드 성공:', popularKeywords.value);
+  } catch (error) {
+    console.error('❌ 인기 키워드 로드 실패:', error);
+    // 실패시 기본값 제공
+    popularKeywords.value = ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
+  }
+};
+
+onActivated(async () => {
+  try {
+    await Promise.all([
+      loadTechTags(),
+      loadPopularKeywords()
+    ]);
+    console.log('✅ 기술 태그 및 인기 키워드 로드 완료');
+    console.log('기술 파트:', techParts.value);
+    console.log('기술 스택:', popularTechStacks.value);
+    
+    // 초기 필터 결과 수 로딩
+    setTimeout(() => updateFilterResultCounts(), 1000);
+  } catch (error) {
+    console.error('❌ 초기 데이터 로드 실패:', error);
+  }
+});
+
+watch([page], () => {
+  router.replace({ query: { ...route.query, page: page.value !== 1 ? page.value : undefined } });
+  performSearch(currentSearchParams.value);
+});
+
+// 검색 상태 관리 (이미 위에서 선언되어 있음)
+
+const handleSearch = async (resetPage = true) => {
   if (resetPage) {
     page.value = 1;
   }
@@ -290,7 +316,34 @@ const handleSearch = (resetPage = true) => {
   Object.keys(nextQuery).forEach(key => nextQuery[key] === undefined && delete nextQuery[key]);
   
   router.replace({ query: nextQuery });
+  
+  await performSearch(searchParams);
 };
+
+const performSearch = async (searchParams) => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const finalParams = {
+      ...searchParams,
+      page: page.value - 1,
+      size: 8,
+      sort: sort.value,
+    };
+    const result = await searchProjects(finalParams);
+    projects.value = result.content || [];
+    totalPages.value = result.totalPages || 1;
+  } catch (err) {
+    console.error('검색 실패:', err);
+    error.value = '검색 중 오류가 발생했습니다.';
+    projects.value = [];
+    totalPages.value = 1;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// handleSearch 함수 중복 제거됨 (위에서 이미 정의되어 있음)
 
 const selectPopularKeyword = (keyword) => {
   searchQuery.value = keyword;
@@ -305,7 +358,6 @@ const handleSortChange = (newSort) => {
 const goToPage = (p) => {
   if (p >= 1 && p <= totalPages.value) {
     page.value = p;
-    handleSearch(false); // Don't reset filters, just change page
   }
 };
 
@@ -336,22 +388,7 @@ const clearSearch = () => {
 
 // --- Lifecycle & Watchers ---
 
-const loadInitialData = async () => {
-  await Promise.all([
-    techTagStore.loadTechTags(),
-    getPopularKeywords().then(res => {
-      popularKeywords.value = res.keywords || ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
-    }).catch(err => {
-      console.error('❌ 인기 키워드 로드 실패:', err);
-      popularKeywords.value = ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
-    })
-  ]);
-  updateFilterResultCounts();
-};
-
-onActivated(() => {
-  loadInitialData();
-});
+// loadInitialData 중복 제거됨 (위에서 이미 정의되어 있음)
 
 // Watch for route query changes to update component state
 watch(
@@ -381,33 +418,75 @@ watch(
 
 // --- Filter Result Count Preview ---
 const updateFilterResultCounts = async () => {
-  // This function can be computationally expensive. Consider optimizing if performance issues arise.
-  const createCountPromise = (key, params) =>
-    getProjectCountPreview(params)
-      .then(result => {
-        filterResultCounts.value[key] = result.totalCount;
+  try {
+    console.log('🔄 필터 결과 수 업데이트 시작');
+    console.log('기술 파트:', techParts.value);
+    console.log('기술 스택:', popularTechStacks.value);
+
+    // 기술 파트별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      techParts.value.map(async (part) => {
+        const params = { keyword: searchQuery.value.trim() || null, techParts: [part] };
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0;
+        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount ?? 0}`);
       })
-      .catch(() => {
-        filterResultCounts.value[key] = 0;
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const part = techParts.value[i]
+          console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`techPart-${part}`] = 0; 
+        }
       });
+    });
 
-  const promises = [];
-  const baseParams = { keyword: searchQuery.value.trim() || null };
+    // 기술 스택별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      popularTechStacks.value.map(async (stack) => {
+        const params = { keyword: searchQuery.value.trim() || null, techStacks: [stack] };
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0;
+        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount ?? 0}`);
+      })
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const stack = popularTechStacks.value[i]
+          console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`techStack-${stack}`] = 0; 
+        }
+      });
+    });
 
-  techParts.value.forEach(part => {
-    promises.push(createCountPromise(`techPart-${part}`, { ...baseParams, techParts: [part] }));
-  });
-  popularTechStacks.value.forEach(stack => {
-    promises.push(createCountPromise(`techStack-${stack}`, { ...baseParams, techStacks: [stack] }));
-  });
-  filteredProjectStatuses.value.forEach(status => {
-    promises.push(createCountPromise(`status-${status.value}`, { ...baseParams, statuses: [status.value] }));
-  });
+    // 상태별 결과 수 계산 - 병렬 처리
+    await Promise.allSettled(
+      filteredProjectStatuses.value.map(async (status) => {
+        const params = { keyword: searchQuery.value.trim() || null, statuses: [status.value] };
+        const result = await getProjectCountPreview(params);
+        filterResultCounts.value[`status-${status.value}`] = result.totalCount ?? 0;
+        console.log(`✅ 상태 "${status.label}" 결과 수: ${result.totalCount ?? 0}`);
+      })
+    ).then(results => {
+      results.forEach((r, i) => { 
+        if (r.status === 'rejected') {
+          const status = filteredProjectStatuses.value[i]
+          console.error(`❌ 상태 "${status.label}" 결과 수 조회 실패:`, r.reason)
+          filterResultCounts.value[`status-${status.value}`] = 0; 
+        }
+      });
+    });
 
-  await Promise.all(promises);
+    console.log('✅ 필터 결과 수 업데이트 완료:', filterResultCounts.value);
+  } catch (error) {
+    console.error('❌ 필터 결과 수 업데이트 실패:', error);
+  }
 };
 
-const getFilterResultCount = (type, value) => filterResultCounts.value[`${type}-${value}`] || 0;
+// 각 필터의 결과 수 가져오기
+const getFilterResultCount = (type, value) => {
+  return filterResultCounts.value[`${type}-${value}`] || 0;
+};
 
 // --- Utilities ---
 const getActiveFilterCount = () => selectedTechParts.value.length + selectedTechStacks.value.length + selectedStatuses.value.length;

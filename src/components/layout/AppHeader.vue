@@ -18,60 +18,6 @@
 
       <div class="header-right">
         <template v-if="isLoggedIn">
-          <!-- 채팅 버튼 -->
-          <div class="icon-button-container">
-            <button 
-              class="icon-button chat-button"
-              @click="toggleChat"
-              :class="{ 'active': showChat }"
-            >
-              <span class="icon">💬</span>
-              <span v-if="finalUnreadChatCount > 0" class="badge chat-badge">{{ finalUnreadChatCount > 99 ? '99+' : finalUnreadChatCount }}</span>
-            </button>
-            
-            <!-- 채팅 드롭다운 -->
-            <div v-if="showChat" class="dropdown chat-dropdown" @click.stop>
-              <div class="dropdown-header">
-                <h3>메시지</h3>
-                <button @click="showChat = false" class="close-btn">✕</button>
-              </div>
-              
-              <div class="chat-list">
-                <div v-if="chatMessages.length > 0">
-                  <div 
-                    v-for="chat in chatMessages" 
-                    :key="chat.id"
-                    class="chat-item"
-                    :class="{ 'unread': !chat.isRead }"
-                    @click="openChat(chat.id)"
-                  >
-                    <div class="chat-avatar">
-                      <img :src="chat.avatar" :alt="chat.senderName" />
-                      <div v-if="chat.isOnline" class="online-indicator"></div>
-                    </div>
-                    <div class="chat-content">
-                      <div class="chat-header">
-                        <span class="chat-name">{{ chat.senderName }}</span>
-                        <span class="chat-time">{{ formatTime(chat.timestamp) }}</span>
-                      </div>
-                      <p class="chat-preview">{{ chat.lastMessage }}</p>
-                    </div>
-                  </div>
-                </div>
-                <div v-else class="empty-chat">
-                  <span class="empty-icon">💬</span>
-                  <p>메시지가 없습니다</p>
-                </div>
-              </div>
-              
-              <div class="dropdown-footer">
-                <router-link to="/my-messages" class="view-all-btn chat-view-all">
-                  모든 메시지 보기
-                </router-link>
-              </div>
-            </div>
-          </div>
-
           <!-- 알림 버튼 -->
           <div class="icon-button-container">
             <button 
@@ -182,49 +128,10 @@ const isLoggedIn = computed(() => {
 const showChat = ref(false)
 const showNotifications = ref(false)
 
-// 샘플 채팅 데이터 (김개발자가 받은 메시지들)
-const chatMessages = ref([
-  {
-    id: 1,
-    senderName: '박디자이너',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    lastMessage: 'UI 디자인 검토 부탁드려요!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15분 전
-    isRead: false,
-    isOnline: true
-  },
-  {
-    id: 2,
-    senderName: '이백엔드',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    lastMessage: 'API 연동 관련해서 질문이 있어요',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2시간 전
-    isRead: false,
-    isOnline: false
-  },
-  {
-    id: 3,
-    senderName: '최AI',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-    lastMessage: '네, 좋은 아이디어네요! 진행해봅시다.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1일 전
-    isRead: true,
-    isOnline: true
-  }
-])
 
 // 실시간 알림만 사용
 const notifications = realTimeNotifications
 
-// 계산된 속성 - 실시간 알림과 기존 로직 통합
-const finalUnreadChatCount = computed(() => {
-  // 실시간 채팅 알림이 있으면 우선 사용
-  if (unreadChatCount.value > 0) {
-    return unreadChatCount.value
-  }
-  // 기존 샘플 데이터의 미읽음 채팅 수
-  return chatMessages.value.filter(chat => !chat.isRead).length
-})
 
 const finalUnreadNotificationCount = computed(() => {
   // 실시간 알림 수만 사용
@@ -232,30 +139,8 @@ const finalUnreadNotificationCount = computed(() => {
 })
 
 // 메서드
-const toggleChat = () => {
-  showChat.value = !showChat.value
-  showNotifications.value = false
-}
-
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
-  showChat.value = false
-}
-
-const openChat = async (chatId) => {
-  // 실시간 채팅 알림 읽음 처리
-  if (hasNewChatMessage.value) {
-    await markChatAsRead()
-  }
-  
-  // 기존 샘플 채팅 읽음 처리
-  const chat = chatMessages.value.find(c => c.id === chatId)
-  if (chat) {
-    chat.isRead = true
-  }
-  
-  // 채팅 페이지로 이동
-  console.log('채팅 열기:', chatId)
   showChat.value = false
 }
 
