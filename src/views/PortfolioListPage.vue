@@ -414,14 +414,15 @@ const updateFilterResultCounts = async () => {
     }))
 
     // 기술 스택별 결과 수 계산 - 병렬 처리
+    const stacks = [...popularTechStacks.value]
     await Promise.allSettled(
-      popularTechStacks.value.map(async (stack) => {
+      stacks.map(async (stack) => {
         const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techStacks: [stack] })
         filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0
       })
     ).then(results => results.forEach((r, i) => { 
       if (r.status === 'rejected') {
-        const stack = popularTechStacks.value[i]
+        const stack = stacks[i]
         console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
         filterResultCounts.value[`techStack-${stack}`] = 0 
       }
