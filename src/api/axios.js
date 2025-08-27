@@ -7,14 +7,18 @@ const api = axios.create({
   baseURL: import.meta.env.PROD
     ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api`
     : '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
   timeout: 15000,
 });
 
 api.interceptors.request.use(
   config => {
+    // FormData면 Content-Type 지움(브라우저가 boundary 포함해 자동 설정)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
+    }
+    // 그 외(일반 객체 등)는 axios가 자동 설정하므로 건드릴 필요 없음
+
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

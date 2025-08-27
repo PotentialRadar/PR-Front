@@ -202,7 +202,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted, onActivated } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { useToast } from 'vue-toastification';
 import PageHeader from '@/components/common/PageHeader.vue';
@@ -221,7 +221,7 @@ export default {
       default: null
     }
   },
-      setup(props) {
+  setup(props) {
     const {
       errors, isSubmitting, submitAttempted,
       validateField, validateForm, clearErrors,
@@ -240,8 +240,8 @@ export default {
       projectDescription: '',
       startDate: '',
       endDate: '',
-      techStack: [],
-      files: [], // FileUploadArea와 연동되는 모델. File 객체 또는 {name, url, size, isExisting: true} 형태
+      techStack: [],   // [{id/name or techStackName, recruitCount}]
+      files: [],       // File 또는 {name,url,size,isExisting:true}
       recruitDeadline: '',
     });
 
@@ -266,36 +266,46 @@ export default {
       submitAttempted.value = false;
     };
 
+    const stripDate = (d) => (d ? String(d).split('T')[0] : '');
+
     onMounted(() => {
       resetForm();
       if (isEditMode.value) {
-        getProject(props.projectId).then(res => {
-          const p = res.data;
-          formData.projectTitle = p.title;
-          formData.projectDescription = p.description;
-          formData.recruitDeadline = p.recruitDeadline.split('T')[0];
-          formData.startDate = p.startDate.split('T')[0];
-          formData.endDate = p.endDate.split('T')[0];
-          formData.techStack = p.techStacks.map(t => ({ id: t.techStackName, name: t.techStackName }));
-          partRows.value = p.recruitmentParts.map(part => ({ part: part.partName, count: part.recruitCount }));
-          
-          if (p.attachments && p.attachments.length > 0) {
-            originalAttachments.value = p.attachments; // 원본 목록 저장
-            // FileUploadArea에 표시하기 위한 데이터 형식으로 변환
-            formData.files = p.attachments.map(att => ({ ...att, isExisting: true }));
-          }
+        getProject(props.projectId)
+            .then(res => {
+              const p = res.data;
+              formData.projectTitle = p.title;
+              formData.projectDescription = p.description;
+              formData.recruitDeadline = stripDate(p.recruitDeadline);
+              formData.startDate = stripDate(p.startDate);
+              formData.endDate = stripDate(p.endDate);
 
-        }).catch(e => {
-          console.error('Failed to fetch project data for editing:', e);
-          toast.error('프로젝트 정보를 불러오는데 실패했습니다.');
-          router.back();
-        });
+              // 편집 모드: 서버 응답을 UI가 쓰는 형태로 안전 변환
+              formData.techStack = (p.techStacks || []).map(t => ({
+                id: t.techStackName,
+                name: t.techStackName,
+                recruitCount: Number(t.recruitCount ?? 0),
+              }));
+
+              partRows.value = (p.recruitmentParts || []).map(part => ({
+                part: part.partName,
+                count: part.recruitCount
+              }));
+
+              if (p.attachments && p.attachments.length > 0) {
+                originalAttachments.value = p.attachments;
+                formData.files = p.attachments.map(att => ({ ...att, isExisting: true }));
+              }
+            })
+            .catch(e => {
+              console.error('Failed to fetch project data for editing:', e);
+              toast.error('프로젝트 정보를 불러오는데 실패했습니다.');
+              router.back();
+            });
       }
     });
 
     onActivated(() => {
-      // Only reset form if not in edit mode (i.e., creating a new project)
-      // and if the form is not already clean (e.g., after a successful submission)
       if (!isEditMode.value) {
         resetForm();
       }
@@ -311,6 +321,9 @@ export default {
       recruitDeadline: ['required'],
       files: []
     };
+
+    // 업로드 호환용: 엘리먼트-UI, antd 등 {raw} / {originFileObj} 케이스 대응
+    const asFile = (f) => (f instanceof File ? f : f?.raw || f?.originFileObj || null);
 
     const submitForm = async () => {
       const uid = userStore.userId;
@@ -328,35 +341,46 @@ export default {
 
       isSubmitting.value = true;
       try {
+        // 1) 첨부파일 정리
         const finalAttachments = [];
 
-        for (const file of formData.files) {
-          if (file.isExisting) {
+        for (const item of formData.files) {
+          console.log('formData.files의 현재 item:', item);
+          if (item?.isExisting) {
+            // 기존 파일은 그대로 전달
             finalAttachments.push({
-              name: file.name,
-              url: file.url,
-              size: file.size
+              name: item.name,
+              url: item.url,
+              size: item.size
             });
-          } else if (file instanceof File) {
-            const uploadRes = await uploadProjectFile(file);
-            finalAttachments.push(uploadRes.data);
+            continue;
           }
+
+          const fileObj = asFile(item);
+          console.log('asFile 변환 후 fileObj:', fileObj);
+          if (!fileObj) continue;
+
+          const { data } = await uploadProjectFile(fileObj); // axios 응답 {name,url,size}
+          finalAttachments.push(data);
         }
 
-        const techStacks = formData.techStack
-          .filter(s => s.techStackName && s.techStackName.trim())
-          .map(s => ({
-            techStackName: s.techStackName.trim(),
-            recruitCount: Number(s.recruitCount ?? 0)
-          }));
+        // 2) 기술스택 변환 (id/name/techStackName 어떤 형태든 받아서 서버 DTO로 통일)
+        const techStacks = (formData.techStack || [])
+            .map(s => ({
+              techStackName: (s.techStackName ?? s.name ?? s.id ?? '').trim(),
+              recruitCount: Number(s.recruitCount ?? 0),
+            }))
+            .filter(s => s.techStackName);
 
-        const parts = partRows.value
-          .filter(r => r.part && r.part.trim() && Number(r.count) > 0)
-          .map(r => ({
-            partName: r.part.trim(),
-            recruitCount: Number(r.count ?? 0)
-          }));
+        // 3) 모집 파트 변환
+        const parts = (partRows.value || [])
+            .filter(r => r.part && r.part.trim() && Number(r.count) > 0)
+            .map(r => ({
+              partName: r.part.trim(),
+              recruitCount: Number(r.count ?? 0)
+            }));
 
+        // 4) 최종 payload
         const projectData = {
           title: formData.projectTitle,
           description: formData.projectDescription,
@@ -370,20 +394,20 @@ export default {
           attachments: finalAttachments
         };
 
+        // 5) API 호출
         if (isEditMode.value) {
           await updateProject(props.projectId, projectData);
         } else {
           await createProject(projectData, uid);
         }
-        
-        toast.success(`프로젝트가 성공적으로 ${isEditMode.value ? '수정' : '등록'}되었습니다!`);
-        
-        if (isEditMode.value) {
-            router.push(`/projects/${props.projectId}`);
-        } else {
-            router.push(`/projects`);
-        }
 
+        toast.success(`프로젝트가 성공적으로 ${isEditMode.value ? '수정' : '등록'}되었습니다!`);
+
+        if (isEditMode.value) {
+          router.push(`/projects/${props.projectId}`);
+        } else {
+          router.push(`/projects`);
+        }
       } catch (error) {
         console.error('Submission error:', error);
         toast.error(`프로젝트 ${isEditMode.value ? '수정' : '등록'} 중 오류가 발생했습니다.`);
@@ -402,7 +426,7 @@ export default {
       validateField, submitForm, resetForm
     };
   }
-}
+};
 </script>
 
 <style scoped>
