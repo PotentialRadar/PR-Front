@@ -20,10 +20,6 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${env.VITE_BACK_PORT || 8080}`,
           changeOrigin: true,
           secure: false,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
         },
       },
     },

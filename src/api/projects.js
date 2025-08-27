@@ -20,11 +20,14 @@ export const deleteProject = (projectId) => api.delete(`${ROOT}/${projectId}`);
 // S3 업로드
 export const uploadProjectFile = (file) => {
     const form = new FormData();
-    form.append('file', file);
+    form.append('file', file); // 백엔드 @RequestParam("file")와 일치
+
     return api.post(`${ROOT}/upload-file`, form, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
+        transformRequest: [(data, headers) => {
+            delete headers['Content-Type'];
+            delete headers['content-type'];
+            return data; // 브라우저가 boundary 붙여서 multipart로 보냄
+        }],
     });
 };
 
