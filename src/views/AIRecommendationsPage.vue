@@ -816,32 +816,53 @@ onMounted(async () => {
     // 저장된 기술스택 불러오기 (로그인 상태에서만)
     if (userStore.isLoggedIn && userStore.userId) {
       try {
-        console.log('🔧 DB에서 기술스택 조회 시도')
-        const dbTechStacks = await userStore.fetchTechStacks()
-        if (dbTechStacks && dbTechStacks.length > 0) {
-          // DB에서 가져온 기술스택을 AI 추천용 형태로 변환
-          userTechStacks.value = dbTechStacks.map(tech => ({
+        console.log('🔧 기술스택 조회 시도 - userStore 먼저 확인')
+    console.log('🔍 현재 userStore 상태:', {
+      isLoggedIn: userStore.isLoggedIn,
+      userId: userStore.userId,
+      techStacksLength: userStore.techStacks?.length || 0,
+      techStacks: userStore.techStacks
+    })
+        
+        // 먼저 userStore에 이미 기술스택이 있는지 확인
+        if (userStore.techStacks && userStore.techStacks.length > 0) {
+          console.log('✅ userStore에서 기술스택 발견:', userStore.techStacks)
+          // userStore의 기술스택을 AI 추천용 형태로 변환
+          userTechStacks.value = userStore.techStacks.map(tech => ({
             name: tech.stackName || tech.techStackName || tech.name,
             level: tech.skillLevel || tech.level || 3
           }))
-          console.log('✅ DB에서 기술스택 로드 성공:', userTechStacks.value)
+          console.log('✅ userStore에서 기술스택 로드 성공:', userTechStacks.value)
+          console.log('🔍 기술스택 상세 정보:', userTechStacks.value.map(tech => `${tech.name} (Lv.${tech.level})`).join(', '))
           await loadRecommendations()
         } else {
-          console.log('⚠️ DB에 기술스택 없음 - localStorage 확인')
-          // DB에 기술스택이 없으면 localStorage 확인
-          const savedTechStacks = localStorage.getItem('userTechStacks')
-          if (savedTechStacks) {
-            try {
-              userTechStacks.value = JSON.parse(savedTechStacks)
-              await loadRecommendations()
-            } catch (error) {
-              console.error('❌ 기술스택 데이터 파싱 오류:', error)
-              localStorage.removeItem('userTechStacks')
+          console.log('⚠️ userStore에 기술스택 없음 - DB에서 새로 조회')
+          const dbTechStacks = await userStore.fetchTechStacks()
+          if (dbTechStacks && dbTechStacks.length > 0) {
+            // DB에서 가져온 기술스택을 AI 추천용 형태로 변환
+            userTechStacks.value = dbTechStacks.map(tech => ({
+              name: tech.stackName || tech.techStackName || tech.name,
+              level: tech.skillLevel || tech.level || 3
+            }))
+            console.log('✅ DB에서 기술스택 로드 성공:', userTechStacks.value)
+            await loadRecommendations()
+          } else {
+            console.log('⚠️ DB에 기술스택 없음 - localStorage 확인')
+            // DB에 기술스택이 없으면 localStorage 확인
+            const savedTechStacks = localStorage.getItem('userTechStacks')
+            if (savedTechStacks) {
+              try {
+                userTechStacks.value = JSON.parse(savedTechStacks)
+                await loadRecommendations()
+              } catch (error) {
+                console.error('❌ 기술스택 데이터 파싱 오류:', error)
+                localStorage.removeItem('userTechStacks')
+                userTechStacks.value = []
+              }
+            } else {
+              console.log('⚠️ DB와 localStorage 모두에 기술스택 없음')
               userTechStacks.value = []
             }
-          } else {
-            console.log('⚠️ DB와 localStorage 모두에 기술스택 없음')
-            userTechStacks.value = []
           }
         }
       } catch (error) {
