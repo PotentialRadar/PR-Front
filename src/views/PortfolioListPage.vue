@@ -255,16 +255,20 @@ const selectPopularKeyword = (keyword) => {
   handleSearch()
 }
 
-// 필터 옵션 데이터
-const techParts = computed(() => techTagStore.techParts)
+// 필터 옵션 데이터 (유저 기반)
+const techParts = computed(() => techTagStore.userTechParts)
+const baseTechStacks = computed(() => techTagStore.getUserPopularTechStacksTop20())
+
+// 필터 결과 수에 따라 정렬된 기술 스택
 const popularTechStacks = computed(() => {
-  const stacks = techTagStore.getPopularTechStacksTop20();
+  const stacks = baseTechStacks.value.slice()
   return stacks.sort((a, b) => {
-    const countA = getFilterResultCount('techStack', a);
-    const countB = getFilterResultCount('techStack', b);
-    return countB - countA;
-  });
+    const countA = filterResultCounts.value[`techStack-${a}`] || 0
+    const countB = filterResultCounts.value[`techStack-${b}`] || 0
+    return countB - countA
+  })
 })
+
 const experienceRanges = ref([
   { value: 'FRESHER', label: '신입' },
   { value: 'LT_1', label: '1년 미만' },
@@ -291,9 +295,9 @@ const isSearchMode = ref(false)
 
 const loadTechTags = async () => {
   try {
-    await techTagStore.loadTechTags()
+    await techTagStore.loadUserTechTags()
   } catch (error) {
-    console.error('❌ 기술 태그 로드 실패:', error)
+    console.error('❌ 유저 기술 태그 로드 실패:', error)
   }
 }
 
@@ -301,7 +305,7 @@ const loadPopularKeywords = async () => {
   try {
     const response = await getPopularUserKeywords()
     popularKeywords.value = response.keywords || []
-    console.log('✅ 포트폴리오 인기 키워드 로드 성공:', popularKeywords.value)
+    // 포트폴리오 인기 키워드 로드 성공
   } catch (error) {
     console.error('❌ 포트폴리오 인기 키워드 로드 실패:', error)
     // 실패시 기본값 제공
@@ -315,9 +319,7 @@ onActivated(async () => {
       loadTechTags(),
       loadPopularKeywords()
     ])
-    console.log('✅ 기술 태그 및 인기 키워드 로드 완료 (PortfolioListPage)')
-    console.log('기술 파트:', techParts.value)
-    console.log('기술 스택:', popularTechStacks.value)
+    // 기술 태그 및 인기 키워드 로드 완료
     
     handleSearch(false)
     // 초기 필터 결과 수 로딩
@@ -381,7 +383,7 @@ const performSearch = async (searchParams) => {
     })) || []
     
     totalPages.value = result.totalPages || 1
-    console.log('포트폴리오 검색 결과:', result)
+    // 포트폴리오 검색 성공
   } catch (err) {
     console.error('검색 실패:', err)
     error.value = '검색 중 오류가 발생했습니다.'
@@ -395,17 +397,13 @@ const performSearch = async (searchParams) => {
 // 결과 수 미리보기 기능 (OR 방식으로 수정)
 const updateFilterResultCounts = async () => {
   try {
-    console.log('🔄 필터 결과 수 업데이트 시작 (Portfolio)')
-    console.log('기술 파트:', techParts.value)
-    console.log('기술 스택:', popularTechStacks.value)
-    console.log('경력 수준:', experienceRanges.value)
+    // 필터 결과 수 업데이트 시작
 
     // 기술 파트별 결과 수 계산 - 병렬 처리
     await Promise.allSettled(
       techParts.value.map(async (part) => {
         const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techParts: [part] })
         filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0
-        console.log(`✅ 기술 파트 "${part}" 결과 수: ${result.totalCount ?? 0}`)
       })
     ).then(results => results.forEach((r, i) => { 
       if (r.status === 'rejected') {
@@ -416,15 +414,15 @@ const updateFilterResultCounts = async () => {
     }))
 
     // 기술 스택별 결과 수 계산 - 병렬 처리
+    const stacks = [...popularTechStacks.value]
     await Promise.allSettled(
-      popularTechStacks.value.map(async (stack) => {
+      stacks.map(async (stack) => {
         const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techStacks: [stack] })
         filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0
-        console.log(`✅ 기술 스택 "${stack}" 결과 수: ${result.totalCount ?? 0}`)
       })
     ).then(results => results.forEach((r, i) => { 
       if (r.status === 'rejected') {
-        const stack = popularTechStacks.value[i]
+        const stack = stacks[i]
         console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
         filterResultCounts.value[`techStack-${stack}`] = 0 
       }
@@ -435,7 +433,6 @@ const updateFilterResultCounts = async () => {
       experienceRanges.value.map(async (exp) => {
         const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, experienceRanges: [exp.value] })
         filterResultCounts.value[`experience-${exp.value}`] = result.totalCount ?? 0
-        console.log(`✅ 경력 수준 "${exp.label}" 결과 수: ${result.totalCount ?? 0}`)
       })
     ).then(results => results.forEach((r, i) => { 
       if (r.status === 'rejected') {
@@ -445,7 +442,7 @@ const updateFilterResultCounts = async () => {
       }
     }))
 
-    console.log('✅ 필터 결과 수 업데이트 완료 (Portfolio):', filterResultCounts.value)
+    // 필터 결과 수 업데이트 완료
   } catch (error) {
     console.error('❌ 필터 결과 수 업데이트 실패 (Portfolio):', error)
   }
@@ -453,7 +450,9 @@ const updateFilterResultCounts = async () => {
 
 // 각 필터의 결과 수 가져오기
 const getFilterResultCount = (type, value) => {
-  return filterResultCounts.value[`${type}-${value}`] || 0
+  const key = `${type}-${value}`
+  const count = filterResultCounts.value[key] || 0
+  return count
 }
 
 // 필터 아이템 토글
@@ -467,20 +466,18 @@ const toggleItem = (list, item) => {
 }
 
 const toggleTechPart = (part) => {
-  console.log(`🔄 기술 파트 토글: "${part}"`)
+  // 기술 파트 토글
   toggleItem(selectedTechParts, part)
 }
 
 const toggleTechStack = (stack) => {
-  console.log(`🔄 기술 스택 토글: "${stack}"`)
+  // 기술 스택 토글
   toggleItem(selectedTechStacks, stack)
 }
 
 const toggleExperience = (experience) => {
-  console.log(`🔄 경력 수준 토글: "${experience}"`)
-  console.log('현재 선택된 경력:', selectedExperiences.value)
+  // 경력 수준 토글
   toggleItem(selectedExperiences, experience)
-  console.log('토글 후 선택된 경력:', selectedExperiences.value)
 }
 
 // 필터 초기화
