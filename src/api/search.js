@@ -34,7 +34,7 @@ export const searchProjects = async (params = {}) => {
     const response = await api.get(`/search/projects?${queryParams.toString()}`)
     return response.data
   } catch (error) {
-    console.error('프로젝트 검색 API 오류:', error)
+    // // console.error('프로젝트 검색 API 오류:', error)
     throw error
   }
 }
@@ -73,13 +73,13 @@ export const searchUsers = async (params = {}) => {
     const response = await api.get(`/search/users?${queryParams.toString()}`)
     return response.data
   } catch (error) {
-    console.error('사용자 검색 API 오류:', error)
+    // // console.error('사용자 검색 API 오류:', error)
     throw error
   }
 }
 
 /**
- * 기술 태그 조회 API
+ * 기술 태그 조회 API (프로젝트 기반)
  * @returns {Promise} 기술 태그 목록
  */
 export const getTechTags = async () => {
@@ -87,7 +87,21 @@ export const getTechTags = async () => {
     const response = await api.get('/search/tags')
     return response.data
   } catch (error) {
-    console.error('기술 태그 조회 API 오류:', error)
+    // // console.error('기술 태그 조회 API 오류:', error)
+    throw error
+  }
+}
+
+/**
+ * 유저 기반 기술 태그 조회 API
+ * @returns {Promise} 유저 기술 태그 목록
+ */
+export const getUserTechTags = async () => {
+  try {
+    const response = await api.get('/search/user-tags')
+    return response.data
+  } catch (error) {
+    // // console.error('유저 기술 태그 조회 API 오류:', error)
     throw error
   }
 }
@@ -101,7 +115,7 @@ export const getPopularKeywords = async () => {
     const response = await api.get('/search/popular/keywords')
     return response.data
   } catch (error) {
-    console.error('인기 키워드 조회 API 오류:', error)
+    // console.error('인기 키워드 조회 API 오류:', error)
     throw error
   }
 }
@@ -115,7 +129,7 @@ export const getPopularUserKeywords = async () => {
     const response = await api.get('/search/popular/user-keywords')
     return response.data
   } catch (error) {
-    console.error('포트폴리오 인기 키워드 조회 API 오류:', error)
+    // console.error('포트폴리오 인기 키워드 조회 API 오류:', error)
     throw error
   }
 }
@@ -143,7 +157,7 @@ export const getProjectCountPreview = async (params = {}) => {
     const response = await api.get(`/search/projects/count-preview?${queryParams.toString()}`)
     return response.data
   } catch (error) {
-    console.error('프로젝트 결과 수 미리보기 API 오류:', error)
+    // console.error('프로젝트 결과 수 미리보기 API 오류:', error)
     throw error
   }
 }
@@ -172,7 +186,7 @@ export const getUserCountPreview = async (params = {}) => {
     const response = await api.get(`/search/users/count-preview?${queryParams.toString()}`)
     return response.data
   } catch (error) {
-    console.error('사용자 결과 수 미리보기 API 오류:', error)
+    // console.error('사용자 결과 수 미리보기 API 오류:', error)
     throw error
   }
 }
@@ -186,7 +200,7 @@ export const syncSearchData = async () => {
     const response = await api.post('/search/sync')
     return response.data
   } catch (error) {
-    console.error('검색 데이터 동기화 API 오류:', error)
+    // console.error('검색 데이터 동기화 API 오류:', error)
     throw error
   }
 }
