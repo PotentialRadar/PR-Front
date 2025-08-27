@@ -58,21 +58,15 @@
                 </div>
               </div>
             </div>
-            <div v-if="personalizationInfo" class="personalization-badge">
-              {{ personalizationInfo.message }}
-            </div>
           </div>
           <div class="stats" v-if="activeTab === 'projects' && recommendations.length > 0">
             <span class="stat-item">
               📊 총 {{ recommendations.length }}개 프로젝트 발견
             </span>
-            <span v-if="personalizationInfo" class="stat-item personalized">
-              🤖 개인화 적용 ({{ personalizationInfo.feedbackCount }}개 피드백 기반)
-            </span>
           </div>
-          <div class="stats" v-if="activeTab === 'members' && memberRecommendations.length > 0">
+          <div class="stats" v-if="activeTab === 'members'">
             <span class="stat-item">
-              👥 총 {{ memberRecommendations.length }}명 발견
+              👥 팀원 추천
             </span>
           </div>
         </div>
@@ -109,6 +103,39 @@
               {{ project.title }} ({{ project.status === 'RECRUITING' ? '모집중' : project.status }})
             </option>
           </select>
+        </div>
+
+        <!-- 선택된 프로젝트 기술스택 정보 (팀원 추천 탭에서만 표시) -->
+        <div v-if="activeTab === 'members' && isTeamLeader && selectedProject" class="selected-project-info">
+          <div class="project-info-header">
+            <div class="project-title-section">
+              <h4 class="project-info-title">{{ selectedProject.title }}</h4>
+            </div>
+          </div>
+          
+          <div class="project-tech-stacks">
+            <div class="tech-stacks-label">
+              <span class="tech-icon">🛠️</span>
+              <span class="tech-text">필요한 기술스택</span>
+            </div>
+            <div class="tech-tags-container">
+              <span 
+                v-for="tech in getProjectTechStacks(selectedProject)" 
+                :key="tech"
+                class="project-tech-tag"
+              >
+                {{ tech }}
+              </span>
+              <div v-if="getProjectTechStacks(selectedProject).length === 0" class="no-tech-stacks">
+                기술스택 정보 없음
+              </div>
+            </div>
+          </div>
+          
+          <div class="recommendation-note">
+            <span class="note-icon">💡</span>
+            <span class="note-text">위 기술스택과 매칭도가 높은 팀원을 추천해드립니다</span>
+          </div>
         </div>
 
 
@@ -215,120 +242,11 @@
 
         <!-- 팀원 추천 탭 -->
         <div v-if="activeTab === 'members'" class="members-tab">
-          <!-- 로딩 상태 -->
-          <div v-if="membersLoading" class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>AI가 당신과 잘 맞는 팀원을 찾고 있습니다...</p>
-          </div>
-
-          <!-- 팀원 추천 결과 없음 -->
-          <div v-else-if="!membersLoading && memberRecommendations.length === 0" class="empty-state">
-            <div class="empty-icon">👥</div>
-            <h3>추천 가능한 팀원이 없습니다</h3>
-            <p>다른 기술스택이나 경험 수준으로 다시 시도해보세요.</p>
-            <button @click="loadMemberRecommendations" class="primary-button">
-              다시 검색
-            </button>
-          </div>
-
-          <!-- 팀원 추천 리스트 -->
-          <div v-else-if="memberRecommendations.length > 0" class="members-grid">
-            <div 
-              v-for="member in memberRecommendations" 
-              :key="member.userId"
-              class="member-card"
-              @click="goToMemberProfile(member.userId)"
-            >
-              <!-- 멤버 헤더 -->
-              <div class="member-header">
-                <div class="member-profile">
-                  <img 
-                    :src="getMemberProfileImage(member)" 
-                    :alt="member.name || member.nickname"
-                    class="member-avatar"
-                    @error="handleMemberImageError($event, member.userId)"
-                    loading="lazy"
-                  />
-                  <div class="member-basic-info">
-                    <h3 class="member-name">{{ member.name || member.nickname }}</h3>
-                    <p class="member-role">{{ member.techPart || '개발자' }}</p>
-                  </div>
-                </div>
-                <div class="match-score-badge">
-                  <span class="score-label">매칭도</span>
-                  <span class="score-value">{{ (member.matchScore * 100).toFixed(0) }}%</span>
-                </div>
-              </div>
-
-              <!-- 멤버 정보 -->
-              <div class="member-info">
-                <div class="member-bio" v-if="member.bio">
-                  <p>{{ member.bio }}</p>
-                </div>
-                <div class="member-stats">
-                  <div class="stat-item">
-                    <span class="stat-label">경력</span>
-                    <span class="stat-value">{{ member.experience || member.experienceRange || 'N/A' }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">평점</span>
-                    <span class="stat-value">⭐ {{ member.averageRating || member.reputationScore || 'N/A' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 기술스택 -->
-              <div class="member-tech-stacks">
-                <div class="tech-stacks-header">
-                  <span class="tech-label">주요 기술스택</span>
-                </div>
-                <div class="tech-tags">
-                  <span 
-                    v-for="tech in getMemberTechStacks(member)" 
-                    :key="tech || ''"
-                    class="tech-tag"
-                    :class="{ 'matched': isUserTech(tech) }"
-                  >
-                    {{ tech }}
-                  </span>
-                  <!-- 디버깅: 기술스택이 안 보이면 원본 데이터 확인 -->
-                  <div v-if="getMemberTechStacks(member).length === 0" class="debug-info">
-                    기술스택 없음: {{ JSON.stringify(member.userTechStacks) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- AI 추천 이유 -->
-              <div v-if="member.explanation" class="ai-explanation">
-                <div class="explanation-header">
-                  <span class="ai-badge">🤖 AI 추천 이유</span>
-                </div>
-                <div class="explanation-content">
-                  <p class="main-reason">{{ member.explanation.simple_explanation || member.explanation.main_reason }}</p>
-                </div>
-              </div>
-
-              <!-- 연락 버튼 -->
-              <div class="member-footer">
-                <div class="member-links">
-                  <a v-if="member.githubUrl" :href="member.githubUrl" target="_blank" class="link-button github">
-                    GitHub
-                  </a>
-                  <a v-if="member.linkedinUrl" :href="member.linkedinUrl" target="_blank" class="link-button linkedin">
-                    LinkedIn
-                  </a>
-                </div>
-                <button 
-                  class="contact-button" 
-                  :class="{ 'invited': invitedMembers.has(member.userId) }"
-                  @click.stop="contactMember(member)"
-                  :disabled="invitedMembers.has(member.userId)"
-                >
-                  {{ invitedMembers.has(member.userId) ? '초대됨' : '초대하기' }}
-                </button>
-              </div>
-            </div>
-          </div>
+          <TeamMemberRecommendation 
+            v-if="selectedProject"
+            :projectId="selectedProject.projectId"
+            :requiredSkills="getProjectTechStacks(selectedProject)"
+          />
         </div>
       </div>
     </div>
@@ -379,6 +297,7 @@ import { useToast } from 'vue-toastification'
 import PageHeader from '@/components/common/PageHeader.vue'
 import TechStackModal from '@/components/common/TechStackModal.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
+import TeamMemberRecommendation from '@/components/projectComponents/TeamMemberRecommendation.vue'
 import api from '@/api/axios'
 
 const router = useRouter()
@@ -387,28 +306,29 @@ const toast = useToast()
 
 // 반응형 데이터
 const isLoading = ref(false)
-const membersLoading = ref(false)
 const showTechStackModal = ref(false)
 const userTechStacks = ref([])
 const recommendations = ref([])
-const memberRecommendations = ref([])
 const popularProjects = ref([])
 const activeTab = ref('projects') // 'projects' 또는 'members'
 const userProjects = ref([]) // 사용자가 팀장인 프로젝트들
 const isTeamLeader = ref(false) // 팀장 여부
 const selectedProjectId = ref(null) // 선택된 프로젝트 ID
-const invitedMembers = ref(new Set()) // 이미 초대된 멤버 ID 추적
 
 // 피드백 모달 관련
 const showFeedbackModal = ref(false)
 const selectedProjectForFeedback = ref(null)
 const feedbackSubmitted = ref(new Set()) // 피드백 제출한 프로젝트 ID들
 
-// 개인화 정보
-const personalizationInfo = ref(null)
 
 // 계산된 속성
 const userTechNames = computed(() => userTechStacks.value.map(tech => tech.name?.toLowerCase()).filter(Boolean))
+
+const selectedProject = computed(() => {
+  return userProjects.value.find(project => 
+    project.projectId === selectedProjectId.value
+  ) || userProjects.value[0] || null
+})
 
 // 사용자 피드백 통계 조회
 const getUserFeedbackStats = async () => {
@@ -487,15 +407,6 @@ const loadRecommendations = async () => {
           ? '🌟 더 다양한 옵션으로 추천'
           : '⚖️ 피드백을 반영한 균형잡힌 추천';
         console.log(`🤖 개인화 적용: ${personalizedMessage}`);
-        
-        // UI에 표시할 개인화 정보 저장
-        personalizationInfo.value = {
-          message: personalizedMessage,
-          feedbackCount: feedbackStats.totalFeedbacks,
-          likeRatio: feedbackStats.likeRatio
-        };
-      } else {
-        personalizationInfo.value = null;
       }
       
       // 추천 이력 ID 및 데이터 확인
@@ -575,249 +486,21 @@ const checkTeamLeaderStatus = async () => {
   }
 }
 
-// 팀원 추천 로드
-const loadMemberRecommendations = async () => {
-  if (userTechStacks.value.length === 0) {
-    return
-  }
-
-  membersLoading.value = true
-  
-  try {
-    console.log('🔍 사용자 프로젝트 데이터:', userProjects.value)
-    
-    // 선택된 프로젝트 찾기
-    const selectedProject = userProjects.value.find(project => 
-      project.projectId === selectedProjectId.value
-    ) || userProjects.value[0]
-    
-    if (!selectedProject) {
-      console.log('❌ 선택된 프로젝트가 없음')
-      memberRecommendations.value = []
-      return
-    }
-    
-    console.log('📋 선택된 프로젝트:', selectedProject)
-    
-    const requestData = {
-      projectId: selectedProject.projectId,
-      requiredSkills: selectedProject?.techStacks?.map(tech => 
-        tech.techStackName || tech.name
-      ).filter(Boolean) || [],
-      teamSize: 4,
-      experienceLevel: "any",
-      excludeUserId: userStore.userId  // 팀장 본인을 백엔드에서 제외
-    }
-
-    console.log('👥 팀원 추천 요청:', requestData)
-
-    // TODO: 실제 팀원 추천 API 엔드포인트로 변경
-    const response = await api.post('/recommend/members', requestData)
-    const data = response.data
-    console.log('📦 팀원 추천 응답:', data)
-    
-    memberRecommendations.value = data || []
-    
-    if (memberRecommendations.value.length > 0) {
-      console.log(`✅ ${memberRecommendations.value.length}명의 팀원 추천 완료`)
-      
-      // 팀원 매칭률 로그 출력
-      console.log('📊 팀원 추천 매칭률 결과:')
-      memberRecommendations.value.forEach((member, index) => {
-        const matchPercentage = Math.round((member.matchScore || 0) * 100)
-        console.log(`  ${index + 1}. ${member.nickname || member.name} - ${matchPercentage}% 매칭`)
-      })
-      
-      // 첫 번째 팀원의 기술스택 구조 확인 (디버깅용)
-      console.log('🔍 첫 번째 팀원 기술스택:', memberRecommendations.value[0].userTechStacks)
-    } else {
-      console.log('⚠️ 추천 가능한 팀원이 없음')
-      toast.info('현재 추천 가능한 팀원이 없습니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-    }
-    
-  } catch (error) {
-    console.error('❌ 팀원 추천 오류:', error)
-    memberRecommendations.value = []
-    toast.error('팀원 추천을 불러오는데 실패했습니다.', {
-      position: 'top-center',
-      timeout: 3000
-    })
-  } finally {
-    membersLoading.value = false
-  }
-}
 
 
 // 프로젝트 변경 시 호출
 const onProjectChange = () => {
   console.log('📋 프로젝트 변경됨:', selectedProjectId.value)
-  memberRecommendations.value = [] // 기존 추천 초기화
-  invitedMembers.value.clear() // 초대 상태 초기화
-  loadMemberRecommendations()
 }
 
 // 팀원 추천 탭 전환
 const switchToMembersTab = () => {
   activeTab.value = 'members'
-  if (memberRecommendations.value.length === 0) {
-    loadMemberRecommendations()
-  }
 }
 
-// 멤버 프로필 페이지로 이동
-const goToMemberProfile = (userId) => {
-  // TODO: 실제 멤버 프로필 페이지 경로로 변경
-  router.push(`/profile/${userId}`)
-}
 
-// 팀원 프로필 이미지 처리 함수들
-const getMemberProfileImage = (member) => {
-  // 1순위: member.profileImage가 있고 실제 이미지 URL인 경우 (더미 URL 제외)
-  if (member.profileImage && 
-      member.profileImage.startsWith('http') && 
-      !member.profileImage.includes('example.com') &&
-      !member.profileImage.includes('placeholder')) {
-    return member.profileImage
-  }
-  
-  // 2순위: dicebear API 사용 (항상 안전함)
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-}
 
-const handleMemberImageError = (event, userId) => {
-  console.warn(`팀원 프로필 이미지 로드 실패 (사용자 ${userId}):`, event.target.src)
-  
-  // Fallback 1: 더미 URL이나 기타 실패한 경우 dicebear avataaars로
-  if (!event.target.src.includes('dicebear.com')) {
-    console.log(`Fallback 1: dicebear avataaars 시도 (사용자 ${userId})`)
-    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-    return
-  }
-  
-  // Fallback 2: avataaars 실패시 initials 시도
-  if (event.target.src.includes('avataaars')) {
-    console.log(`Fallback 2: dicebear initials 시도 (사용자 ${userId})`)
-    event.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=User${userId}&backgroundColor=4f46e5,7c3aed,db2777,dc2626,ea580c`
-    return
-  }
-  
-  // Fallback 3: initials 실패시 shapes 시도
-  if (event.target.src.includes('initials')) {
-    console.log(`Fallback 3: dicebear shapes 시도 (사용자 ${userId})`)
-    event.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${userId}&backgroundColor=22c55e,3b82f6,8b5cf6,f59e0b,ef4444`
-    return
-  }
-  
-  // Fallback 4: shapes 실패시 최종 대안
-  if (event.target.src.includes('shapes')) {
-    console.log(`Fallback 4: 최종 대안 시도 (사용자 ${userId})`)
-    event.target.src = `https://ui-avatars.com/api/?name=User${userId}&background=4CAF50&color=fff&size=60`
-    return
-  }
-  
-  // 모든 API 실패 시
-  console.error(`모든 이미지 fallback 실패 (사용자 ${userId}) - 최종 처리`)
-  
-  // 이미지를 숨기는 대신 CSS 배경으로 처리
-  event.target.style.opacity = '0'
-  event.target.style.background = 'linear-gradient(135deg, #4CAF50, #81C784)'
-  event.target.alt = 'U'
-}
 
-// 멤버에게 팀원 초대 보내기
-const contactMember = async (member) => {
-  if (!userStore.isLoggedIn) {
-    toast.error('로그인이 필요합니다.', {
-      position: 'top-center',
-      timeout: 3000
-    })
-    return
-  }
-
-  if (userProjects.value.length === 0) {
-    toast.error('초대할 수 있는 프로젝트가 없습니다.', {
-      position: 'top-center',
-      timeout: 3000
-    })
-    return
-  }
-
-  try {
-    // 선택된 프로젝트 사용 (없으면 첫 번째 프로젝트)
-    const selectedProject = userProjects.value.find(p => p.projectId === selectedProjectId.value) 
-                          || userProjects.value[0]
-    
-    if (!selectedProject) {
-      toast.error('선택된 프로젝트를 찾을 수 없습니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-      return
-    }
-
-    // 자기 자신에게 초대 보내는 것 방지
-    if (member.userId === userStore.userId) {
-      toast.warning('자기 자신을 초대할 수 없습니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-      return
-    }
-    
-    const inviteData = {
-      projectId: selectedProject.projectId,
-      inviteeId: member.userId,
-      message: `${selectedProject.title} 프로젝트에 참여해보시겠어요? AI가 ${Math.round((member.matchScore || 0) * 100)}% 매칭으로 추천했습니다! 🚀`
-    }
-
-    console.log('📧 팀원 초대 요청:', inviteData)
-    
-    // 팀원 초대 API 호출 (TeamMemberRecommendation과 동일한 방식)
-    const response = await api.post('/invitations/send', inviteData, {
-      headers: {
-        'User-Id': userStore.userId.toString()
-      }
-    })
-    
-    toast.success(`${member.name || member.nickname}님에게 팀원 초대를 보냈습니다! 🎉`, {
-      position: 'top-center',
-      timeout: 3000
-    })
-    
-    console.log('✅ 팀원 초대 성공:', response.data)
-    
-    // 초대된 멤버를 추적 목록에 추가
-    invitedMembers.value.add(member.userId)
-    
-  } catch (error) {
-    console.error('❌ 팀원 초대 실패:', error)
-    
-    if (error.response?.status === 409) {
-      toast.warning('이미 초대된 사용자입니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-    } else if (error.response?.status === 400) {
-      toast.error('잘못된 초대 요청입니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-    } else if (error.response?.status === 404) {
-      toast.error('사용자를 찾을 수 없습니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-    } else {
-      toast.error('팀원 초대에 실패했습니다.', {
-        position: 'top-center',
-        timeout: 3000
-      })
-    }
-  }
-}
 
 const handleTechStackSave = (techStacks) => {
   userTechStacks.value = techStacks
@@ -839,24 +522,24 @@ const isUserTech = (techName) => {
   return techName && userTechNames.value.includes(techName.toLowerCase())
 }
 
-// 팀원 기술스택 추출 (Proxy 객체 문제 해결)
-const getMemberTechStacks = (member) => {
+// 프로젝트 기술스택 추출
+const getProjectTechStacks = (project) => {
   try {
-    if (member.userTechStacks && Array.isArray(member.userTechStacks)) {
-      // Proxy 객체를 일반 배열로 변환하고 name 속성 추출
-      const techStacks = [...member.userTechStacks].map(tech => tech.name).filter(Boolean)
-      console.log('🔍 기술스택 추출 결과:', techStacks)
-      return techStacks.slice(0, 6)
+    if (!project) return []
+    
+    if (project.techStacks && Array.isArray(project.techStacks)) {
+      return project.techStacks.map(tech => 
+        tech.techStackName || tech.name || tech
+      ).filter(Boolean)
     }
-    if (member.techStacks && Array.isArray(member.techStacks)) {
-      return member.techStacks.slice(0, 6)
-    }
+    
     return []
   } catch (error) {
-    console.error('기술스택 추출 오류:', error, member)
+    console.error('프로젝트 기술스택 추출 오류:', error, project)
     return []
   }
 }
+
 
 
 const formatDuration = (startDate, endDate) => {
@@ -1779,6 +1462,117 @@ onUnmounted(() => {
 
 .project-select:hover {
   border-color: #adb5bd;
+}
+
+/* 선택된 프로젝트 정보 */
+.selected-project-info {
+  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+}
+
+.project-info-header {
+  margin-bottom: 16px;
+}
+
+.project-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-info-title {
+  margin: 0;
+  color: #155724;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.recommendation-basis {
+  background: rgba(40, 167, 69, 0.1);
+  color: #155724;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: fit-content;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.project-tech-stacks {
+  margin-bottom: 16px;
+}
+
+.tech-stacks-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tech-icon {
+  font-size: 1.2rem;
+}
+
+.tech-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #155724;
+}
+
+.tech-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-tech-tag {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+  transition: all 0.2s ease;
+}
+
+.project-tech-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.no-tech-stacks {
+  color: #6c757d;
+  font-style: italic;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.recommendation-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.note-icon {
+  font-size: 1.1rem;
+}
+
+.note-text {
+  color: #856404;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 /* 팀원 추천 스타일 */
