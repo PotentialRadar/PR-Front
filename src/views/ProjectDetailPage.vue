@@ -158,6 +158,7 @@ const load = async () => {
   try {
     // 먼저 API에서 데이터 조회 시도
     const { data } = await getProject(projectId.value);
+    console.log('✅ API 응답 데이터:', data); // 응답 데이터 전체를 콘솔에 출력
     console.log('✅ API에서 프로젝트 데이터 로드 성공:', data.title);
     
     // 백엔드 DTO를 프론트엔드 형식으로 변환

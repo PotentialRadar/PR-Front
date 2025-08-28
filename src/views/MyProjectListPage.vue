@@ -318,10 +318,10 @@ const STATUS_FILTER_TO_ENUM = {
   'cancelled':   'CANCELLED'
 }
 const ENUM_TO_CLASS = {
-  'RECRUITING':  'recruiting',
-  'IN_PROGRESS': 'in-progress',
-  'COMPLETED':   'completed',
-  'CANCELLED':   'cancelled'
+  'RECRUITING':  'status-recruiting',
+  'IN_PROGRESS': 'status-in-progress',
+  'COMPLETED':   'status-completed',
+  'CANCELLED':   'status-cancelled'
 }
 const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
 
@@ -741,22 +741,25 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   font-size: 13px;
 }
 
-.status-badge.recruiting {
-  background: #e7f3ff;
-  color: #007bff;
+.status-badge.status-recruiting {
+  background-color: #E8F5E9;
+  border: 1px solid #4CAF50;
+  color: #2E7D32;
 }
 
-.status-badge.in-progress {
-  background: #fff8e1;
-  color: #ffc107;
+.status-badge.status-in-progress {
+  background-color: #E3F2FD;
+  border: 1px solid #2196F3;
+  color: #1976D2;
 }
 
-.status-badge.completed {
-  background: #e8f5e9;
-  color: #28a745;
+.status-badge.status-completed {
+  background-color: #F5F5F5;
+  border: 1px solid #BDBDBD;
+  color: #616161;
 }
 
-.status-badge.cancelled {
+.status-badge.status-cancelled {
   background: #fdecea;
   color: #dc3545;
 }
