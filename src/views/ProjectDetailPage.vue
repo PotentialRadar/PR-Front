@@ -33,6 +33,7 @@
               <!-- 지원하기 버튼 -->
               <div class="action-button-container">
                 <button
+                  v-if="isLoggedIn && project?.status === '모집중'"
                   class="apply-button"
                   @click="openApplyModal"
                 >
@@ -158,16 +159,20 @@ const load = async () => {
   try {
     // 먼저 API에서 데이터 조회 시도
     const { data } = await getProject(projectId.value);
-    console.log('✅ API 응답 데이터:', data); // 응답 데이터 전체를 콘솔에 출력
-    console.log('✅ API에서 프로젝트 데이터 로드 성공:', data.title);
     
+    const statusMap = {
+      'RECRUITING': '모집중',
+      'IN_PROGRESS': '진행중',
+      'COMPLETED': '완료'
+    };
+
     // 백엔드 DTO를 프론트엔드 형식으로 변환
     project.value = {
       id: data.projectId ?? data.id,
       title: data.title,
       description: data.description,
       techStacks: data.techStacks?.map(tech => ({ techStackName: tech.techStackName })) || [],
-      status: data.status === 'RECRUITING' ? '모집중' : data.status,
+      status: statusMap[data.status] || data.status,
       startDate: data.startDate,
       endDate: data.endDate,
       recruitCount: data.recruitCount,

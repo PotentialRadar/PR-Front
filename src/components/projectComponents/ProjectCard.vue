@@ -89,7 +89,7 @@
 
     <div class="bottom-section">
       <button class="detail-button" @click="goToDetail">상세보기</button>
-      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status !== '마감'">지원하기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status === 'RECRUITING'">지원하기</button>
     </div>
   </div>
 </template>
