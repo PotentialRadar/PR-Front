@@ -199,6 +199,7 @@ import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 
 import { applyProject } from '@/api/projectMember';
 import { searchProjects, getPopularKeywords, getProjectCountPreview } from '@/api/search';
+import { listProjects } from '@/api/projects';
 
 const router = useRouter();
 const route = useRoute();
@@ -330,12 +331,60 @@ const performSearch = async (searchParams) => {
       size: 8,
       sort: sort.value,
     };
-    const result = await searchProjects(finalParams);
-    projects.value = result.content || [];
-    totalPages.value = result.totalPages || 1;
+    
+    // 검색 조건이 있는지 확인 (키워드, 기술 파트, 기술 스택, 상태 필터)
+    const hasSearchConditions = 
+      finalParams.keyword || 
+      (finalParams.techParts && finalParams.techParts.length > 0) || 
+      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
+      (finalParams.statuses && finalParams.statuses.length > 0);
+    
+    console.log('🔍 Search conditions check:', {
+      hasSearchConditions,
+      finalParams
+    });
+    
+    let result;
+    if (hasSearchConditions) {
+      // 검색/필터 조건이 있으면 Elasticsearch 사용
+      console.log('📊 Using Elasticsearch API...');
+      result = await searchProjects(finalParams);
+    } else {
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순)
+      let sortParam;
+      if (sort.value === 'latest') {
+        sortParam = 'createdAt,desc'; // 최신순
+      } else if (sort.value === 'popular') {
+        sortParam = 'likeCount,desc'; // 인기순 (좋아요 수 기준)
+      } else {
+        sortParam = 'createdAt,desc'; // 기본값
+      }
+      
+      const rdbParams = {
+        page: page.value - 1,
+        size: 8,
+        sort: sortParam
+      };
+      
+      console.log('🗄️ Using RDB API with params:', rdbParams);
+      result = await listProjects(rdbParams);
+      console.log('✅ RDB API response:', result);
+    }
+    
+    // axios 응답 구조에 맞게 데이터 추출
+    const data = result.data || result;
+    projects.value = data.content || [];
+    totalPages.value = data.totalPages || 1;
+    console.log('📋 Final projects:', projects.value.length, 'projects loaded');
   } catch (err) {
-    console.error('검색 실패:', err);
-    error.value = '검색 중 오류가 발생했습니다.';
+    console.error('❌ 프로젝트 로드 실패:', err);
+    console.error('❌ 에러 상세:', {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
+      message: err.message
+    });
+    error.value = '프로젝트를 불러오는 중 오류가 발생했습니다.';
     projects.value = [];
     totalPages.value = 1;
   } finally {
