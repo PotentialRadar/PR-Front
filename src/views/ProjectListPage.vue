@@ -198,6 +198,7 @@ import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 // import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'; // This component is not used in the template
 
 import { applyProject } from '@/api/projectMember';
+import axios from 'axios';
 import { searchProjects, getPopularKeywords, getProjectCountPreview } from '@/api/search';
 import { listProjects } from '@/api/projects';
 
@@ -351,24 +352,27 @@ const performSearch = async (searchParams) => {
       result = await searchProjects(finalParams);
     } else {
       // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순)
-      let sortParam;
-      if (sort.value === 'latest') {
-        sortParam = 'createdAt,desc'; // 최신순
-      } else if (sort.value === 'popular') {
-        sortParam = 'likeCount,desc'; // 인기순 (좋아요 수 기준)
+      console.log('🗄️ Using RDB API...');
+      console.log('🔍 Current sort.value:', sort.value, typeof sort.value);
+      
+      if (sort.value === 'likeCount,desc') {
+        // 좋아요순 정렬
+        const url = `/api/projects?page=${page.value - 1}&size=8&sort=likeCount,desc`;
+        console.log('🔧 Popular sort URL:', url);
+        result = await axios.get(url);
+        console.log('📊 Popular sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, likeCount: p.likeCount})));
       } else {
-        sortParam = 'createdAt,desc'; // 기본값
+        // 최신순이나 기본값
+        const rdbParams = {
+          page: page.value - 1,
+          size: 8,
+          sort: 'createdAt,desc'
+        };
+        console.log('🔧 RDB params for latest sort:', rdbParams);
+        result = await listProjects(rdbParams);
       }
-      
-      const rdbParams = {
-        page: page.value - 1,
-        size: 8,
-        sort: sortParam
-      };
-      
-      console.log('🗄️ Using RDB API with params:', rdbParams);
-      result = await listProjects(rdbParams);
       console.log('✅ RDB API response:', result);
+      console.log('📊 Projects with likeCount:', result.data?.content?.map(p => ({id: p.projectId, title: p.title.substring(0,20), likeCount: p.likeCount})));
     }
     
     // axios 응답 구조에 맞게 데이터 추출
