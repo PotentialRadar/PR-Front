@@ -8,20 +8,19 @@ export const useUserStore = defineStore('user', {
     userId: null,
     nickname: null,
     profile: null,
-    accessToken: null,
+    // httpOnly 쿠키 방식에서는 프론트엔드에서 토큰을 직접 관리하지 않음
     techStacks: [], // 사용자 기술스택 정보 추가
+    isLoggingOut: false, // 로그아웃 진행 중 플래그
   }),
   actions: {
-    login({ email, userId, accessToken, refreshToken }) {
+    // httpOnly 쿠키 방식에서는 토큰을 매개변수로 받지 않음
+    login({ email, userId }) {
       this.isLoggedIn = true;
       this.email = email;
       this.userId = userId;
-      this.accessToken = accessToken;
       
-      localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
+      // httpOnly 쿠키 방식에서는 localStorage에 토큰을 저장하지 않음
+      // 토큰은 브라우저가 자동으로 쿠키를 통해 관리함
       
       console.log('로그인 성공!', { userId, email });
     },
@@ -33,73 +32,98 @@ export const useUserStore = defineStore('user', {
       this.userId = null;
       this.nickname = null;
       this.profile = null;
-      this.accessToken = null;
       this.techStacks = [];
       
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // httpOnly 쿠키는 브라우저에서 직접 삭제할 수 없음
+      // 서버에서 logout API를 통해 쿠키를 만료시켜야 함
     },
 
-    // 실제 로그아웃 API 호출 및 리다이렉트
+    // 실제 로그아웃 API 호출 (페이지 리다이렉트 없음)
     async logout() {
       console.log('🚪 logout() 호출됨 - 호출 스택:', new Error().stack);
+      
+      // 로그아웃 진행 중 플래그 설정
+      this.isLoggingOut = true;
+      
       try {
-        await logoutApi();
+        console.log('📡 로그아웃 API 호출 시작');
+        const response = await logoutApi();
+        console.log('📡 로그아웃 API 응답:', response);
+        
+        // 로그아웃 성공 후 잠깐 대기 (쿠키 삭제가 완료되도록)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
       } catch (error) {
-        console.error('로그아웃 API 호출 실패:', error);
+        console.error('❌ 로그아웃 API 호출 실패:', error);
+        console.error('❌ 에러 상세:', error.response?.data || error.message);
       } finally {
         this.clearUserData();
-        
-        // 라우터가 없는 경우에만 강제 이동
-        if (typeof window !== 'undefined') {
-          // SPA 환경에서는 라우터 사용을 권장하지만, 
-          // 완전한 상태 초기화를 위해 페이지 새로고침
-          window.location.href = '/';
-        }
+        this.isLoggingOut = false; // 로그아웃 완료
+        console.log('✅ 로그아웃 상태 정리 완료');
       }
     },
     async checkLogin() {
       console.log('🔍 checkLogin() 호출됨 - 호출 스택:', new Error().stack.split('\n')[1]);
-      const token = localStorage.getItem('accessToken');
-      console.log('🔑 localStorage 전체:', localStorage);
-      console.log('🔑 토큰 확인:', token, 'userId:', this.userId, 'profile:', !!this.profile);
-      console.log('🔑 현재 this.accessToken:', this.accessToken);
       
-      if (token) {
-        this.isLoggedIn = true;
-        this.accessToken = token;
+      // 로그아웃 진행 중이면 checkLogin을 실행하지 않음
+      if (this.isLoggingOut) {
+        console.log('🚪 로그아웃 진행 중 - checkLogin 스킵');
+        return;
+      }
+      
+      // httpOnly 쿠키 방식에서는 새로운 /api/auth/status API를 사용하여 인증 상태 확인
+      try {
+        const response = await fetch('/api/auth/status', {
+          method: 'GET',
+          credentials: 'include', // 쿠키 포함
+        });
         
-        // 프로필 정보가 없고, 사용자 정보(userId)도 없으면 가져오기
-        if (!this.profile && !this.userId) {
-          console.log('📋 프로필 정보 없음 - fetchProfile 호출');
-          try {
-            await this.fetchProfile();
-          } catch (error) {
-            console.error('로그인 체크 중 프로필 조회 실패:', error);
-            console.error('프로필 조회 실패 상세:', error.response?.data || error.message);
+        if (response.ok) {
+          const authData = await response.json();
+          console.log('🔍 인증 상태 응답:', authData);
+          
+          // 로그아웃 진행 중이면 서버 응답 무시
+          if (this.isLoggingOut) {
+            console.log('🚪 로그아웃 진행 중 - 서버 응답 무시');
+            return;
+          }
+          
+          if (authData.authenticated) {
+            // 서버에서 인증됨 - 사용자 정보 설정
+            this.isLoggedIn = true;
+            this.userId = authData.userId;
+            this.email = authData.email;
+            this.nickname = authData.nickname;
             
-            // 401 에러(토큰 만료)인 경우만 로그아웃 처리
-            if (error.response?.status === 401) {
-              console.log('❌ 토큰 만료로 인한 로그아웃');
-              this.clearUserData();
-            } else {
-              // 다른 에러는 토큰은 유지하되 로그인 상태만 false로 설정
-              console.log('⚠️ 프로필 조회 실패 - 토큰은 유지하고 로그인 상태만 false로 변경');
-              this.isLoggedIn = false;
+            // 프로필 정보가 없으면 추가로 가져오기
+            if (!this.profile) {
+              try {
+                await this.fetchProfile();
+              } catch (profileError) {
+                console.warn('⚠️ 프로필 정보 로딩 실패 (인증은 성공):', profileError);
+              }
             }
+            
+            console.log('✅ 인증 성공:', { userId: this.userId, email: this.email });
+          } else {
+            // 서버에서 인증 실패 - 로그아웃 상태로 설정
+            console.log('❌ 인증되지 않음');
+            this.clearUserData();
           }
         } else {
-          console.log('✅ 프로필 또는 userId 있음 - fetchProfile 스킵');
+          // API 호출 실패
+          console.error('❌ 인증 상태 확인 API 호출 실패:', response.status);
+          this.clearUserData();
         }
-      } else {
-        this.isLoggedIn = false;
-        this.accessToken = null;
+      } catch (error) {
+        console.error('❌ 인증 상태 확인 중 오류:', error);
+        this.clearUserData();
       }
     },
     
     async fetchProfile() {
       try {
-        console.log('🔍 fetchProfile 호출 - 현재 토큰:', this.accessToken);
+        console.log('🔍 fetchProfile 호출 - httpOnly 쿠키를 통한 인증 시도');
         const response = await getUserProfile();
         console.log('✅ fetchProfile 성공:', response.data);
         

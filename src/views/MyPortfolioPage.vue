@@ -765,12 +765,8 @@ const loadPortfolioData = async () => {
   try {
     console.log('포트폴리오 데이터 로드 시작...')
     
-    // 인증 토큰 확인
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
-      console.error('인증 토큰이 없습니다.')
-      throw new Error('로그인이 필요합니다.')
-    }
+    // httpOnly 쿠키 방식에서는 토큰 확인을 하지 않음
+    // 서버에서 쿠키를 통해 자동으로 인증 처리됨
     
     // 포트폴리오 데이터와 전체 기술 스택 목록을 병렬로 로드
     const [portfolioResponse, allTechStacksResponse] = await Promise.all([

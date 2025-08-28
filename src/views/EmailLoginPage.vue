@@ -77,35 +77,27 @@ const canSubmit = computed(() => email.value && password.value);
 // 이메일 로그인 처리
 const handleEmailLogin = async () => {
   try {
-    const result = await loginByEmail({
+    await loginByEmail({
       email: email.value,
       password: password.value,
     });
 
-    // 토큰 저장
-    localStorage.setItem("accessToken", result.accessToken);
-    localStorage.setItem("refreshToken", result.refreshToken);
+    // 로그아웃 플래그 제거(가드/헤더에 즉시 반영)
+    try { sessionStorage.removeItem('clientLoggedOut') } catch (_) {}
 
-    // 사용자 정보 가져오기
-    const userProfileResponse = await api.get("/user/me");
-    const userProfile = userProfileResponse.data;
-    
-    console.log('📋 사용자 프로필 응답:', userProfile);
+    // 서버 인증 상태로 확정(쿠키 기반)
+    await userStore.checkLogin();
 
-    // Pinia 상태 갱신 (OAuth와 동일한 형식)
-    userStore.login({
-      userId: userProfile.userId || userProfile.id,
-      email: userProfile.email,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    });
-
-    // 프로필 정보 추가 로드
-    await userStore.fetchProfile();
+    // 프로필은 선택적으로 로드(실패해도 로그인 상태 유지)
+    try {
+      await userStore.fetchProfile();
+    } catch (e) {
+      console.warn('프로필 로드 실패(무시 가능):', e?.response?.status || e?.message || e);
+    }
 
     console.log("로그인 성공!", {
-      userId: userProfile.id,
-      email: userProfile.email,
+      userId: userStore.userId,
+      email: userStore.email,
     });
     router.push("/");
   } catch (error) {

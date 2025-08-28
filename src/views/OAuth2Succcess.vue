@@ -28,15 +28,10 @@ onMounted(async () => {
     if (token) {
       message.value = "토큰 저장 중...";
 
-      // 토큰을 localStorage에 저장
-      localStorage.setItem("accessToken", token);
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
+      // httpOnly 쿠키 방식에서는 localStorage에 토큰을 저장하지 않음
+      // 서버가 쿠키를 통해 자동으로 토큰을 관리함
 
-      console.log("토큰 저장 완료, API 호출 시작");
-      console.log("저장된 토큰:", localStorage.getItem("accessToken"));
-      console.log("Authorization 헤더:", `Bearer ${token}`);
+      console.log("httpOnly 쿠키 방식 - 토큰은 서버에서 관리됨");
 
       message.value = "사용자 정보 조회 중...";
 
@@ -87,8 +82,7 @@ onMounted(async () => {
       "로그인 처리 중 오류가 발생했습니다.";
     message.value = "로그인에 실패했습니다.";
 
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    // httpOnly 쿠키 방식에서는 localStorage를 사용하지 않음
     userStore.logout();
 
     setTimeout(() => {

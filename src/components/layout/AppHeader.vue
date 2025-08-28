@@ -17,7 +17,7 @@
       </div>
 
       <div class="header-right">
-        <template v-if="isLoggedIn">
+        <template v-if="authCheckCompleted && isLoggedIn">
           <!-- 알림 버튼 -->
           <div class="icon-button-container">
             <button 
@@ -79,11 +79,18 @@
           </div>
         </template>
         
-        <template v-else>
+        <template v-else-if="authCheckCompleted && !isLoggedIn">
           <div class="user-menu">
             <router-link to="/login" class="auth-link">로그인</router-link>
             <span class="separator">|</span>
             <router-link to="/signUp" class="auth-link">회원가입</router-link>
+          </div>
+        </template>
+        
+        <template v-else>
+          <!-- 인증 확인 중 로딩 상태 -->
+          <div class="user-menu">
+            <span class="auth-link" style="color: #ccc;">로딩 중...</span>
           </div>
         </template>
       </div>
@@ -120,13 +127,27 @@ const {
 
 // 계산된 속성
 const isLoggedIn = computed(() => {
-  console.log('🔍 AppHeader isLoggedIn computed:', userStore.isLoggedIn, 'userId:', userStore.userId)
-  return userStore.isLoggedIn
+  const loggedIn = userStore.isLoggedIn
+  const userId = userStore.userId
+  const email = userStore.email
+  const nickname = userStore.nickname
+  
+  console.log('🔍 AppHeader isLoggedIn computed:', {
+    isLoggedIn: loggedIn,
+    userId: userId,
+    email: email,
+    nickname: nickname,
+    storeState: userStore.$state
+  })
+  
+  // 명시적으로 boolean 값으로 반환
+  return Boolean(loggedIn)
 })
 
 // 반응형 데이터
 const showChat = ref(false)
 const showNotifications = ref(false)
+const authCheckCompleted = ref(false)
 
 
 // 실시간 알림만 사용
@@ -226,12 +247,28 @@ const formatTime = (timestamp) => {
   })
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  console.log('🚪 AppHeader handleLogout 시작')
+  
   // 알림 연결 정리
   cleanupNotifications()
   resetNotifications()
+  // 클라이언트 로그아웃 플래그 (라우터가 즉시 로그인 페이지 접근 허용)
+  try { sessionStorage.setItem('clientLoggedOut', '1') } catch (_) {}
   
-  userStore.logout()
+  // 로그아웃 API 호출 및 상태 정리만 수행 (페이지 리다이렉트 없음)
+  try {
+    console.log('🔄 userStore.logout() 호출 전')
+    await userStore.logout()
+    console.log('✅ userStore.logout() 완료')
+  } catch (error) {
+    console.error('❌ 로그아웃 처리 실패:', error)
+  }
+  
+  // 프론트 상태는 이미 초기화됨. 즉시 UI 갱신만 수행
+  authCheckCompleted.value = true
+  console.log('✅ 로그아웃 후 UI 상태 갱신 완료 (재검사 생략)')
+  
   toast.success('로그아웃되었습니다.', {
     position: 'top-center',
     timeout: 2000,
@@ -249,9 +286,27 @@ const handleClickOutside = (event) => {
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  const handleFocus = async () => {
+    // 탭 포커스/가시성 변경 시 인증 상태 재확인 (쿠키 만료/삭제 반영)
+    if (!userStore.isLoggingOut) {
+      await userStore.checkLogin()
+    }
+  }
+  window.addEventListener('focus', handleFocus)
+  document.addEventListener('visibilitychange', handleFocus)
   
   // 디버깅용 로그
   console.log('AppHeader mounted - userStore 상태:', {
+    isLoggedIn: userStore.isLoggedIn,
+    userId: userStore.userId,
+    email: userStore.email
+  })
+  
+  // AppHeader 마운트 시 인증 상태 확인
+  console.log('🔍 AppHeader에서 인증 상태 확인 시작')
+  await userStore.checkLogin()
+  authCheckCompleted.value = true
+  console.log('🔍 AppHeader 인증 상태 확인 완료:', {
     isLoggedIn: userStore.isLoggedIn,
     userId: userStore.userId,
     email: userStore.email
@@ -276,6 +331,13 @@ onMounted(async () => {
     },
     { immediate: true }
   )
+  
+  // 언마운트 시 제거를 위해 참조 보관
+  // eslint-disable-next-line vue/no-setup-props-destructure
+  onUnmounted(() => {
+    window.removeEventListener('focus', handleFocus)
+    document.removeEventListener('visibilitychange', handleFocus)
+  })
 })
 
 onUnmounted(() => {

@@ -16,31 +16,23 @@ const userStore = useUserStore();
 
 onMounted(async () => {
   try {
-    // URL 파라미터에서 토큰 정보 추출
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('accessToken');
-    const refreshToken = urlParams.get('refreshToken');
-    const email = urlParams.get('email');
-    const userId = urlParams.get('userId');
-
-    if (accessToken && email && userId) {
-      // userStore에 로그인 정보 저장
-      userStore.login({
-        email,
-        userId: parseInt(userId),
-        accessToken,
-        refreshToken
-      });
-
-      // 프로필 정보 가져오기
-      await userStore.fetchProfile();
-      
-      console.log('✅ OAuth 로그인 성공:', { userId, email });
-    } else {
-      console.warn('⚠️ OAuth 응답에서 필요한 정보를 찾을 수 없습니다');
-    }
+    // httpOnly 쿠키 방식에서는 URL 파라미터로 토큰을 받지 않음
+    // 서버가 OAuth 성공 시 쿠키에 토큰을 자동 설정함
+    
+    // 서버에서 사용자 정보 가져오기 (쿠키의 토큰으로 인증됨)
+    await userStore.fetchProfile();
+    
+    // userStore에 로그인 정보 저장 (fetchProfile에서 이미 설정됨)
+    userStore.isLoggedIn = true;
+    
+    console.log('✅ OAuth 로그인 성공 - httpOnly 쿠키를 통한 인증');
   } catch (error) {
     console.error('❌ OAuth 로그인 처리 실패:', error);
+    // 인증 실패 시 로그인 페이지로 리다이렉트
+    setTimeout(() => {
+      router.push('/login');
+    }, 2000);
+    return;
   }
 
   setTimeout(() => {
