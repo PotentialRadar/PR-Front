@@ -9,7 +9,7 @@ import AppFooter from '@/components/layout/AppFooter.vue';
 const userStore = useUserStore();
 
 onMounted(async () => {
-  // 앱 시작 시 로그인 상태 확인
+  // checkLogin 활성화 - 새로고침 시 토큰으로 로그인 상태 복원
   await userStore.checkLogin();
   
   console.log('App mounted - userStore 상태:', {
