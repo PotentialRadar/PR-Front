@@ -76,13 +76,18 @@ const props = defineProps({
 const formatReviewDate = (dateString) => {
   if (!dateString) return ''
   
-  const date = new Date(dateString)
+  const reviewDate = new Date(dateString)
   const now = new Date()
-  const diffTime = Math.abs(now - date)
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
-  if (diffDays === 1) {
-    return '어제'
+
+  // 시간을 0으로 설정하여 날짜만 비교
+  const reviewDateMidnight = new Date(reviewDate.getFullYear(), reviewDate.getMonth(), reviewDate.getDate());
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const diffTime = todayMidnight - reviewDateMidnight;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return '오늘'
   } else if (diffDays < 7) {
     return `${diffDays}일 전`
   } else if (diffDays < 30) {
