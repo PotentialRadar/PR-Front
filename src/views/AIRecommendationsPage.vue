@@ -11,7 +11,7 @@
       <div class="tech-stack-status" v-if="userTechStacks.length > 0">
         <div class="status-header">
           <h3>현재 설정된 기술스택</h3>
-          <button @click="showTechStackModal = true" class="edit-button">
+          <button @click="router.push('/myPage/portfolio')" class="edit-button">
             편집
           </button>
         </div>
@@ -244,6 +244,7 @@
         <div v-if="activeTab === 'members'" class="members-tab">
           <TeamMemberRecommendation 
             v-if="selectedProject"
+            :key="selectedProject.projectId"
             :projectId="selectedProject.projectId"
             :requiredSkills="getProjectTechStacks(selectedProject)"
           />
@@ -393,6 +394,9 @@ const loadRecommendations = async () => {
     const response = await api.post(`/recommend/projects?topN=10&minScore=${minScore}&minOverlap=${minOverlap}&strict=false`, requestData)
     const data = response.data
     console.log('📦 AI 추천 응답:', data)
+    
+    // AI 추천 처리 시간을 더 길게 보이도록 2초 딜레이 추가
+    await new Promise(resolve => setTimeout(resolve, 2000))
     
     recommendations.value = data || []
     

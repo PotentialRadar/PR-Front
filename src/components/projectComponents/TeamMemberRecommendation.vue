@@ -137,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
@@ -341,6 +341,19 @@ const handleImageError = (event, userId) => {
 onMounted(() => {
   fetchRecommendations()
 })
+
+// Props 변경 감지하여 새로운 추천 로드
+watch([() => props.projectId, () => props.requiredSkills], ([newProjectId, newSkills], [oldProjectId, oldSkills]) => {
+  console.log('🔄 TeamMemberRecommendation props 변경 감지:', {
+    projectId: { old: oldProjectId, new: newProjectId },
+    skillsChanged: JSON.stringify(oldSkills) !== JSON.stringify(newSkills)
+  })
+  
+  if (newProjectId && (newProjectId !== oldProjectId || JSON.stringify(newSkills) !== JSON.stringify(oldSkills))) {
+    console.log('🚀 프로젝트/기술스택 변경으로 인한 팀원 추천 새로고침')
+    fetchRecommendations()
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
