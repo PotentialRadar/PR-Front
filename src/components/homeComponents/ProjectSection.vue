@@ -34,6 +34,7 @@
             />
           </template>
           
+          
           <template v-else>
             <div class="no-projects" key="no-projects">
               <div v-if="activeTab === 'ai' && isLoadingAI" class="ai-loading-message">
@@ -71,7 +72,7 @@
                     </div>
                   </div>
                 </div>
-                <button class="setup-button" @click="router.push('/myPage/edit-profile')">
+                <button class="setup-button" @click="router.push('/myPage/portfolio')">
                   기술스택 설정하기
                 </button>
               </div>
@@ -105,11 +106,13 @@ const isUserLoggedIn = computed(() => {
 })
 
 const hasUserTechStack = computed(() => {
-  // TODO: 실제 사용자 기술스택 정보 확인 필요
-  // return userStore.user?.techStacks?.length > 0
-  
-  // 기술스택 미설정 테스트를 위해 false로 설정
-  return false // 기술스택 설정 유도 메시지 테스트용
+  const hasTechStacks = userStore.techStacks && userStore.techStacks.length > 0
+  console.log('🔍 hasUserTechStack computed:', {
+    techStacks: userStore.techStacks,
+    length: userStore.techStacks?.length || 0,
+    hasTechStacks
+  })
+  return hasTechStacks
 })
 
 // 프로젝트 데이터 로드
@@ -139,17 +142,8 @@ const formatDeadline = (deadline) => {
 const fetchProjects = async () => {
   try {
     const response = await api.get('/projects');
-    const responseData = response.data;
-
-    // API 응답이 페이징 객체일 수 있으므로 content를 확인
-    const apiProjects = Array.isArray(responseData) ? responseData : responseData?.content;
-
-    // 최종적으로 배열인지 한 번 더 확인
-    if (!Array.isArray(apiProjects)) {
-      console.error('Error: Project data is not an array.', apiProjects);
-      projects.value = [];
-      return;
-    }
+    // 페이지네이션 구조 처리: response.data.content가 실제 프로젝트 배열
+    const apiProjects = response.data?.content || response.data || [];
     
     // API 데이터를 ProjectCard에 맞게 변환
     projects.value = apiProjects.map(project => ({
@@ -158,7 +152,8 @@ const fetchProjects = async () => {
       category: mapCategoryFromTechStacks(project.techStacks),
     }));
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error('프로젝트 목록 로드 실패:', error.response?.status || error.message);
+    // API 실패 시 빈 배열 유지
     projects.value = [];
   }
 };
@@ -178,7 +173,9 @@ const mapCategoryFromTechStacks = (techStacks) => {
 }
 
 const filteredProjects = computed(() => {
-  if (activeTab.value === 'all') return projects.value
+  if (activeTab.value === 'all') {
+    return projects.value
+  }
   if (activeTab.value === 'ai') {
     // 로그인 안된 사용자 - 빈 배열 반환 (로그인 메시지가 표시됨)
     if (!isUserLoggedIn.value) {
@@ -208,8 +205,8 @@ const getPopularProjects = () => {
 // 백엔드 API에서 인기 프로젝트 조회
 const fetchPopularProjects = async (limit = 5) => {
   try {
-    const response = await fetch(`http://localhost:8000/api/projects/popular?limit=${limit}`)
-    const data = await response.json()
+    const response = await api.get(`/projects/popular?limit=${limit}`)
+    const data = response.data
     
     return data.map(project => ({
       id: project.project_id || project.projectId,
@@ -232,17 +229,40 @@ const fetchPopularProjects = async (limit = 5) => {
 }
 
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
-onMounted(() => {
-  // 테스트: 로그아웃 상태로 만들기 (비활성화)
-  // localStorage.removeItem('accessToken')
-  // 로그인 상태 체크
-  // userStore.checkLogin()
-  fetchProjects()
+onMounted(async () => {
+  try {
+    // 로그인 상태 체크
+    await userStore.checkLogin()
+    fetchProjects()
+    
+    // 로그인한 사용자라면 기술스택 로드
+    if (userStore.isLoggedIn) {
+      console.log('🔧 메인 페이지: 로그인 상태 확인됨, 기술스택 로딩 시작')
+      try {
+        const techStacks = await userStore.fetchTechStacks()
+        console.log('✅ 메인 페이지: 기술스택 로딩 완료', {
+          techStackCount: techStacks.length,
+          hasUserTechStack: hasUserTechStack.value
+        })
+        
+        // AI 추천 탭이 활성화되어 있고 기술스택이 있으면 즉시 추천 로드
+        if (activeTab.value === 'ai' && techStacks.length > 0) {
+          console.log('🤖 메인 페이지: AI 탭 활성 상태에서 기술스택 확인됨, 추천 로딩 시작')
+          const recommendations = await fetchAIRecommendations()
+          aiRecommendedProjects.value = recommendations
+          hasLoadedAIOnce.value = true
+        }
+      } catch (error) {
+        console.error('❌ 메인 페이지 기술스택 로드 실패:', error)
+      }
+    }
+  } catch (error) {
+    console.error('❌ 메인 페이지 초기화 실패:', error)
+  }
 })
 
 // AI 추천 API 호출
 const fetchAIRecommendations = async () => {
-  console.log('🚀 AI 추천 API 호출 시작')
   isLoadingAI.value = true
   
   // 최소 로딩 시간 보장 (UX 개선)
@@ -288,7 +308,6 @@ const fetchAIRecommendations = async () => {
     const randomIndex = Math.floor(Math.random() * testTechStacks.length)
     const selectedTechStacks = testTechStacks[randomIndex]
     
-    console.log(`\n🎯 테스트 케이스 ${randomIndex + 1}: ${selectedTechStacks.map(t => t.name).join(', ')}`)
     
     const requestBody = {
       userId: userStore.userId || 1,
@@ -298,15 +317,9 @@ const fetchAIRecommendations = async () => {
       maxResults: 5
     }
     
-    const response = await fetch(`http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}/api/recommend/projects?topN=5&minScore=0.3&minOverlap=0.1&strict=false`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    })
+    const response = await api.post('/recommend/projects?topN=4&minScore=0.3&minOverlap=0.1&strict=false', requestBody)
     
-    const responseData = await response.json()
+    const responseData = response.data
     const projects = Array.isArray(responseData) ? responseData : []
     
     if (projects.length === 0) {
@@ -315,9 +328,11 @@ const fetchAIRecommendations = async () => {
     }
     
     // 📊 추천 결과 요약 출력
-    console.log('📊 추천 결과:')
+    console.log('📊 메인 페이지 AI 추천 결과:')
+    console.log('📊 매칭률 순위:')
     projects.forEach((project, index) => {
-      console.log(`  ${index + 1}. ${project.title} (점수: ${project.matchScore?.toFixed(2) || 'N/A'})`)
+      const matchPercentage = Math.round((project.matchScore || 0) * 100)
+      console.log(`  ${index + 1}. ${project.title} - ${matchPercentage}% 매칭 (점수: ${project.matchScore?.toFixed(2) || 'N/A'})`)
       
       // 🔍 추천 설명 데이터 확인
       if (project.explanation) {
@@ -328,22 +343,12 @@ const fetchAIRecommendations = async () => {
         if (project.explanation.growth_opportunities?.length > 0) {
           console.log(`    🌱 성장 기회: ${project.explanation.growth_opportunities.join(', ')}`)
         }
-      } else {
-        console.log(`    ❌ explanation 데이터 없음`)
       }
     })
     
     // 응답 데이터를 프론트엔드 프로젝트 형식으로 변환
     return projects.map(project => {
-      console.log('🔍 변환 중인 프로젝트:', project.title)
-      console.log('  - recruitCount (camelCase):', project.recruitCount)
-      console.log('  - appliedCount (camelCase):', project.appliedCount) 
-      console.log('  - recruitDeadline (camelCase):', project.recruitDeadline)
-      console.log('  - startDate (camelCase):', project.startDate)
-      console.log('  - endDate (camelCase):', project.endDate)
-      console.log('  - projectTechStacks:', project.projectTechStacks)
-      
-      const recruitDeadline = project.RecruitDeadline || project.recruit_deadline
+      const recruitDeadline = project.recruitDeadline || project.RecruitDeadline || project.recruit_deadline
       
       return {
         id: project.projectId || project.project_id,
@@ -386,13 +391,92 @@ const goToDetail = (project) => {
 }
 
 // AI 탭 선택 시마다 새로운 추천 데이터 불러오기
-watch(activeTab, async (newTab) => {
-  if (newTab === 'ai' && isUserLoggedIn.value && hasUserTechStack.value) {
-    const recommendations = await fetchAIRecommendations()
-    aiRecommendedProjects.value = recommendations
-    hasLoadedAIOnce.value = true
+watch(activeTab, async (newTab, oldTab) => {
+  console.log('🔄 탭 변경:', { oldTab, newTab })
+  
+  if (newTab === 'ai') {
+    console.log('🤖 AI 탭 선택됨 - 상태 확인:', {
+      isUserLoggedIn: isUserLoggedIn.value,
+      hasUserTechStack: hasUserTechStack.value,
+      techStacksLength: userStore.techStacks?.length || 0
+    })
+    
+    if (isUserLoggedIn.value) {
+      // 로그인한 사용자라면 기술스택을 다시 로드해보자
+      if (userStore.techStacks.length === 0) {
+        console.log('🔧 AI 탭: 기술스택이 비어있음, 다시 로드 시도')
+        try {
+          const techStacks = await userStore.fetchTechStacks()
+          console.log('🔧 AI 탭: 기술스택 재로드 결과:', techStacks)
+        } catch (error) {
+          console.error('❌ AI 탭: 기술스택 재로드 실패:', error)
+        }
+      }
+      
+      if (hasUserTechStack.value) {
+        console.log('✅ AI 추천 조건 충족 - 추천 로딩 시작')
+        const recommendations = await fetchAIRecommendations()
+        aiRecommendedProjects.value = recommendations
+        hasLoadedAIOnce.value = true
+      } else {
+        console.log('❌ AI 추천 조건 미충족 - 기술스택 없음')
+      }
+    } else {
+      console.log('❌ AI 추천 조건 미충족 - 로그인 필요')
+    }
   }
 })
+
+// 기술스택 변화 감지 watch 추가
+watch(
+  () => userStore.techStacks,
+  async (newTechStacks, oldTechStacks) => {
+    console.log('🔧 기술스택 변화 감지:', {
+      old: oldTechStacks?.length || 0,
+      new: newTechStacks?.length || 0,
+      activeTab: activeTab.value
+    })
+    
+    // AI 탭이 활성화되어 있고 새로 기술스택이 로드되었다면 추천 실행
+    if (activeTab.value === 'ai' && newTechStacks?.length > 0 && (!oldTechStacks || oldTechStacks.length === 0)) {
+      console.log('🤖 기술스택 로드됨, AI 추천 시작')
+      const recommendations = await fetchAIRecommendations()
+      aiRecommendedProjects.value = recommendations
+      hasLoadedAIOnce.value = true
+    }
+  },
+  { deep: true }
+)
+
+// 로그인 상태 변화 감지 watch 추가
+watch(
+  () => userStore.isLoggedIn,
+  async (newLoggedIn, oldLoggedIn) => {
+    console.log('🔐 로그인 상태 변화:', {
+      old: oldLoggedIn,
+      new: newLoggedIn,
+      activeTab: activeTab.value
+    })
+    
+    // 새로 로그인했고 AI 탭이 활성화되어 있다면
+    if (newLoggedIn && !oldLoggedIn && activeTab.value === 'ai') {
+      console.log('🔐 새로 로그인됨, 기술스택 로딩 시작')
+      try {
+        const techStacks = await userStore.fetchTechStacks()
+        console.log('🔐 로그인 후 기술스택 로딩 완료:', techStacks)
+        
+        if (techStacks.length > 0) {
+          console.log('🤖 로그인 후 AI 추천 시작')
+          const recommendations = await fetchAIRecommendations()
+          aiRecommendedProjects.value = recommendations
+          hasLoadedAIOnce.value = true
+        }
+      } catch (error) {
+        console.error('❌ 로그인 후 기술스택 로딩 실패:', error)
+      }
+    }
+  }
+)
 </script>
 
 <style scoped>
@@ -1014,6 +1098,7 @@ watch(activeTab, async (newTab) => {
   border-color: rgba(129, 199, 132, 0.5);
   box-shadow: 0 8px 25px rgba(129, 199, 132, 0.2);
 }
+
 
 
 </style>

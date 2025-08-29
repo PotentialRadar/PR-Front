@@ -3,6 +3,8 @@ import { EventSourcePolyfill } from 'event-source-polyfill'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
+console.log('🔥🔥🔥 useNotifications.js 파일이 로드되었습니다! 🔥🔥🔥')
+
 // SSE EventSource 인스턴스를 앱 전체에서 하나만 유지하도록 외부에 선언
 let eventSource = null
 
@@ -325,8 +327,16 @@ export function useNotifications() {
      * @param {object} notification - 클릭된 알림 객체
      */
     async function handleNotificationClick(notification) {
-        console.log('[handleNotificationClick] 알림 클릭:', notification)
-        if (!notification || !notification.notificationType) {
+        console.log('🚨🚨🚨 [handleNotificationClick] 함수 시작!!! 🚨🚨🚨')
+        console.log('🚨 [handleNotificationClick] 알림 클릭:', notification)
+        console.log('🚨 [handleNotificationClick] 알림 전체 속성:', Object.keys(notification))
+        console.log('🚨 [handleNotificationClick] notification.url:', notification.url)
+        console.log('🚨 [handleNotificationClick] notification.notificationType:', notification.notificationType)
+        console.log('🚨 [handleNotificationClick] notification.type:', notification.type)
+        console.log('🚨 [handleNotificationClick] notification.invitationId:', notification.invitationId)
+        
+        // notificationType과 type 둘 다 확인
+        if (!notification || (!notification.notificationType && !notification.type)) {
             console.error("잘못된 알림 데이터입니다.", notification)
             return
         }
@@ -338,10 +348,40 @@ export function useNotifications() {
             forceUpdate()
         }
         
-        const type = notification.notificationType.toUpperCase()
+        const type = (notification.notificationType || notification.type || '').toUpperCase()
+        console.log('[handleNotificationClick] 처리할 타입:', type)
 
-        if (type === 'INVITATION') {
-            // 초대 알림은 별도 처리 (수락/거절 버튼)
+        if (type === 'INVITATION' || type === 'INVITE') {
+            console.log('🎯 초대 알림 처리 시작')
+            // 초대 알림 클릭 시 - invitationId로 프로젝트 정보를 가져와서 이동
+            if (notification.invitationId) {
+                console.log('🎯 invitationId 발견:', notification.invitationId)
+                try {
+                    // invitationId로 초대 정보를 가져와서 프로젝트 ID 확인
+                    const token = localStorage.getItem('accessToken')
+                    const response = await axios.get('/api/invitations/received', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'User-Id': localStorage.getItem('userId') || '2'  // 임시로 user 2번 사용
+                        }
+                    })
+                    
+                    const invitation = response.data.find(inv => inv.invitationId === notification.invitationId)
+                    if (invitation && invitation.projectId) {
+                        console.log('🎯 초대에서 프로젝트 ID 찾음:', invitation.projectId)
+                        router.push(`/projects/${invitation.projectId}`)
+                    } else {
+                        console.log('🎯 초대 정보를 찾을 수 없음, 프로젝트 목록으로 이동')
+                        router.push('/projects')
+                    }
+                } catch (error) {
+                    console.error('🎯 초대 정보 조회 실패:', error)
+                    router.push('/projects')
+                }
+            } else {
+                console.log('🎯 invitationId 없음, 프로젝트 목록으로 이동')
+                router.push('/projects')
+            }
             return
         }
 
@@ -380,9 +420,12 @@ export function useNotifications() {
     }
 
     function extractProjectIdFromUrl(url) {
+        console.log('[extractProjectIdFromUrl] URL 파싱:', url)
         if (!url) return null
         const match = url.match(/\/projects\/(\d+)/)
-        return match ? match[1] : null
+        const projectId = match ? match[1] : null
+        console.log('[extractProjectIdFromUrl] 추출된 projectId:', projectId)
+        return projectId
     }
 
     // 컴퓨티드 속성

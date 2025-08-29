@@ -25,9 +25,10 @@
               placeholder="이메일 주소 또는 닉네임을 입력하세요"
               @keyup.enter="searchUser"
             />
-            <button class="search-button" @click="searchUser" :disabled="!searchQuery.trim()">
-              <i class="bi bi-search"></i>
-              검색
+            <button class="search-button" @click="searchUser" :disabled="!searchQuery.trim() || isLoading">
+              <i class="bi bi-search" v-if="!isLoading"></i>
+              <i class="bi bi-arrow-clockwise spin" v-if="isLoading"></i>
+              {{ isLoading ? '검색 중...' : '검색' }}
             </button>
           </div>
 
@@ -51,10 +52,11 @@
                 <button
                   class="invite-button"
                   @click="inviteUser(user)"
-                  :disabled="isAlreadyInvited(user.id)"
+                  :disabled="isAlreadyInvited(user.id) || isLoading"
                 >
-                  <i class="bi bi-person-plus"></i>
-                  {{ isAlreadyInvited(user.id) ? '초대됨' : '초대' }}
+                  <i class="bi bi-person-plus" v-if="!isLoading"></i>
+                  <i class="bi bi-arrow-clockwise spin" v-if="isLoading"></i>
+                  {{ isAlreadyInvited(user.id) ? '초대됨' : (isLoading ? '초대 중...' : '초대') }}
                 </button>
               </div>
             </div>
@@ -77,9 +79,10 @@
               class="email-input"
               placeholder="초대할 이메일 주소를 입력하세요"
             />
-            <button class="invite-email-button" @click="inviteByEmail" :disabled="!isValidEmail(inviteEmail)">
-              <i class="bi bi-envelope"></i>
-              초대 발송
+            <button class="invite-email-button" @click="inviteByEmail" :disabled="!isValidEmail(inviteEmail) || isLoading">
+              <i class="bi bi-envelope" v-if="!isLoading"></i>
+              <i class="bi bi-arrow-clockwise spin" v-if="isLoading"></i>
+              {{ isLoading ? '전송 중...' : '초대 발송' }}
             </button>
           </div>
         </div>
@@ -128,6 +131,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import { useUserStore } from '@/stores/userStore'
+import api from '@/api/axios'
 
 const props = defineProps({
   projectId: {
@@ -143,6 +148,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'invites-sent'])
 
 const toast = useToast()
+const userStore = useUserStore()
 
 // 반응형 데이터
 const searchQuery = ref('')
@@ -150,31 +156,9 @@ const searchResults = ref([])
 const hasSearched = ref(false)
 const inviteEmail = ref('')
 const inviteList = ref([])
+const isLoading = ref(false)
 
-// Mock 사용자 데이터 (실제로는 API에서 가져올 것)
-const mockUsers = [
-  {
-    id: 1,
-    name: '김개발',
-    email: 'kimdev@example.com',
-    avatar: null,
-    techStacks: ['React', 'TypeScript', 'Node.js']
-  },
-  {
-    id: 2,
-    name: '이디자인',
-    email: 'design@example.com',
-    avatar: null,
-    techStacks: ['Figma', 'Photoshop', 'UI/UX']
-  },
-  {
-    id: 3,
-    name: '박백엔드',
-    email: 'backend@example.com',
-    avatar: null,
-    techStacks: ['Java', 'Spring Boot', 'MySQL']
-  }
-]
+// API 호출 함수들
 
 // 계산된 속성
 const isValidEmail = (email) => {
@@ -183,71 +167,166 @@ const isValidEmail = (email) => {
 }
 
 // 메서드
-const searchUser = () => {
+const searchUser = async () => {
   if (!searchQuery.value.trim()) return
-  
+
+  isLoading.value = true
   hasSearched.value = true
   
-  // Mock 검색 로직 (실제로는 API 호출)
-  searchResults.value = mockUsers.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-  
-  console.log(`🔍 "${searchQuery.value}" 검색 결과:`, searchResults.value.length, '명')
+  try {
+    // 사용자 검색 API 호출 (기존 사용자 검색 API 활용)
+    const response = await api.get(`/users/search?query=${encodeURIComponent(searchQuery.value)}`, {
+      headers: {
+        'User-Id': userStore.userId.toString()
+      }
+    })
+    
+    const users = response.data
+    searchResults.value = users.map(user => ({
+      id: user.userId,
+      name: user.nickname,
+      email: user.email,
+      avatar: user.profileImage,
+      techStacks: user.techStacks || []
+    }))
+    
+    console.log(`🔍 "${searchQuery.value}" 검색 결과:`, searchResults.value.length, '명')
+    
+  } catch (error) {
+    console.error('사용자 검색 오류:', error)
+    toast.error('사용자 검색에 실패했습니다.')
+    searchResults.value = []
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const inviteUser = (user) => {
+const inviteUser = async (user) => {
   if (isAlreadyInvited(user.id)) return
   
-  const invite = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    avatar: user.avatar,
-    techStacks: user.techStacks,
-    status: 'pending',
-    invitedAt: new Date().toISOString()
+  isLoading.value = true
+  
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
+    const response = await api.post('/invitations/send', {
+      projectId: props.projectId,
+      inviteeId: user.id,
+      message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
+    }, {
+      headers: {
+        'User-Id': userStore.userId.toString()
+      }
+    })
+    
+    const result = response.data
+    
+    if (result.success) {
+      // 초대 목록에 추가
+      const invite = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        status: 'pending',
+        invitedAt: new Date().toISOString()
+      }
+      
+      inviteList.value.push(invite)
+      
+      toast.success(`${user.name}님에게 초대를 보냈습니다!`, {
+        position: 'top-center',
+        timeout: 2000
+      })
+      emit('invites-sent')
+    } else {
+      toast.error(result.message || '초대 전송에 실패했습니다.')
+    }
+    
+  } catch (error) {
+    console.error('초대 전송 오류:', error)
+    toast.error('초대 전송에 실패했습니다.')
+  } finally {
+    isLoading.value = false
   }
-  
-  inviteList.value.push(invite)
-  
-  toast.success(`${user.name}님을 초대 목록에 추가했습니다!`, {
-    position: 'top-center',
-    timeout: 2000
-  })
 }
 
-const inviteByEmail = () => {
+const inviteByEmail = async () => {
   if (!isValidEmail(inviteEmail.value)) return
   
   // 이미 초대된 이메일인지 확인
-  const alreadyInvited = inviteList.value.some(invite => invite.email === inviteEmail.value)
-  if (alreadyInvited) {
-    toast.warning('이미 초대한 이메일입니다.', {
-      position: 'top-center',
-      timeout: 2000
-    })
+  if (inviteList.value.some(invite => invite.email === inviteEmail.value)) {
+    toast.warning('이미 초대된 이메일입니다.')
     return
   }
   
-  const invite = {
-    id: `email_${Date.now()}`,
-    name: null,
-    email: inviteEmail.value,
-    avatar: null,
-    techStacks: [],
-    status: 'pending',
-    invitedAt: new Date().toISOString()
+  isLoading.value = true
+  
+  try {
+    // 이메일로 사용자 검색 후 초대
+    const searchResponse = await api.get(`/users/search?query=${encodeURIComponent(inviteEmail.value)}`, {
+      headers: {
+        'User-Id': userStore.userId.toString()
+      }
+    })
+    
+    const users = searchResponse.data
+    const user = users.find(u => u.email === inviteEmail.value)
+    
+    if (!user) {
+      toast.error('해당 이메일의 사용자를 찾을 수 없습니다.')
+      return
+    }
+    
+    // 사용자를 찾았으면 초대 보내기
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
+    const inviteResponse = await api.post('/invitations/send', {
+      projectId: props.projectId,
+      inviteeId: user.userId,
+      message: `${props.projectTitle} 프로젝트에 함께 참여해주세요!`
+    }, {
+      headers: {
+        'User-Id': userStore.userId.toString()
+      }
+    })
+    
+    const result = inviteResponse.data
+    
+    if (result.success) {
+      const invite = {
+        id: user.userId,
+        name: user.nickname,
+        email: user.email,
+        avatar: user.profileImage,
+        status: 'pending',
+        invitedAt: new Date().toISOString()
+      }
+      
+      inviteList.value.push(invite)
+      inviteEmail.value = ''
+      
+      toast.success(`${user.nickname}님에게 초대를 보냈습니다!`, {
+        position: 'top-center',
+        timeout: 2000
+      })
+      emit('invites-sent')
+    } else {
+      toast.error(result.message || '초대 전송에 실패했습니다.')
+    }
+    
+  } catch (error) {
+    console.error('이메일 초대 오류:', error)
+    toast.error('이메일 초대에 실패했습니다.')
+  } finally {
+    isLoading.value = false
   }
-  
-  inviteList.value.push(invite)
-  inviteEmail.value = ''
-  
-  toast.success(`${invite.email}로 초대장을 발송할 예정입니다!`, {
-    position: 'top-center',
-    timeout: 2000
-  })
 }
 
 const isAlreadyInvited = (userId) => {
@@ -669,5 +748,15 @@ const getStatusText = (status) => {
   .invite-info {
     justify-content: flex-start;
   }
+}
+
+/* 로딩 스피너 */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
