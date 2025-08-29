@@ -3,8 +3,8 @@
     <div class="card-header">
       <div class="header-left">
         <div class="status-title-container">
-          <div class="status-badge" v-if="project.status">
-            <span>{{ project.status }}</span>
+          <div class="status-badge" v-if="project.status" :class="statusClass">
+            <span>{{ displayStatus }}</span>
           </div>
           <div class="title-container">
             <h3 class="project-title">{{ project.title }}</h3>
@@ -89,7 +89,7 @@
 
     <div class="bottom-section">
       <button class="detail-button" @click="goToDetail">상세보기</button>
-      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status !== '마감'">지원하기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status === 'RECRUITING'">지원하기</button>
     </div>
   </div>
 </template>
@@ -199,6 +199,22 @@ const displayDuration = computed(() => {
   if (diff < 30) return `${Math.round(diff / 7)}주`;
   return `${Math.round(diff / 30)}개월`;
 });
+
+const displayStatus = computed(() => {
+  console.log('Checking project.status:', props.project.status);
+  const statusMap = {
+    'RECRUITING': '모집중',
+    'IN_PROGRESS': '진행중',
+    'COMPLETED': '완료'
+  };
+  return statusMap[props.project.status] || props.project.status;
+});
+
+const statusClass = computed(() => ({
+  'status-recruiting': props.project.status === 'RECRUITING',
+  'status-in-progress': props.project.status === 'IN_PROGRESS',
+  'status-completed': props.project.status === 'COMPLETED',
+}));
 
 </script>
 
@@ -593,5 +609,30 @@ const displayDuration = computed(() => {
     font-size: 11px;
     padding: 4px 8px;
   }
+}
+
+/* Status-specific styles */
+.status-badge.status-recruiting {
+  background-color: #E8F5E9;
+  border-color: #4CAF50;
+}
+.status-badge.status-recruiting span {
+  color: #2E7D32;
+}
+
+.status-badge.status-in-progress {
+  background-color: #E3F2FD;
+  border-color: #2196F3;
+}
+.status-badge.status-in-progress span {
+  color: #1976D2;
+}
+
+.status-badge.status-completed {
+  background-color: #F5F5F5;
+  border-color: #BDBDBD;
+}
+.status-badge.status-completed span {
+  color: #616161;
 }
 </style>

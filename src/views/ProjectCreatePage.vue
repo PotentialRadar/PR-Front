@@ -52,34 +52,32 @@
           </div>
         </div>
 
-        <!-- 시작일 -->
-        <div class="form-section deadline-section">
-          <div class="section-title">시작일</div>
-          <div class="input-group">
-            <input
-                type="date"
-                v-model="formData.startDate"
-                :class="['deadline-input', { 'error': getError('startDate').value }]"
-                @blur="validateField('startDate', formData.startDate, validationSchema.startDate)"
-            />
-            <div v-if="getError('startDate').value" class="error-message">
-              {{ getError('startDate').value }}
+        <!-- 프로젝트 기간 -->
+        <div class="form-section">
+          <div class="section-title">프로젝트 기간</div>
+          <div class="date-range-group">
+            <div class="input-group">
+              <input
+                  type="date"
+                  v-model="formData.startDate"
+                  :class="['deadline-input', { 'error': getError('startDate').value }]"
+                  @blur="validateField('startDate', formData.startDate, validationSchema.startDate)"
+              />
+              <div v-if="getError('startDate').value" class="error-message">
+                {{ getError('startDate').value }}
+              </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 종료일 -->
-        <div class="form-section deadline-section">
-          <div class="section-title">종료일</div>
-          <div class="input-group">
-            <input
-                type="date"
-                v-model="formData.endDate"
-                :class="['deadline-input', { 'error': getError('endDate').value }]"
-                @blur="validateField('endDate', formData.endDate, validationSchema.endDate)"
-            />
-            <div v-if="getError('endDate').value" class="error-message">
-              {{ getError('endDate').value }}
+            <span class="date-separator">~</span>
+            <div class="input-group">
+              <input
+                  type="date"
+                  v-model="formData.endDate"
+                  :class="['deadline-input', { 'error': getError('endDate').value }]"
+                  @blur="validateField('endDate', formData.endDate, validationSchema.endDate)"
+              />
+              <div v-if="getError('endDate').value" class="error-message">
+                {{ getError('endDate').value }}
+              </div>
             </div>
           </div>
         </div>
@@ -147,16 +145,22 @@
         <!-- 마감일 -->
         <div class="form-section deadline-section">
           <div class="section-title">모집 마감일</div>
-          <div class="input-group">
+          <div class="input-group with-presets">
+            <div class="deadline-presets">
+              <button type="button" @click="setRecruitDeadline('day', 7)" class="preset-button">1주일 후</button>
+              <button type="button" @click="setRecruitDeadline('day', 14)" class="preset-button">2주일 후</button>
+              <button type="button" @click="setRecruitDeadline('day', 21)" class="preset-button">3주일 후</button>
+              <button type="button" @click="setRecruitDeadline('month', 1)" class="preset-button">1개월 후</button>
+            </div>
             <input
                 type="date"
                 v-model="formData.recruitDeadline"
                 :min="new Date().toISOString().slice(0, 10)"
                 :class="['deadline-input', { 'error': getError('recruitDeadline').value }]"
             />
-            <div v-if="getError('recruitDeadline').value" class="error-message">
-              {{ getError('recruitDeadline').value }}
-            </div>
+          </div>
+          <div v-if="getError('recruitDeadline').value" class="error-message">
+            {{ getError('recruitDeadline').value }}
           </div>
         </div>
 
@@ -245,7 +249,7 @@ export default {
       recruitDeadline: '',
     });
 
-    const partRows = ref([{ part: 'FRONTEND', count: 1 }]);
+    const partRows = ref([{ part: '', count: 1 }]);
     const addPartRow = () => partRows.value.push({ part: '', count: 1 });
     const removePartRow = (idx) => partRows.value.splice(idx, 1);
     const totalRecruitCount = computed(() =>
@@ -260,7 +264,7 @@ export default {
       formData.techStack = [];
       formData.files = [];
       formData.recruitDeadline = '';
-      partRows.value = [{ part: 'FRONTEND', count: 1 }];
+      partRows.value = [{ part: '', count: 1 }];
       originalAttachments.value = [];
       clearErrors();
       submitAttempted.value = false;
@@ -320,6 +324,23 @@ export default {
       techStack: ['techStack'],
       recruitDeadline: ['required'],
       files: []
+    };
+
+    const setRecruitDeadline = (unit, amount) => {
+      const today = new Date();
+      let targetDate = new Date(today);
+
+      if (unit === 'day') {
+        targetDate.setDate(today.getDate() + amount);
+      } else if (unit === 'month') {
+        targetDate.setMonth(today.getMonth() + amount);
+      }
+
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      
+      formData.recruitDeadline = `${year}-${month}-${day}`;
     };
 
     // 업로드 호환용: 엘리먼트-UI, antd 등 {raw} / {originFileObj} 케이스 대응
@@ -423,7 +444,8 @@ export default {
       validationSchema,
       errors, isSubmitting, submitAttempted,
       hasErrors, hasError, getError,
-      validateField, submitForm, resetForm
+      validateField, submitForm, resetForm,
+      setRecruitDeadline
     };
   }
 };
@@ -571,43 +593,21 @@ export default {
   color: #4CAF50;
 }
 
-.duration-personnel-group {
-  display: flex; 
-  gap: 20px; 
-  align-self: stretch; 
-  margin-bottom: 30px; 
-}
-
-.duration-personnel-group .form-section {
-  flex: 1;
-  margin-bottom: 80px; 
-
-}
-
-/* 진행인원 섹션 오른쪽 정렬 */
-.personnel-section {
-  align-items: flex-end; /* 전체 섹션을 오른쪽 정렬 */
-}
-
-.personnel-title {
-  align-self: flex-end; /* 제목을 오른쪽 정렬 */
-}
-
-.personnel-content {
+.date-range-group {
   display: flex;
-  justify-content: flex-end; /* PersonnelCounter를 오른쪽 정렬 */
+  align-items: center;
+  gap: 10px;
   width: 100%;
 }
-
-.personnel-error {
-  align-self: flex-end; /* 에러 메시지도 오른쪽 정렬 */
+.date-range-group .input-group {
+  flex: 1;
+}
+.date-separator {
+  padding-bottom: 20px; /* 에러 메시지 공간 확보 */
 }
 
-.deadline-section {
-  margin-bottom: 80px; /* 다른 섹션과 동일하게 */
-}
 .deadline-input {
-  width: 230px;
+  width: 100%;
   padding: 16px;
   border-radius: 8px;
   border: 2px solid var(--color-grey-85, #D9D9D9);
@@ -967,6 +967,40 @@ export default {
     transform: translateY(0);
   }
 }
+
+.input-group.with-presets {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.deadline-presets {
+  display: flex;
+  gap: 8px;
+}
+
+.preset-button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid #D9D9D9;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.preset-button:hover {
+  border-color: #4CAF50;
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.input-group.with-presets .deadline-input {
+  flex: 1;
+}
+
 .parts-section { margin-top: -20px; }
 .parts-card {
   width: 100%;
