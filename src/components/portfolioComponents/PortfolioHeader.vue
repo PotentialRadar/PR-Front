@@ -33,7 +33,7 @@
     <!-- Action buttons -->
     <div class="header-actions">
       <div class="social-actions">
-        <button class="like-button" @click="toggleLike" :class="{ liked: isLiked }">
+        <button class="like-button" @click="toggleLike" :class="{ liked: isLiked }" :disabled="!isLoggedIn">
           <i class="bi bi-heart" v-if="!isLiked"></i>
           <i class="bi bi-heart-fill" v-else></i>
           <span class="like-count">{{ likeCount }}</span>
@@ -62,7 +62,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
+import { togglePortfolioLike, getPortfolioLikeStatus, getPortfolioLikeCount } from '@/api/user'
 import ToastNotification from '../common/ToastNotification.vue'
 
 // Props
@@ -135,7 +136,8 @@ const handleImageLoad = () => {
 
 // Reactive data
 const isLiked = ref(false)
-const likeCount = ref(42)
+const likeCount = ref(0)
+const isLoggedIn = computed(() => !!localStorage.getItem('accessToken'))
 const showContactModal = ref(false)
 
 // Toast notification state
@@ -156,20 +158,30 @@ const hideToast = () => {
   toast.visible = false
 }
 
-const toggleLike = () => {
-  const wasLiked = isLiked.value
-  isLiked.value = !isLiked.value
-  likeCount.value += isLiked.value ? 1 : -1
-
-  // Show feedback toast
-  if (isLiked.value) {
-    showToast('포트폴리오에 좋아요를 표시했습니다!', 'success')
-  } else {
-    showToast('좋아요가 취소되었습니다.', 'info')
+const toggleLike = async () => {
+  if (!isLoggedIn.value) {
+    showToast('로그인 후 좋아요를 누를 수 있습니다.', 'info')
+    return
   }
+  
+  try {
+    console.log('좋아요 토글 시작:', props.userId, '현재 상태:', isLiked.value)
+    const response = await togglePortfolioLike(props.userId)
+    console.log('좋아요 API 응답:', response.data)
+    
+    isLiked.value = response.data.liked
+    likeCount.value = response.data.likeCount
 
-  // Here you would typically sync with your API
-  // syncLikeWithAPI(props.userId, isLiked.value)
+    // Show feedback toast
+    if (isLiked.value) {
+      showToast('포트폴리오에 좋아요를 표시했습니다!', 'success')
+    } else {
+      showToast('좋아요가 취소되었습니다.', 'info')
+    }
+  } catch (error) {
+    console.error('좋아요 처리 실패:', error)
+    showToast('좋아요 처리에 실패했습니다.', 'error')
+  }
 }
 
 const openChatModal = () => {
@@ -190,6 +202,34 @@ const handleContactSend = (formData) => {
 const getPortfolioUrl = () => {
   return window.location.href
 }
+
+const loadLikeData = async () => {
+  try {
+    // 좋아요 개수는 누구나 볼 수 있음
+    const countResponse = await getPortfolioLikeCount(props.userId)
+    likeCount.value = countResponse.data
+    
+    // 좋아요 상태는 로그인한 사용자만
+    if (isLoggedIn.value) {
+      const statusResponse = await getPortfolioLikeStatus(props.userId)
+      isLiked.value = statusResponse.data.isLiked || statusResponse.data.liked
+    }
+  } catch (error) {
+    console.error('좋아요 데이터 로드 실패:', error)
+  }
+}
+
+onMounted(() => {
+  if (props.userId) {
+    loadLikeData()
+  }
+})
+
+watch(() => props.userId, (newUserId) => {
+  if (newUserId) {
+    loadLikeData()
+  }
+})
 
 const copyLink = async () => {
   try {
