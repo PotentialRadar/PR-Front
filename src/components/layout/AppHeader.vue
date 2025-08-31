@@ -50,7 +50,7 @@
                     <div class="notification-icon" :class="notification.type">
                       <span>{{ getNotificationIcon(notification.type) }}</span>
                     </div>
-                    <div class="notification-content" @click="handleNotificationClick(notification)">
+                    <div class="notification-content" @click="handleNotificationClickLocal(notification)">
                       <p class="notification-message">{{ notification.message }}</p>
                       <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
                     </div>
@@ -104,10 +104,12 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
 import { useNotifications } from '@/composables/useNotifications'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const router = useRouter()
 const toast = useToast()
+const router = useRouter()
 
 // 실시간 알림 관리
 const {
@@ -122,7 +124,7 @@ const {
   deleteNotification,
   acceptInvitation,
   rejectInvitation,
-  handleNotificationClick: handleRealTimeNotificationClick,
+  handleNotificationClick,
   cleanup: cleanupNotifications,
   resetNotifications
 } = useNotifications()
@@ -144,6 +146,7 @@ const isLoggedIn = computed(() => {
   
   // 명시적으로 boolean 값으로 반환
   return Boolean(loggedIn)
+  return userStore.isLoggedIn
 })
 
 // 반응형 데이터
@@ -167,9 +170,126 @@ const toggleNotifications = () => {
   showChat.value = false
 }
 
-const handleNotificationClick = async (notification) => {
-  // 실시간 알림 처리
-  await handleRealTimeNotificationClick(notification)
+const openChat = async (chatId) => {
+  // 실시간 채팅 알림 읽음 처리
+  if (hasNewChatMessage.value) {
+    await markChatAsRead()
+  }
+  
+  // 기존 샘플 채팅 읽음 처리
+  const chat = chatMessages.value.find(c => c.id === chatId)
+  if (chat) {
+    chat.isRead = true
+  }
+  
+  // 채팅 페이지로 이동
+  showChat.value = false
+}
+
+const handleNotificationClickLocal = async (notification) => {
+  
+  // 초대 알림인 경우 직접 처리
+  if (notification.type === 'invite' || notification.notificationType === 'INVITATION') {
+    try {
+      // 1. 알림의 url 필드 먼저 확인 (백엔드에서 "/projects/{projectId}" 형태로 설정)
+      if (notification.url && notification.url.startsWith('/projects/')) {
+        const projectIdFromUrl = notification.url.split('/projects/')[1]
+        if (projectIdFromUrl && !isNaN(projectIdFromUrl)) {
+          await router.push(`/projects/${projectIdFromUrl}`)
+          showNotifications.value = false
+          return
+        }
+      }
+      
+      // 2. invitationId가 있으면 초대 상세 조회
+      if (notification.invitationId) {
+        
+        try {
+          const token = localStorage.getItem('accessToken')
+          const userId = userStore.userId
+          
+          if (!userId) {
+            await router.push('/projects')
+            showNotifications.value = false
+            return
+          }
+          
+          const response = await fetch('/api/invitations/received', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'User-Id': userId.toString(),
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (response.ok) {
+            const invitations = await response.json()
+            
+            const invitation = invitations.find(inv => 
+              inv.invitationId === notification.invitationId || 
+              inv.invitationId === parseInt(notification.invitationId)
+            )
+            
+            if (invitation && invitation.projectId) {
+              await router.push(`/projects/${invitation.projectId}`)
+              showNotifications.value = false
+              return
+            }
+          }
+        } catch (apiError) {
+          console.error('초대 API 호출 실패:', apiError)
+        }
+      }
+      
+      // 3. 알림 메시지에서 프로젝트 이름 추출하여 검색
+      const message = notification.message || notification.content
+      
+      const projectNameMatch = message.match(/'(.+?)' 프로젝트에 초대했습니다/)
+      if (projectNameMatch) {
+        const projectName = projectNameMatch[1]
+        
+        try {
+          const token = localStorage.getItem('accessToken')
+          const projectsResponse = await fetch('/api/projects', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (projectsResponse.ok) {
+            const projectsResult = await projectsResponse.json()
+            
+            let projects = []
+            if (projectsResult.content) {
+              projects = projectsResult.content
+            } else if (Array.isArray(projectsResult)) {
+              projects = projectsResult
+            }
+            
+            const project = projects.find(p => p.title === projectName)
+            if (project) {
+              await router.push(`/projects/${project.projectId}`)
+              showNotifications.value = false
+              return
+            }
+          }
+        } catch (searchError) {
+          console.error('프로젝트 검색 실패:', searchError)
+        }
+      }
+      
+      // 4. 모든 방법 실패 시 프로젝트 목록으로 이동
+      await router.push('/projects')
+      
+    } catch (error) {
+      console.error('초대 처리 중 오류:', error)
+      await router.push('/projects')
+    }
+  } else {
+    // 다른 알림은 기존 함수로 처리
+    await handleNotificationClick(notification)
+  }
   showNotifications.value = false
 }
 
@@ -273,12 +393,17 @@ const handleLogout = async () => {
   
   toast.success('로그아웃되었습니다.', {
     position: 'top-center',
-    timeout: 2000,
+    timeout: 1500,
     hideProgressBar: true,
   })
 
   // 즉시 로그인 페이지로 이동 (사용자는 거기서 로그인/회원가입 선택)
   router.push({ path: '/login', query: { redirect: '/' } })
+  
+  // 토스트가 보이는 시간을 확보한 후 로그아웃 (한 번만 호출)
+  setTimeout(() => {
+    userStore.logout()
+  }, 500)
 }
 
 // 외부 클릭 감지
@@ -300,12 +425,6 @@ onMounted(async () => {
   window.addEventListener('focus', handleFocus)
   document.addEventListener('visibilitychange', handleFocus)
   
-  // 디버깅용 로그
-  console.log('AppHeader mounted - userStore 상태:', {
-    isLoggedIn: userStore.isLoggedIn,
-    userId: userStore.userId,
-    email: userStore.email
-  })
   
   // AppHeader 마운트 시 인증 상태 확인
   console.log('🔍 AppHeader에서 인증 상태 확인 시작')
@@ -322,14 +441,22 @@ onMounted(async () => {
   
   // 로그인 + userId 동시 충족 시 초기화, 로그아웃/해제 시 정리
   watch(
-    [() => userStore.isLoggedIn, () => userStore.userId],
-    ([loggedIn, userId], [prevLoggedIn]) => {
-      console.log('👀 로그인 상태 변화 감지:', { loggedIn, userId })
-      if (loggedIn && userId) {
-        console.log('🆔 로그인+userId 확인 - 알림 시스템 시작')
-        initializeNotifications()
-      } else if (!loggedIn && prevLoggedIn) {
-        console.log('❌ 로그아웃 감지 - 실시간 알림 정리')
+    () => userStore.isLoggedIn,
+    (newValue, oldValue) => {
+      
+      if (newValue && !oldValue) {
+        // 로그인 상태로 변경된 경우만 초기화
+        // userStore에 userId가 설정될 때까지 기다림
+        const checkAndInit = () => {
+          if (userStore.userId) {
+            initializeNotifications()
+          } else {
+            setTimeout(checkAndInit, 500)
+          }
+        }
+        checkAndInit()
+      } else if (!newValue && oldValue) {
+        // 로그아웃된 경우만 정리
         cleanupNotifications()
         resetNotifications()
       }
@@ -343,6 +470,13 @@ onMounted(async () => {
     window.removeEventListener('focus', handleFocus)
     document.removeEventListener('visibilitychange', handleFocus)
   })
+  
+  // 컴포넌트 마운트 시 로그인 상태 확인 (초기화 지연)
+  setTimeout(() => {
+    if (userStore.isLoggedIn && userStore.userId) {
+      initializeNotifications()
+    }
+  }, 2000) // 2초 지연으로 App.vue의 checkLogin 완료 대기
 })
 
 onUnmounted(() => {

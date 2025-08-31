@@ -3,8 +3,14 @@
     <div class="card-header">
       <div class="header-left">
         <div class="status-title-container">
-          <div class="status-badge" v-if="project.status">
-            <span>{{ project.status }}</span>
+          <div class="status-badges-row">
+            <div class="status-badge" v-if="project.status" :class="statusClass">
+              <span>{{ displayStatus }}</span>
+            </div>
+            <!-- AI 추천 매칭도 배지 -->
+            <div v-if="project.isAIRecommendation && project.matchScore" class="match-score-badge">
+              <span>매칭도 {{ (project.matchScore * 100).toFixed(0) }}%</span>
+            </div>
           </div>
           <div class="title-container">
             <h3 class="project-title">{{ project.title }}</h3>
@@ -33,12 +39,26 @@
     <div class="category-tags-section">
       <div class="project-tags">
         <!-- 기술스택 표시 (techStacks 배열 사용) -->
-        <div class="self-tag" v-for="tech in project.techStacks" :key="tech.techStackName || tech">
+        <div class="self-tag" 
+             :class="{ 'matched': tech.isMatched }"
+             v-for="tech in project.techStacks" 
+             :key="tech.techStackName || tech">
           {{ tech.techStackName || tech }}
         </div>
         <!-- fallback으로 tags도 지원 -->
         <div class="self-tag" v-for="tag in project.tags" :key="tag" v-if="!project.techStacks || !project.techStacks.length">
           {{ tag }}
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 추천 이유 섹션 -->
+    <div v-if="project.isAIRecommendation && project.aiExplanation" class="ai-recommendation-section">
+      <div class="ai-recommendation-box">
+        <div class="ai-icon">🤖</div>
+        <div class="ai-content">
+          <div class="ai-label">AI 추천 이유</div>
+          <div class="ai-text">{{ project.aiExplanation }}</div>
         </div>
       </div>
     </div>
@@ -89,7 +109,7 @@
 
     <div class="bottom-section">
       <button class="detail-button" @click="goToDetail">상세보기</button>
-      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status !== '마감'">지원하기</button>
+      <button class="apply-button" @click="onApplyClick" v-if="isLoggedIn && project.status === 'RECRUITING'">지원하기</button>
     </div>
   </div>
 </template>
@@ -200,6 +220,22 @@ const displayDuration = computed(() => {
   return `${Math.round(diff / 30)}개월`;
 });
 
+const displayStatus = computed(() => {
+  console.log('Checking project.status:', props.project.status);
+  const statusMap = {
+    'RECRUITING': '모집중',
+    'IN_PROGRESS': '진행중',
+    'COMPLETED': '완료'
+  };
+  return statusMap[props.project.status] || props.project.status;
+});
+
+const statusClass = computed(() => ({
+  'status-recruiting': props.project.status === 'RECRUITING',
+  'status-in-progress': props.project.status === 'IN_PROGRESS',
+  'status-completed': props.project.status === 'COMPLETED',
+}));
+
 </script>
 
 <style scoped>
@@ -268,6 +304,29 @@ const displayDuration = computed(() => {
 
 .status-badge span {
   color: #2E7D32;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.status-badges-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.match-score-badge {
+  display: inline-flex;
+  padding: 6px 12px;
+  align-items: center;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: 1px solid #20c997;
+}
+
+.match-score-badge span {
+  color: white;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -413,6 +472,83 @@ const displayDuration = computed(() => {
   background: rgba(76, 175, 80, 0.2);
   border-color: #4CAF50;
   color: #1B5E20;
+}
+
+.self-tag.matched {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
+  color: #1B5E20;
+  font-weight: 600;
+  position: relative;
+}
+
+.self-tag.matched::after {
+  content: '✓';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #4CAF50;
+  color: white;
+  font-size: 10px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.ai-recommendation-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.ai-recommendation-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
+  border: 1px solid rgba(40, 167, 69, 0.15);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.ai-recommendation-box:hover {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.08) 0%, rgba(32, 201, 151, 0.08) 100%);
+  border-color: rgba(40, 167, 69, 0.25);
+}
+
+.ai-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ai-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #28a745;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ai-text {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #555;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .project-info {
@@ -593,5 +729,30 @@ const displayDuration = computed(() => {
     font-size: 11px;
     padding: 4px 8px;
   }
+}
+
+/* Status-specific styles */
+.status-badge.status-recruiting {
+  background-color: #E8F5E9;
+  border-color: #4CAF50;
+}
+.status-badge.status-recruiting span {
+  color: #2E7D32;
+}
+
+.status-badge.status-in-progress {
+  background-color: #E3F2FD;
+  border-color: #2196F3;
+}
+.status-badge.status-in-progress span {
+  color: #1976D2;
+}
+
+.status-badge.status-completed {
+  background-color: #F5F5F5;
+  border-color: #BDBDBD;
+}
+.status-badge.status-completed span {
+  color: #616161;
 }
 </style>

@@ -30,8 +30,26 @@
         <section class="members-section">
           <h2>프로젝트 멤버 ({{ approvedMembers.length }}명)</h2>
           <div v-if="approvedMembers.length > 0" class="members-list">
-            <div v-for="member in approvedMembers" :key="member.id" class="member-card">
-              <h3>{{ member.userName }} ({{ getPartLabel(member.techPart) }})</h3>
+            <div v-for="member in approvedMembers" :key="member.userId || member.id" class="member-card">
+              <div class="member-avatar">
+                <img 
+                  v-if="getAvatarUrl(member)" 
+                  :src="getAvatarUrl(member)" 
+                  :alt="member.userName"
+                  class="avatar-image"
+                  @error="(event) => handleImageError(event, member)"
+                />
+                <div v-else class="avatar-circle">{{ member.userName ? member.userName.charAt(0) : '?' }}</div>
+              </div>
+              <div class="member-info">
+                <div class="member-name">{{ member.userName }}</div>
+                <div class="member-details">
+                  <span v-if="member.techPart" class="member-part">{{ getPartLabel(member.techPart) }}</span>
+                  <span v-if="member.role" class="member-role-badge" :class="getRoleClass(member.role)">
+                    {{ getRoleLabel(member.role) }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <p v-else>아직 승인된 멤버가 없습니다.</p>
@@ -60,7 +78,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getProject, deleteProject, updateProjectStatus } from '@/api/projects'; // Import deleteProject
+import { getProject, deleteProject, updateProjectStatus, getConfirmedProjectMembers } from '@/api/projects'; // Import deleteProject
 import { getProjectMembers, updateMemberStatus } from '@/api/projectMember';
 import { PART_OPTIONS } from '@/constants/parts';
 import { useUserStore } from '@/stores/userStore'; // Import user store
@@ -72,6 +90,7 @@ const projectId = ref(route.params.projectId);
 
 const project = ref(null);
 const applicants = ref([]);
+const confirmedMembers = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
@@ -83,11 +102,49 @@ const statusOptions = [
 ];
 
 const pendingApplicants = computed(() => applicants.value.filter(a => a.status === 'PENDING'));
-const approvedMembers = computed(() => applicants.value.filter(a => a.status === 'ACCEPTED'));
+const approvedMembers = computed(() => {
+  // 지원을 통해 승인된 멤버 + 초대를 통해 추가된 멤버
+  const acceptedApplicants = applicants.value.filter(a => a.status === 'ACCEPTED');
+  return [...acceptedApplicants, ...confirmedMembers.value];
+});
 
 const getPartLabel = (partValue) => {
   const part = PART_OPTIONS.find(option => option.value === partValue);
   return part ? part.label : partValue;
+};
+
+const getRoleLabel = (role) => {
+  const roleLabels = {
+    'LEADER': '리더',
+    'MEMBER': '멤버'
+  };
+  return roleLabels[role] || role;
+};
+
+const getRoleClass = (role) => {
+  return role === 'LEADER' ? 'role-leader' : 'role-member';
+};
+
+const getAvatarUrl = (member) => {
+  // profileImageUrl 또는 profileImage 필드 확인, 없으면 dicebear 기본 아바타 생성
+  return member.profileImageUrl || member.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`;
+};
+
+const handleImageError = (event, member) => {
+  // 이미지 로드 실패 시 dicebear 기본 아바타로 재시도
+  const img = event.target;
+  const fallbackUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}`;
+  
+  if (img.src !== fallbackUrl) {
+    img.src = fallbackUrl;
+  } else {
+    // dicebear도 실패하면 아바타 서클로 대체
+    const memberName = img.alt;
+    const avatarCircle = document.createElement('div');
+    avatarCircle.className = 'avatar-circle';
+    avatarCircle.textContent = memberName ? memberName.charAt(0) : '?';
+    img.parentNode.replaceChild(avatarCircle, img);
+  }
 };
 
 onMounted(async () => {
@@ -108,6 +165,16 @@ onMounted(async () => {
     // Use the dynamic userId from the store
     const applicantsResponse = await getProjectMembers(projectId.value, currentUserId);
     applicants.value = applicantsResponse.data;
+
+    // 확정된 프로젝트 멤버도 가져오기 (초대를 통해 추가된 멤버들)
+    const confirmedResponse = await getConfirmedProjectMembers(projectId.value);
+    confirmedMembers.value = confirmedResponse.data;
+    
+    // 디버깅: 실제 응답 데이터 확인
+    console.log('🔍 전체 응답:', confirmedResponse.data);
+    if (confirmedResponse.data.length > 0) {
+      console.log('🔍 첫 번째 멤버 데이터:', confirmedResponse.data[0]);
+    }
 
   } catch (err) {
     console.error('데이터 로딩 중 오류 발생:', err);
@@ -342,5 +409,133 @@ h2 {
 .delete-btn {
   background-color: #f44336;
   color: white;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* 새로운 멤버 카드 스타일 */
+.members-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.member-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: #4CAF50;
+}
+
+.member-avatar {
+  flex-shrink: 0;
+}
+
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.avatar-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+}
+
+.member-card:hover .avatar-image {
+  border-color: #4CAF50;
+}
+
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.member-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-part {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.member-role-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.role-leader {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+}
+
+.role-member {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .members-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .member-card {
+    padding: 16px;
+  }
+  
+  .avatar-circle,
+  .avatar-image {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .avatar-circle {
+    font-size: 16px;
+  }
 }
 </style>
