@@ -276,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { portfolioApi } from '@/api/portfolio.js'
 import api from '@/api/axios.js'
@@ -575,6 +575,12 @@ onMounted(() => {
   } else {
     portfolioNotFound.value = true
     loading.value = false
+  }
+})
+
+watch(() => route.params.userId, (newUserId) => {
+  if (newUserId) {
+    loadPortfolioData(newUserId)
   }
 })
 </script>

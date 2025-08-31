@@ -147,6 +147,7 @@
                 <div 
                   v-for="portfolio in portfolios" 
                   :key="portfolio.id" 
+                  :data-portfolio-id="portfolio.id"
                   class="portfolio-card"
                   @click="viewPortfolio(portfolio.id)"
                 >
@@ -236,6 +237,7 @@ import { useTechTagStore } from '@/stores/techTagStore'
 import PageHeader from '@/components/common/PageHeader.vue'
 
 import { searchUsers, getPopularUserKeywords, getUserCountPreview } from '@/api/search'
+import { getPortfolios, togglePortfolioLike, getPortfolioLikeStatus } from '@/api/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -305,7 +307,6 @@ const loadPopularKeywords = async () => {
   try {
     const response = await getPopularUserKeywords()
     popularKeywords.value = response.keywords || []
-    // 포트폴리오 인기 키워드 로드 성공
   } catch (error) {
     console.error('❌ 포트폴리오 인기 키워드 로드 실패:', error)
     // 실패시 기본값 제공
@@ -319,10 +320,7 @@ onActivated(async () => {
       loadTechTags(),
       loadPopularKeywords()
     ])
-    // 기술 태그 및 인기 키워드 로드 완료
-    
     handleSearch(false)
-    // 초기 필터 결과 수 로딩
     setTimeout(() => updateFilterResultCounts(), 1000)
   } catch (error) {
     console.error('❌ 초기 데이터 로드 실패 (PortfolioListPage):', error)
@@ -360,20 +358,44 @@ const performSearch = async (searchParams) => {
       size: 20,
       sort: sortByToParam(sortBy.value)
     }
-    const result = await searchUsers(finalParams)
     
+    // 검색 조건이 있는지 확인
+    const hasSearchConditions = 
+      finalParams.keyword || 
+      (finalParams.techParts && finalParams.techParts.length > 0) || 
+      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
+      (finalParams.experienceRanges && finalParams.experienceRanges.length > 0)
     
-    portfolios.value = result.content?.map(user => ({
+    let result
+    if (hasSearchConditions) {
+      // 검색/필터 조건이 있으면 Elasticsearch 사용
+      result = await searchUsers(finalParams)
+    } else {
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순)
+      const rdbParams = {
+        page: page.value - 1,
+        size: 20,
+        sortBy: sortBy.value === 'popularity' ? 'likeCount' : 'recent'
+      }
+      result = await getPortfolios(rdbParams)
+    }
+    
+    // 데이터 매핑
+    const data = result.data || result
+    console.log('API Response:', data)
+    console.log('Content/Portfolios:', data.content || data.portfolios)
+    portfolios.value = (data.content || data.portfolios)?.map(user => ({
       userId: user.userId,
       id: user.userId,
       nickname: user.nickname || `User ${user.userId}`,
       name: user.nickname || `User ${user.userId}`,
       jobTitle: user.jobTitle || null,
-      category: user.techPart || 'General',
-      skills: user.techStacks || [],
-      profileImage: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      category: user.techPartName || user.techPart || 'General',
+      skills: user.techStacks && user.techStacks.length > 0 ? user.techStacks : [`${user.techStackCount || 0}개 기술`],
+      profileImage: user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+      avatar: user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
       isLiked: false,
+      likeCount: user.likeCount || 0,
       experienceRange: user.experienceRange,
       bio: user.bio || '',
       projectCount: user.projectCount || 0,
@@ -382,8 +404,10 @@ const performSearch = async (searchParams) => {
       reputationScore: user.reputationScore || 0
     })) || []
     
-    totalPages.value = result.totalPages || 1
-    // 포트폴리오 검색 성공
+    totalPages.value = data.totalPages || 1
+    
+    // 로그인한 사용자의 좋아요 상태 로드
+    await loadLikeStatuses()
   } catch (err) {
     console.error('검색 실패:', err)
     error.value = '검색 중 오류가 발생했습니다.'
@@ -397,8 +421,6 @@ const performSearch = async (searchParams) => {
 // 결과 수 미리보기 기능 (OR 방식으로 수정)
 const updateFilterResultCounts = async () => {
   try {
-    // 필터 결과 수 업데이트 시작
-
     // 기술 파트별 결과 수 계산 - 병렬 처리
     await Promise.allSettled(
       techParts.value.map(async (part) => {
@@ -442,7 +464,6 @@ const updateFilterResultCounts = async () => {
       }
     }))
 
-    // 필터 결과 수 업데이트 완료
   } catch (error) {
     console.error('❌ 필터 결과 수 업데이트 실패 (Portfolio):', error)
   }
@@ -461,7 +482,6 @@ const toggleItem = (list, item) => {
   if (index > -1) list.value.splice(index, 1)
   else list.value.push(item)
   handleSearch()
-  // 필터 변경 시 결과 수 업데이트 (디바운스 적용)
   setTimeout(() => updateFilterResultCounts(), 500)
 }
 
@@ -498,10 +518,60 @@ const goToPage = (newPage) => {
   }
 }
 
-const toggleLike = (portfolioId) => {
-  const portfolio = portfolios.value.find(p => p.id === portfolioId)
-  if (portfolio) {
+const loadLikeStatuses = async () => {
+  const token = localStorage.getItem('accessToken')
+  if (!token) return
+  
+  try {
+    await Promise.all(
+      portfolios.value.map(async (portfolio) => {
+        try {
+          const response = await getPortfolioLikeStatus(portfolio.userId)
+          portfolio.isLiked = response.data.isLiked || response.data.liked
+        } catch (error) {
+          // 개별 포트폴리오 좋아요 상태 로드 실패는 무시
+        }
+      })
+    )
+  } catch (error) {
+    console.error('좋아요 상태 로드 실패:', error)
+  }
+}
+
+const toggleLike = async (portfolioId) => {
+  const token = localStorage.getItem('accessToken')
+  if (!token) {
+    alert('로그인 후 좋아요를 누를 수 있습니다.')
+    return
+  }
+  
+  try {
+    const portfolio = portfolios.value.find(p => p.id === portfolioId)
+    if (!portfolio) return
+    
+    // 즉시 UI 업데이트 (낙관적 업데이트)
+    const previousState = portfolio.isLiked
     portfolio.isLiked = !portfolio.isLiked
+    
+    const response = await togglePortfolioLike(portfolioId)
+    portfolio.isLiked = response.data.liked
+    portfolio.likeCount = response.data.likeCount
+    
+    // 애니메이션 효과
+    const likeBtn = document.querySelector(`[data-portfolio-id="${portfolioId}"] .like-btn`)
+    if (likeBtn) {
+      likeBtn.style.transform = 'scale(1.2)'
+      setTimeout(() => {
+        likeBtn.style.transform = 'scale(1)'
+      }, 150)
+    }
+  } catch (error) {
+    console.error('좋아요 처리 실패:', error)
+    // 실패 시 이전 상태로 복원
+    const portfolio = portfolios.value.find(p => p.id === portfolioId)
+    if (portfolio) {
+      portfolio.isLiked = !portfolio.isLiked
+    }
   }
 }
 
