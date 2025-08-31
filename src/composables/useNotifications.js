@@ -43,11 +43,8 @@ export function useNotifications() {
     }
 
     function connectSSE() {
-        const token = localStorage.getItem('accessToken')
-        if (!token) {
-            console.log('❌ SSE 연결 시도 실패: 토큰이 없습니다')
-            return
-        }
+        // httpOnly 쿠키 방식에서는 토큰을 localStorage에서 확인하지 않음
+        // 서버가 쿠키를 통해 자동으로 인증 처리
         if (eventSource) {
             console.log('🔄 기존 SSE 연결 종료 후 재연결')
             eventSource.close()
@@ -56,16 +53,14 @@ export function useNotifications() {
         // PR-Front API 엔드포인트로 변경 (환경에 따라 수정 필요)
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
         
-        console.log('🔗 SSE 연결 시도:', `${apiBaseUrl}/api/notification/connect`)
-        console.log('🔑 사용 중인 토큰:', token?.substring(0, 20) + '...')
+        console.log('🔗 SSE 연결 시도 (httpOnly 쿠키 방식):', `${apiBaseUrl}/api/notification/connect`)
         
         eventSource = new EventSourcePolyfill(`${apiBaseUrl}/api/notification/connect`, {
             headers: { 
-                Authorization: `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
             },
             heartbeatTimeout: 300000, // 5분
-            withCredentials: false
+            withCredentials: true // httpOnly 쿠키 포함
         })
         
         // SSE 연결 상태를 전역에 저장 (디버깅용)
@@ -135,9 +130,8 @@ export function useNotifications() {
             if (eventSource?.readyState === EventSource.CLOSED) {
                 console.log('🔄 SSE 재연결 시도')
                 setTimeout(() => {
-                    if (localStorage.getItem('accessToken')) {
-                        connectSSE()
-                    }
+                    // httpOnly 쿠키 방식에서는 토큰 확인 없이 재연결 시도
+                    connectSSE()
                 }, 5000) // 5초 후 재시도
             }
         }
@@ -147,25 +141,33 @@ export function useNotifications() {
         if (isLoading.value || (!isInitial && !hasMore.value)) return
         isLoading.value = true
         try {
-            const token = localStorage.getItem('accessToken')
-            if (!token) { 
-                console.log('❌ fetchNotifications: 토큰이 없습니다')
-                isLoading.value = false
-                return
-            }
+            // httpOnly 쿠키 방식에서는 토큰 확인을 하지 않고 바로 API 호출
+            // 서버에서 쿠키를 통해 인증 처리
             
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
             console.log('📋 알림 목록 요청:', `${apiBaseUrl}/api/notification/list`)
             
-            const response = await axios.get(`${apiBaseUrl}/api/notification/list`, {
-                params: { lastId: isInitial ? null : lastNotificationId.value, size: 10 },
-                headers: { Authorization: `Bearer ${token}` },
-                timeout: 10000 // 10초 타임아웃
+            // httpOnly 쿠키 방식으로 axios 대신 fetch 사용
+            const response = await fetch(`${apiBaseUrl}/api/notification/list?${new URLSearchParams({
+                lastId: isInitial ? '' : (lastNotificationId.value || ''),
+                size: '10'
+            })}`, {
+                method: 'GET',
+                credentials: 'include', // httpOnly 쿠키 포함
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
-
-            console.log('📋 알림 목록 응답:', response.data)
             
-            const { notifications: fetchedData, hasNext, totalUnreadCount } = response.data
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            
+            const data = await response.json()
+
+            console.log('📋 알림 목록 응답:', data)
+            
+            const { notifications: fetchedData, hasNext, totalUnreadCount } = data
             const hasUnreadChat = fetchedData.some(item => item.notificationType?.toUpperCase() === 'CHAT' && item.delYn === 'N')
             if (hasUnreadChat) hasNewChatMessage.value = true
             
@@ -211,33 +213,28 @@ export function useNotifications() {
     
     function initializeNotifications() {
         console.log('🚀 알림 시스템 초기화 시작')
-        const token = localStorage.getItem('accessToken')
-        if (token) {
-            console.log('✅ 토큰 확인됨 - 알림 시스템 활성화')
-            isLogin.value = true
+        // httpOnly 쿠키 방식에서는 localStorage에서 토큰을 확인하지 않음
+        console.log('✅ httpOnly 쿠키 방식 - 알림 시스템 활성화')
+        isLogin.value = true
             
-            // 백엔드 알림 API가 구현되어 있으므로 활성화
-            fetchNotifications(true).then(() => {
-                console.log('📋 초기 알림 목록 로드 완료 - SSE 연결 시작')
-                // 약간의 지연 후 SSE 연결 (백엔드 준비 시간 확보)
+        // 백엔드 알림 API가 구현되어 있으므로 활성화
+        fetchNotifications(true).then(() => {
+            console.log('📋 초기 알림 목록 로드 완료 - SSE 연결 시작')
+            // 약간의 지연 후 SSE 연결 (백엔드 준비 시간 확보)
+            setTimeout(() => {
+                connectSSE()
+            }, 1000)
+        }).catch(error => {
+            console.error('❌ 초기 알림 목록 로드 실패:', error)
+            // 404 에러가 아닌 경우에만 SSE 연결 시도
+            if (error.response?.status !== 404) {
                 setTimeout(() => {
                     connectSSE()
-                }, 1000)
-            }).catch(error => {
-                console.error('❌ 초기 알림 목록 로드 실패:', error)
-                // 404 에러가 아닌 경우에만 SSE 연결 시도
-                if (error.response?.status !== 404) {
-                    setTimeout(() => {
-                        connectSSE()
-                    }, 2000)
-                } else {
-                    console.log('⚠️ 알림 API 엔드포인트가 없습니다. SSE 연결을 건너뜁니다.')
-                }
-            })
-        } else {
-            console.log('❌ 토큰 없음 - 알림 시스템 비활성화')
-            isLogin.value = false
-        }
+                }, 2000)
+            } else {
+                console.log('⚠️ 알림 API 엔드포인트가 없습니다. SSE 연결을 건너뜁니다.')
+            }
+        })
     }
 
     async function markChatAsRead() {
@@ -247,8 +244,13 @@ export function useNotifications() {
         hasNewChatMessage.value = false
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-            await axios.post(`${apiBaseUrl}/api/notification/read-chat`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            // httpOnly 쿠키 방식으로 fetch 사용
+            await fetch(`${apiBaseUrl}/api/notification/read-chat`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
         } catch (error) {
             console.error('❌ 채팅 알림 읽음 처리 API 호출 실패:', error)
@@ -259,8 +261,13 @@ export function useNotifications() {
     async function markAllAsRead() {
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-            await axios.post(`${apiBaseUrl}/api/notification/read-all`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            // httpOnly 쿠키 방식으로 fetch 사용
+            await fetch(`${apiBaseUrl}/api/notification/read-all`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
             notifications.value.forEach(notification => {
                 notification.isRead = true
@@ -283,8 +290,13 @@ export function useNotifications() {
     async function deleteNotification(notificationId) {
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-            await axios.post(`${apiBaseUrl}/api/notification/delete/${notificationId}`, null, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            // httpOnly 쿠키 방식으로 fetch 사용
+            await fetch(`${apiBaseUrl}/api/notification/delete/${notificationId}`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
             _removeNotificationFromState(notificationId)
         } catch (error) { 
@@ -295,14 +307,21 @@ export function useNotifications() {
     async function acceptInvitation(notification) {
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-            const response = await axios.post(`${apiBaseUrl}/api/invitations/${notification.invitationId}/accept`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            // httpOnly 쿠키 방식으로 fetch 사용
+            const response = await fetch(`${apiBaseUrl}/api/invitations/${notification.invitationId}/accept`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
+            
+            const data = response.ok ? await response.json() : null
             _removeNotificationFromState(notification.id)
             
             // PR-Front에서는 프로젝트 상세 페이지로 리다이렉트
-            if (response.data && response.data.projectId) {
-                router.push({ path: `/projects/${response.data.projectId}` })
+            if (data && data.projectId) {
+                router.push({ path: `/projects/${data.projectId}` })
             }
         } catch (error) { 
             console.error('❌ 초대 수락 실패:', error) 
@@ -312,8 +331,13 @@ export function useNotifications() {
     async function rejectInvitation(notification) {
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-            await axios.post(`${apiBaseUrl}/api/invitations/${notification.invitationId}/reject`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            // httpOnly 쿠키 방식으로 fetch 사용
+            await fetch(`${apiBaseUrl}/api/invitations/${notification.invitationId}/reject`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
             _removeNotificationFromState(notification.id)
         } catch (error) { 

@@ -116,7 +116,7 @@
               </div>
               
               <div v-if="activeTab === 'comment' && project" id="comment-section">
-                <ProjectComment :projectId="projectId" :projectOwnerId="project.teamLeaderId" />
+                <ProjectComment :projectId="projectId" :projectOwnerId="project.author.userId" />
               </div>
             </div>
           </div>

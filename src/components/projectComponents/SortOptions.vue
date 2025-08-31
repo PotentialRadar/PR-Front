@@ -14,6 +14,13 @@
     >
       인기순
     </div>
+    <div
+      class="sort-option"
+      :class="{ selected: currentSelectedSort === 'recruitDeadline,asc' }"
+      @click="setSort('recruitDeadline,asc')"
+    >
+      마감순
+    </div>
   </div>
 </template>
 

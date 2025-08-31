@@ -198,7 +198,7 @@ import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 // import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'; // This component is not used in the template
 
 import { applyProject } from '@/api/projectMember';
-import axios from 'axios';
+import api from '@/api/axios';
 import { searchProjects, getPopularKeywords, getProjectCountPreview } from '@/api/search';
 import { listProjects } from '@/api/projects';
 
@@ -357,16 +357,16 @@ const performSearch = async (searchParams) => {
       
       if (sort.value === 'likeCount,desc') {
         // 좋아요순 정렬
-        const url = `/api/projects?page=${page.value - 1}&size=8&sort=likeCount,desc`;
+        const url = `/projects?page=${page.value - 1}&size=8&sort=likeCount,desc`;
         console.log('🔧 Popular sort URL:', url);
-        result = await axios.get(url);
+        result = await api.get(url);
         console.log('📊 Popular sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, likeCount: p.likeCount})));
       } else {
         // 최신순이나 기본값
         const rdbParams = {
           page: page.value - 1,
           size: 8,
-          sort: 'createdAt,desc'
+          sort: sort.value
         };
         console.log('🔧 RDB params for latest sort:', rdbParams);
         result = await listProjects(rdbParams);
