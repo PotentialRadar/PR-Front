@@ -276,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { portfolioApi } from '@/api/portfolio.js'
 import api from '@/api/axios.js'
@@ -359,7 +359,15 @@ const loadPortfolioData = async (userId) => {
   portfolioNotFound.value = false
 
   try {
-    const response = await portfolioApi.getPublicPortfolio(userId)
+    // 캐시 방지를 위해 타임스탬프 쿼리 파라미터 추가
+    const timestamp = Date.now()
+    const response = await portfolioApi.getPublicPortfolio(userId, {
+      params: { _t: timestamp },
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
     const userData = response.data
     
     // 디버깅용 로그 (개발 환경에서만)
@@ -577,6 +585,18 @@ onMounted(() => {
     loading.value = false
   }
 })
+
+// 라우트 파라미터 변경 감시 (URL 변경 시 새로운 데이터 로드)
+watch(
+  () => route.params.userId,
+  (newUserId, oldUserId) => {
+    if (newUserId && newUserId !== oldUserId) {
+      console.log(`🔄 라우트 파라미터 변경: ${oldUserId} → ${newUserId}`)
+      loadPortfolioData(newUserId)
+    }
+  },
+  { immediate: false }
+)
 </script>
 
 <style scoped>
