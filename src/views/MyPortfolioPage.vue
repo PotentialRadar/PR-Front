@@ -970,7 +970,7 @@ const saveEdit = async (field) => {
       // 다른 필드들은 개별 API 사용
       switch (field) {
         case 'introduction':
-          await portfolioApi.updatePortfolio({ bio: editData.introduction })
+          await portfolioApi.updateBio(editData.introduction)
           portfolioData.introduction = editData.introduction
           break
         case 'education':

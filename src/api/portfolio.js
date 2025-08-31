@@ -36,6 +36,9 @@ export const portfolioApi = {
   // 포트폴리오 통합 업데이트
   updatePortfolio: (data) => api.put('/user/portfolio', data),
 
+  // 자기소개만 업데이트
+  updateBio: (bio) => api.patch('/user/bio', { bio }),
+
   // 기술 스택 관련 API
   getTechStacks: () => api.get('/user/tech-stacks'),
   
