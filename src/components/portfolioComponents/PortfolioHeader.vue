@@ -12,7 +12,13 @@
           {{ userInfo?.category || 'Developer' }}
         </div>
         <div class="profile-picture-container">
-          <img class="profile-picture" :src="userInfo?.avatar || defaultAvatar" :alt="`${userInfo?.name || 'User'} profile picture`" />
+          <img 
+            class="profile-picture" 
+            :src="currentAvatar" 
+            :alt="`${userInfo?.name || 'User'} profile picture`"
+            @error="handleImageError"
+            @load="handleImageLoad"
+          />
         </div>
         <div class="user-details">
           <div class="name-section">
@@ -56,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import ToastNotification from '../common/ToastNotification.vue'
 
 // Props
@@ -81,7 +87,51 @@ const props = defineProps({
 })
 
 // Default avatar fallback
-const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
+const defaultAvatar = computed(() => 
+  `https://api.dicebear.com/7.x/avataaars/svg?seed=${props.userId}`
+)
+
+// Image handling
+const currentAvatar = ref('')
+const imageError = ref(false)
+
+// Update current avatar when userInfo changes
+watch(() => props.userInfo?.avatar, (newAvatar) => {
+  console.log('🖼️ PortfolioHeader: 아바타 URL 변경됨:', {
+    newAvatar,
+    isValidUrl: newAvatar && newAvatar.trim(),
+    defaultAvatar: defaultAvatar.value
+  })
+  
+  if (newAvatar && newAvatar.trim()) {
+    currentAvatar.value = newAvatar
+    imageError.value = false
+  } else {
+    currentAvatar.value = defaultAvatar.value
+    imageError.value = false
+  }
+}, { immediate: true })
+
+// Handle image load error
+const handleImageError = (event) => {
+  const failedUrl = event.target.src
+  console.warn('🖼️ 프로필 이미지 로드 실패:', {
+    failedUrl,
+    userInfo: props.userInfo,
+    willUseFallback: defaultAvatar.value,
+    errorDetails: event
+  })
+  
+  if (!imageError.value) { // 무한 루프 방지
+    imageError.value = true
+    currentAvatar.value = defaultAvatar.value
+  }
+}
+
+// Handle successful image load
+const handleImageLoad = () => {
+  imageError.value = false
+}
 
 // Reactive data
 const isLiked = ref(false)
@@ -244,6 +294,27 @@ const copyLink = async () => {
   height: 100%;
   object-fit: cover;
   position: relative;
+  transition: opacity 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-picture:not([src=""]):not([src]):before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .user-details {

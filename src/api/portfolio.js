@@ -6,7 +6,7 @@ export const portfolioApi = {
   getPortfolio: () => api.get('/user/portfolio'),
 
   // 공개 포트폴리오 조회 (인증 불필요)
-  getPublicPortfolio: (userId) => api.get(`/portfolio/${userId}`),
+  getPublicPortfolio: (userId, config = {}) => api.get(`/portfolio/${userId}`, config),
 
   // 공개된 포트폴리오 목록 조회 (검색 및 페이징 포함)
   getPublicPortfolios: (params = {}) => {
@@ -35,6 +35,9 @@ export const portfolioApi = {
 
   // 포트폴리오 통합 업데이트
   updatePortfolio: (data) => api.put('/user/portfolio', data),
+
+  // 자기소개만 업데이트
+  updateBio: (bio) => api.patch('/user/bio', { bio }),
 
   // 기술 스택 관련 API
   getTechStacks: () => api.get('/user/tech-stacks'),
