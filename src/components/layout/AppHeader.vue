@@ -104,12 +104,10 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
 import { useNotifications } from '@/composables/useNotifications'
-import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const router = useRouter()
 const toast = useToast()
-const router = useRouter()
 
 // 실시간 알림 관리
 const {
