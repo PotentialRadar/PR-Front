@@ -100,11 +100,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from 'vue-toastification'
 import { useNotifications } from '@/composables/useNotifications'
 
 const userStore = useUserStore()
+const router = useRouter()
 const toast = useToast()
 
 // 실시간 알림 관리
@@ -274,6 +276,9 @@ const handleLogout = async () => {
     timeout: 2000,
     hideProgressBar: true,
   })
+
+  // 즉시 로그인 페이지로 이동 (사용자는 거기서 로그인/회원가입 선택)
+  router.push({ path: '/login', query: { redirect: '/' } })
 }
 
 // 외부 클릭 감지

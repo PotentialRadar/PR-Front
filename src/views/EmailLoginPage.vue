@@ -56,6 +56,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast 알림 -->
+    <div v-if="showToast" :class="['toast', `toast-${toastType}`]">
+      <div class="toast-content">
+        <div class="toast-icon">
+          <i v-if="toastType === 'error'" class="bi bi-exclamation-circle"></i>
+          <i v-if="toastType === 'success'" class="bi bi-check-circle"></i>
+          <i v-if="toastType === 'warning'" class="bi bi-exclamation-triangle"></i>
+          <i v-if="toastType === 'info'" class="bi bi-info-circle"></i>
+        </div>
+        <span class="toast-message">{{ toastMessage }}</span>
+        <button @click="showToast = false" class="toast-close">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -64,7 +80,11 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { loginByEmail } from "../api/login";
-import api from "@/api/axios";
+
+// Toast 알림 상태
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref('error'); // 'success', 'error', 'warning', 'info'
 
 const email = ref("");
 const password = ref("");
@@ -73,6 +93,28 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const canSubmit = computed(() => email.value && password.value);
+
+// Toast 메시지 표시 함수들
+const showErrorToast = (message) => {
+  toastMessage.value = message;
+  toastType.value = 'error';
+  showToast.value = true;
+  
+  // 3초 후 자동 숨김
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+};
+
+const showSuccessToast = (message) => {
+  toastMessage.value = message;
+  toastType.value = 'success';
+  showToast.value = true;
+  
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+};
 
 // 이메일 로그인 처리
 const handleEmailLogin = async () => {
@@ -102,7 +144,11 @@ const handleEmailLogin = async () => {
     router.push("/");
   } catch (error) {
     console.error("로그인 실패:", error);
-    alert("로그인 실패: " + (error?.response?.data?.message || "서버 오류"));
+    
+    // 백엔드에서 온 구체적인 에러 메시지 추출
+    const errorMessage = error?.response?.data?.message || error?.message || "서버 오류가 발생했습니다";
+    
+    showErrorToast(errorMessage);
   }
 };
 </script>
@@ -300,5 +346,102 @@ form {
   color: rgba(55, 56, 60, 0.61);
   margin-top: 30px;
   padding: 0 25px 0 20px;
+}
+
+/* Toast 알림 스타일 */
+.toast {
+  position: fixed;
+  /* 헤더 높이(68px) + 여백 */
+  top: 84px;
+  right: 20px;
+  /* 헤더(2000)보다 높게 설정 */
+  z-index: 3000;
+  min-width: 300px;
+  max-width: 500px;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+  color: white;
+  border-left: 4px solid #ff4757;
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border-left: 4px solid #2E7D32;
+}
+
+.toast-warning {
+  background: linear-gradient(135deg, #ffa726, #ff9800);
+  color: white;
+  border-left: 4px solid #f57c00;
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #42a5f5, #2196f3);
+  color: white;
+  border-left: 4px solid #1976d2;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .toast {
+    top: 78px; /* 모바일에서도 헤더 아래에 표시 */
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
 }
 </style>

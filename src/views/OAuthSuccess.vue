@@ -24,6 +24,9 @@ onMounted(async () => {
     
     // userStore에 로그인 정보 저장 (fetchProfile에서 이미 설정됨)
     userStore.isLoggedIn = true;
+
+    // 로그아웃 플래그 제거(혹시 남아있다면)
+    try { sessionStorage.removeItem('clientLoggedOut') } catch (_) {}
     
     console.log('✅ OAuth 로그인 성공 - httpOnly 쿠키를 통한 인증');
   } catch (error) {

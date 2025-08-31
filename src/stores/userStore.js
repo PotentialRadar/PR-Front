@@ -34,6 +34,13 @@ export const useUserStore = defineStore('user', {
       this.profile = null;
       this.techStacks = [];
       
+      // 클라이언트 로그아웃 플래그 설정 (axios interceptor에서 토큰 갱신 시도 방지)
+      try {
+        sessionStorage.setItem('clientLoggedOut', '1');
+      } catch (_) {
+        console.warn('sessionStorage 접근 실패');
+      }
+      
       // httpOnly 쿠키는 브라우저에서 직접 삭제할 수 없음
       // 서버에서 logout API를 통해 쿠키를 만료시켜야 함
     },
@@ -88,12 +95,19 @@ export const useUserStore = defineStore('user', {
             return;
           }
           
-          if (authData.authenticated) {
-            // 서버에서 인증됨 - 사용자 정보 설정
-            this.isLoggedIn = true;
-            this.userId = authData.userId;
-            this.email = authData.email;
-            this.nickname = authData.nickname;
+      if (authData.authenticated) {
+        // 서버에서 인증됨 - 사용자 정보 설정
+        this.isLoggedIn = true;
+        this.userId = authData.userId;
+        this.email = authData.email;
+        this.nickname = authData.nickname;
+
+        // 클라이언트 로그아웃 플래그가 남아있다면 제거하여 라우터 가드 오작동 방지
+        try {
+          sessionStorage.removeItem('clientLoggedOut');
+        } catch (_) {
+          console.warn('sessionStorage 접근 실패');
+        }
             
             // 프로필 정보가 없으면 추가로 가져오기
             if (!this.profile) {

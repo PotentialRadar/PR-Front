@@ -44,7 +44,7 @@ const routes = [
   {
     path: '/oauth/success',
     name: 'OAuthSuccess',
-    component: () => import('@/views/OAuth2Succcess.vue'),
+    component: () => import('@/views/OAuthSuccess.vue'),
   },
   {
     // 회원가입
