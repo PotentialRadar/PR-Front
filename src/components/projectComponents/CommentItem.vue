@@ -71,7 +71,7 @@ export default {
 
       const commentAuthorId = this.comment._raw?.userId;
       const isAuthor = this.currentUserId === commentAuthorId;
-      const isProjectOwner = this.currentUserId === Number(this.projectOwnerId);
+      const isProjectOwner = Number(this.currentUserId) === Number(this.projectOwnerId);
       const isParentCommentAuthor = this.comment.isReply && this.currentUserId === this.parentAuthorId; // NEW
 
       // --- 디버깅 로그 ---

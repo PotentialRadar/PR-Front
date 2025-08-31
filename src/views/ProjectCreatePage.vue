@@ -60,6 +60,7 @@
               <input
                   type="date"
                   v-model="formData.startDate"
+                  :max="formData.endDate"
                   :class="['deadline-input', { 'error': getError('startDate').value }]"
                   @blur="validateField('startDate', formData.startDate, validationSchema.startDate)"
               />
@@ -72,6 +73,7 @@
               <input
                   type="date"
                   v-model="formData.endDate"
+                  :min="formData.startDate"
                   :class="['deadline-input', { 'error': getError('endDate').value }]"
                   @blur="validateField('endDate', formData.endDate, validationSchema.endDate)"
               />

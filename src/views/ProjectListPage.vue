@@ -366,7 +366,7 @@ const performSearch = async (searchParams) => {
         const rdbParams = {
           page: page.value - 1,
           size: 8,
-          sort: 'createdAt,desc'
+          sort: sort.value
         };
         console.log('🔧 RDB params for latest sort:', rdbParams);
         result = await listProjects(rdbParams);
