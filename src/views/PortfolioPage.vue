@@ -353,6 +353,31 @@ const hasContactInfo = computed(() => {
            hasValidLinkedin || hasValidWebsite || hasValidLocation)
 })
 
+// 이미지 URL 유효성 검사 및 변환 함수
+const getValidImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+    return null
+  }
+  
+  const trimmedUrl = imageUrl.trim()
+  
+  // 이미 절대 URL인 경우
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl
+  }
+  
+  // 상대 경로인 경우 백엔드 도메인을 추가
+  if (trimmedUrl.startsWith('/')) {
+    const backendUrl = import.meta.env.PROD 
+      ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}`
+      : 'http://localhost:8080'
+    return `${backendUrl}${trimmedUrl}`
+  }
+  
+  // 기타 경우는 그대로 반환
+  return trimmedUrl
+}
+
 // 포트폴리오 데이터 로드 함수
 const loadPortfolioData = async (userId) => {
   loading.value = true
@@ -383,6 +408,15 @@ const loadPortfolioData = async (userId) => {
       githubUrl: userData.githubUrl,
       linkedinUrl: userData.linkedinUrl,
       websiteUrl: userData.websiteUrl
+    })
+    console.log('🖼️ 프로필 이미지 정보:', {
+      originalProfileImage: userData.profileImage,
+      processedImageUrl: getValidImageUrl(userData.profileImage),
+      isEmptyString: userData.profileImage === '',
+      isNull: userData.profileImage === null,
+      isUndefined: userData.profileImage === undefined,
+      trimmedLength: userData.profileImage ? userData.profileImage.trim().length : 0,
+      fallbackAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`
     })
     
     if (!userData) {
@@ -418,7 +452,7 @@ const loadPortfolioData = async (userId) => {
       userInfo: {
         name: userData.nickname || '사용자',
         jobTitle: userData.jobTitle || '',
-        avatar: userData.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
+        avatar: getValidImageUrl(userData.profileImage) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
         category: userData.techPartName || userData.techPart || '',
         email: userData.email || '',
         phone: userData.phone || '',
