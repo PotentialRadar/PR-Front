@@ -47,7 +47,6 @@
             <div class="filter-chips">
               <button v-for="part in techParts" :key="part" class="filter-chip" :class="{ 'active': selectedTechParts.includes(part) }" @click="toggleTechPart(part)">
                 {{ part }}
-                <span class="result-count">({{ getFilterResultCount('techPart', part) }})</span>
                 <span v-if="selectedTechParts.length > 0 && selectedTechParts.includes(part)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -62,7 +61,6 @@
             <div class="filter-chips">
               <button v-for="stack in popularTechStacks" :key="stack" class="filter-chip" :class="{ 'active': selectedTechStacks.includes(stack) }" @click="toggleTechStack(stack)">
                 {{ stack }}
-                <span class="result-count">({{ getFilterResultCount('techStack', stack) }})</span>
                 <span v-if="selectedTechStacks.length > 0 && selectedTechStacks.includes(stack)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -77,7 +75,6 @@
             <div class="filter-chips">
               <button v-for="status in filteredProjectStatuses" :key="status.value" class="filter-chip status-chip" :class="{ 'active': selectedStatuses.includes(status.value) }" @click="toggleStatus(status.value)">
                 <div class="status-indicator" :class="getStatusClass(status.value)"></div>{{ status.label }}
-                <span class="result-count">({{ getFilterResultCount('status', status.value) }})</span>
                 <span v-if="selectedStatuses.length > 0 && selectedStatuses.includes(status.value)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -199,7 +196,7 @@ import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
 
 import { applyProject } from '@/api/projectMember';
 import api from '@/api/axios';
-import { searchProjects, getPopularKeywords, getProjectCountPreview } from '@/api/search';
+import { searchProjects, getPopularKeywords } from '@/api/search';
 import { listProjects } from '@/api/projects';
 
 const router = useRouter();
@@ -215,7 +212,6 @@ const totalPages = ref(1);
 const loading = ref(false);
 const error = ref(null);
 const popularKeywords = ref([]);
-const filterResultCounts = ref({});
 
 // Search and Filter State
 const page = ref(1);
@@ -230,12 +226,7 @@ const isSearchMode = ref(false);
 // Filter Options Data
 const techParts = computed(() => techTagStore.techParts);
 const popularTechStacks = computed(() => {
-  const stacks = techTagStore.getPopularTechStacksTop20();
-  return stacks.sort((a, b) => {
-    const countA = getFilterResultCount('techStack', a);
-    const countB = getFilterResultCount('techStack', b);
-    return countB - countA;
-  });
+  return techTagStore.getPopularTechStacksTop20();
 });
 const projectStatuses = ref([
   { value: 'RECRUITING', label: '모집중' },
@@ -276,15 +267,21 @@ onActivated(async () => {
     console.log('기술 파트:', techParts.value);
     console.log('기술 스택:', popularTechStacks.value);
     
-    // 초기 필터 결과 수 로딩
-    setTimeout(() => updateFilterResultCounts(), 1000);
+    // 필터 상태 복원
+    restoreFilterState();
+    
+    // 현재 검색 상태가 있으면 그대로 유지, 없으면 초기 데이터 로딩
+    if (Object.values(currentSearchParams.value).some(v => v !== null && v !== undefined && v?.length > 0)) {
+      await performSearch(currentSearchParams.value);
+    } else {
+      await loadInitialData();
+    }
   } catch (error) {
     console.error('❌ 초기 데이터 로드 실패:', error);
   }
 });
 
 watch([page], () => {
-  router.replace({ query: { ...route.query, page: page.value !== 1 ? page.value : undefined } });
   performSearch(currentSearchParams.value);
 });
 
@@ -303,21 +300,8 @@ const handleSearch = async (resetPage = true) => {
   currentSearchParams.value = searchParams;
   isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
 
-  // Update URL query params
-  const nextQuery = {
-    ...route.query,
-    q: searchParams.keyword || undefined,
-    parts: searchParams.techParts?.join(',') || undefined,
-    stacks: searchParams.techStacks?.join(',') || undefined,
-    status: searchParams.statuses?.join(',') || undefined,
-    page: page.value !== 1 ? String(page.value) : undefined,
-    sort: sort.value !== DEFAULT_SORT ? sort.value : undefined,
-  };
-  
-  // Remove undefined properties
-  Object.keys(nextQuery).forEach(key => nextQuery[key] === undefined && delete nextQuery[key]);
-  
-  router.replace({ query: nextQuery });
+  // 필터 상태 저장
+  saveFilterState();
   
   await performSearch(searchParams);
 };
@@ -421,7 +405,6 @@ const toggleItem = (list, item) => {
   if (index > -1) list.value.splice(index, 1);
   else list.value.push(item);
   handleSearch();
-  setTimeout(() => updateFilterResultCounts(), 500);
 };
 
 const toggleTechPart = (part) => toggleItem(selectedTechParts, part);
@@ -432,6 +415,7 @@ const clearAllFilters = () => {
   selectedTechParts.value = [];
   selectedTechStacks.value = [];
   selectedStatuses.value = [];
+  sessionStorage.removeItem('projectListFilters');
   handleSearch();
 };
 const clearSearch = () => {
@@ -443,92 +427,53 @@ const clearSearch = () => {
 
 // loadInitialData 중복 제거됨 (위에서 이미 정의되어 있음)
 
-// Watch for route query changes to update component state
-watch(
-  () => route.query,
-  (query) => {
-    searchQuery.value = query.q || '';
-    selectedTechParts.value = query.parts ? query.parts.split(',') : [];
-    selectedTechStacks.value = query.stacks ? query.stacks.split(',') : [];
-    selectedStatuses.value = query.status ? query.status.split(',') : [];
-    page.value = query.page ? Number(query.page) : 1;
-    sort.value = query.sort || DEFAULT_SORT;
-    
-    const searchParams = {
-      keyword: searchQuery.value.trim() || null,
-      techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
-      techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
-      statuses: selectedStatuses.value.length > 0 ? selectedStatuses.value : null
-    };
-    currentSearchParams.value = searchParams;
-    isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
+// 필터 상태 저장/복원 함수들
+const saveFilterState = () => {
+  const filterState = {
+    searchQuery: searchQuery.value,
+    selectedTechParts: selectedTechParts.value,
+    selectedTechStacks: selectedTechStacks.value,
+    selectedStatuses: selectedStatuses.value,
+    currentSearchParams: currentSearchParams.value,
+    isSearchMode: isSearchMode.value,
+    page: page.value
+  };
+  sessionStorage.setItem('projectListFilters', JSON.stringify(filterState));
+};
 
-    performSearch(searchParams);
-  },
-  { immediate: true }
-);
-
-
-// --- Filter Result Count Preview ---
-const updateFilterResultCounts = async () => {
-  try {
-    // 기술 파트별 결과 수 계산 - 병렬 처리
-    await Promise.allSettled(
-      techParts.value.map(async (part) => {
-        const params = { keyword: searchQuery.value.trim() || null, techParts: [part] };
-        const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0;
-      })
-    ).then(results => {
-      results.forEach((r, i) => { 
-        if (r.status === 'rejected') {
-          const part = techParts.value[i]
-          filterResultCounts.value[`techPart-${part}`] = 0; 
-        }
-      });
-    });
-
-    // 기술 스택별 결과 수 계산 - 병렬 처리
-    await Promise.allSettled(
-      popularTechStacks.value.map(async (stack) => {
-        const params = { keyword: searchQuery.value.trim() || null, techStacks: [stack] };
-        const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0;
-      })
-    ).then(results => {
-      results.forEach((r, i) => { 
-        if (r.status === 'rejected') {
-          const stack = popularTechStacks.value[i]
-          filterResultCounts.value[`techStack-${stack}`] = 0; 
-        }
-      });
-    });
-
-    // 상태별 결과 수 계산 - 병렬 처리
-    await Promise.allSettled(
-      filteredProjectStatuses.value.map(async (status) => {
-        const params = { keyword: searchQuery.value.trim() || null, statuses: [status.value] };
-        const result = await getProjectCountPreview(params);
-        filterResultCounts.value[`status-${status.value}`] = result.totalCount ?? 0;
-      })
-    ).then(results => {
-      results.forEach((r, i) => { 
-        if (r.status === 'rejected') {
-          const status = filteredProjectStatuses.value[i]
-          filterResultCounts.value[`status-${status.value}`] = 0; 
-        }
-      });
-    });
-
-  } catch (error) {
-    // 에러 발생 시 조용히 처리
+const restoreFilterState = () => {
+  const saved = sessionStorage.getItem('projectListFilters');
+  if (saved) {
+    try {
+      const filterState = JSON.parse(saved);
+      searchQuery.value = filterState.searchQuery || '';
+      selectedTechParts.value = filterState.selectedTechParts || [];
+      selectedTechStacks.value = filterState.selectedTechStacks || [];
+      selectedStatuses.value = filterState.selectedStatuses || [];
+      currentSearchParams.value = filterState.currentSearchParams || {};
+      isSearchMode.value = filterState.isSearchMode || false;
+      page.value = filterState.page || 1;
+      console.log('✅ 필터 상태 복원됨:', filterState);
+    } catch (error) {
+      console.error('❌ 필터 상태 복원 실패:', error);
+    }
   }
 };
 
-// 각 필터의 결과 수 가져오기
-const getFilterResultCount = (type, value) => {
-  return filterResultCounts.value[`${type}-${value}`] || 0;
+// 초기 데이터 로딩
+const loadInitialData = async () => {
+  const searchParams = {
+    keyword: null,
+    techParts: null,
+    techStacks: null,
+    statuses: null
+  };
+  currentSearchParams.value = searchParams;
+  isSearchMode.value = false;
+  await performSearch(searchParams);
 };
+
+
 
 // --- Utilities ---
 const getActiveFilterCount = () => selectedTechParts.value.length + selectedTechStacks.value.length + selectedStatuses.value.length;
