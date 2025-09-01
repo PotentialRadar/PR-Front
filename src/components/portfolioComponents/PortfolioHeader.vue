@@ -12,7 +12,13 @@
           {{ userInfo?.category || 'Developer' }}
         </div>
         <div class="profile-picture-container">
-          <img class="profile-picture" :src="userInfo?.avatar || defaultAvatar" :alt="`${userInfo?.name || 'User'} profile picture`" />
+          <img 
+            class="profile-picture" 
+            :src="currentAvatar" 
+            :alt="`${userInfo?.name || 'User'} profile picture`"
+            @error="handleImageError"
+            @load="handleImageLoad"
+          />
         </div>
         <div class="user-details">
           <div class="name-section">
@@ -27,7 +33,7 @@
     <!-- Action buttons -->
     <div class="header-actions">
       <div class="social-actions">
-        <button class="like-button" @click="toggleLike" :class="{ liked: isLiked }">
+        <button class="like-button" @click="toggleLike" :class="{ liked: isLiked }" :disabled="!isLoggedIn">
           <i class="bi bi-heart" v-if="!isLiked"></i>
           <i class="bi bi-heart-fill" v-else></i>
           <span class="like-count">{{ likeCount }}</span>
@@ -56,7 +62,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
+import { togglePortfolioLike, getPortfolioLikeStatus, getPortfolioLikeCount } from '@/api/user'
 import ToastNotification from '../common/ToastNotification.vue'
 
 // Props
@@ -81,11 +88,56 @@ const props = defineProps({
 })
 
 // Default avatar fallback
-const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
+const defaultAvatar = computed(() => 
+  `https://api.dicebear.com/7.x/avataaars/svg?seed=${props.userId}`
+)
+
+// Image handling
+const currentAvatar = ref('')
+const imageError = ref(false)
+
+// Update current avatar when userInfo changes
+watch(() => props.userInfo?.avatar, (newAvatar) => {
+  console.log('🖼️ PortfolioHeader: 아바타 URL 변경됨:', {
+    newAvatar,
+    isValidUrl: newAvatar && newAvatar.trim(),
+    defaultAvatar: defaultAvatar.value
+  })
+  
+  if (newAvatar && newAvatar.trim()) {
+    currentAvatar.value = newAvatar
+    imageError.value = false
+  } else {
+    currentAvatar.value = defaultAvatar.value
+    imageError.value = false
+  }
+}, { immediate: true })
+
+// Handle image load error
+const handleImageError = (event) => {
+  const failedUrl = event.target.src
+  console.warn('🖼️ 프로필 이미지 로드 실패:', {
+    failedUrl,
+    userInfo: props.userInfo,
+    willUseFallback: defaultAvatar.value,
+    errorDetails: event
+  })
+  
+  if (!imageError.value) { // 무한 루프 방지
+    imageError.value = true
+    currentAvatar.value = defaultAvatar.value
+  }
+}
+
+// Handle successful image load
+const handleImageLoad = () => {
+  imageError.value = false
+}
 
 // Reactive data
 const isLiked = ref(false)
-const likeCount = ref(42)
+const likeCount = ref(0)
+const isLoggedIn = computed(() => !!localStorage.getItem('accessToken'))
 const showContactModal = ref(false)
 
 // Toast notification state
@@ -106,20 +158,30 @@ const hideToast = () => {
   toast.visible = false
 }
 
-const toggleLike = () => {
-  const wasLiked = isLiked.value
-  isLiked.value = !isLiked.value
-  likeCount.value += isLiked.value ? 1 : -1
-
-  // Show feedback toast
-  if (isLiked.value) {
-    showToast('포트폴리오에 좋아요를 표시했습니다!', 'success')
-  } else {
-    showToast('좋아요가 취소되었습니다.', 'info')
+const toggleLike = async () => {
+  if (!isLoggedIn.value) {
+    showToast('로그인 후 좋아요를 누를 수 있습니다.', 'info')
+    return
   }
+  
+  try {
+    console.log('좋아요 토글 시작:', props.userId, '현재 상태:', isLiked.value)
+    const response = await togglePortfolioLike(props.userId)
+    console.log('좋아요 API 응답:', response.data)
+    
+    isLiked.value = response.data.liked
+    likeCount.value = response.data.likeCount
 
-  // Here you would typically sync with your API
-  // syncLikeWithAPI(props.userId, isLiked.value)
+    // Show feedback toast
+    if (isLiked.value) {
+      showToast('포트폴리오에 좋아요를 표시했습니다!', 'success')
+    } else {
+      showToast('좋아요가 취소되었습니다.', 'info')
+    }
+  } catch (error) {
+    console.error('좋아요 처리 실패:', error)
+    showToast('좋아요 처리에 실패했습니다.', 'error')
+  }
 }
 
 const openChatModal = () => {
@@ -140,6 +202,34 @@ const handleContactSend = (formData) => {
 const getPortfolioUrl = () => {
   return window.location.href
 }
+
+const loadLikeData = async () => {
+  try {
+    // 좋아요 개수는 누구나 볼 수 있음
+    const countResponse = await getPortfolioLikeCount(props.userId)
+    likeCount.value = countResponse.data
+    
+    // 좋아요 상태는 로그인한 사용자만
+    if (isLoggedIn.value) {
+      const statusResponse = await getPortfolioLikeStatus(props.userId)
+      isLiked.value = statusResponse.data.isLiked || statusResponse.data.liked
+    }
+  } catch (error) {
+    console.error('좋아요 데이터 로드 실패:', error)
+  }
+}
+
+onMounted(() => {
+  if (props.userId) {
+    loadLikeData()
+  }
+})
+
+watch(() => props.userId, (newUserId) => {
+  if (newUserId) {
+    loadLikeData()
+  }
+})
 
 const copyLink = async () => {
   try {
@@ -244,6 +334,27 @@ const copyLink = async () => {
   height: 100%;
   object-fit: cover;
   position: relative;
+  transition: opacity 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-picture:not([src=""]):not([src]):before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .user-details {
