@@ -42,3 +42,14 @@ export const getProjectsCreatedByUser = (userId) =>
 
 export const getAppliedProjectsByUser = (userId) =>
   api.get(`${BASE_URL}/${userId}/applied`);
+
+export const getPortfolios = (params) => api.get('/portfolios', { params });
+
+export const togglePortfolioLike = (targetId) => 
+  api.post('/likes', { targetId, targetType: 'PORTFOLIO' });
+
+export const getPortfolioLikeStatus = (targetId) => 
+  api.get('/likes/status', { params: { targetType: 'PORTFOLIO', targetId } });
+
+export const getPortfolioLikeCount = (targetId) => 
+  api.get('/likes/count', { params: { targetType: 'PORTFOLIO', targetId } });

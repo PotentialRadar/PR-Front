@@ -276,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { portfolioApi } from '@/api/portfolio.js'
 import api from '@/api/axios.js'
@@ -353,13 +353,46 @@ const hasContactInfo = computed(() => {
            hasValidLinkedin || hasValidWebsite || hasValidLocation)
 })
 
+// 이미지 URL 유효성 검사 및 변환 함수
+const getValidImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+    return null
+  }
+  
+  const trimmedUrl = imageUrl.trim()
+  
+  // 이미 절대 URL인 경우
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl
+  }
+  
+  // 상대 경로인 경우 백엔드 도메인을 추가
+  if (trimmedUrl.startsWith('/')) {
+    const backendUrl = import.meta.env.PROD 
+      ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}`
+      : 'http://localhost:8080'
+    return `${backendUrl}${trimmedUrl}`
+  }
+  
+  // 기타 경우는 그대로 반환
+  return trimmedUrl
+}
+
 // 포트폴리오 데이터 로드 함수
 const loadPortfolioData = async (userId) => {
   loading.value = true
   portfolioNotFound.value = false
 
   try {
-    const response = await portfolioApi.getPublicPortfolio(userId)
+    // 캐시 방지를 위해 타임스탬프 쿼리 파라미터 추가
+    const timestamp = Date.now()
+    const response = await portfolioApi.getPublicPortfolio(userId, {
+      params: { _t: timestamp },
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
     const userData = response.data
     
     // 디버깅용 로그 (개발 환경에서만)
@@ -375,6 +408,15 @@ const loadPortfolioData = async (userId) => {
       githubUrl: userData.githubUrl,
       linkedinUrl: userData.linkedinUrl,
       websiteUrl: userData.websiteUrl
+    })
+    console.log('🖼️ 프로필 이미지 정보:', {
+      originalProfileImage: userData.profileImage,
+      processedImageUrl: getValidImageUrl(userData.profileImage),
+      isEmptyString: userData.profileImage === '',
+      isNull: userData.profileImage === null,
+      isUndefined: userData.profileImage === undefined,
+      trimmedLength: userData.profileImage ? userData.profileImage.trim().length : 0,
+      fallbackAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`
     })
     
     if (!userData) {
@@ -410,7 +452,7 @@ const loadPortfolioData = async (userId) => {
       userInfo: {
         name: userData.nickname || '사용자',
         jobTitle: userData.jobTitle || '',
-        avatar: userData.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
+        avatar: getValidImageUrl(userData.profileImage) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
         category: userData.techPartName || userData.techPart || '',
         email: userData.email || '',
         phone: userData.phone || '',
@@ -577,6 +619,18 @@ onMounted(() => {
     loading.value = false
   }
 })
+
+// 라우트 파라미터 변경 감시 (URL 변경 시 새로운 데이터 로드)
+watch(
+  () => route.params.userId,
+  (newUserId, oldUserId) => {
+    if (newUserId && newUserId !== oldUserId) {
+      console.log(`🔄 라우트 파라미터 변경: ${oldUserId} → ${newUserId}`)
+      loadPortfolioData(newUserId)
+    }
+  },
+  { immediate: false }
+)
 </script>
 
 <style scoped>
