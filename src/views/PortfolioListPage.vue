@@ -152,7 +152,12 @@
                   <div class="card-header">
                     <div class="profile-section">
                       <div class="profile-avatar">
-                        <img :src="portfolio.avatar" :alt="portfolio.name" />
+                        <img 
+                          :src="portfolio.avatar" 
+                          :alt="portfolio.name" 
+                          @error="handleImageError($event, portfolio)"
+                          :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}'`"
+                        />
                       </div>
                       <div class="profile-info">
                         <h3 class="profile-name">{{ portfolio.name }}</h3>
@@ -406,7 +411,6 @@ const performSearch = async (searchParams) => {
     loading.value = false
   }
 }
-
 
 // 필터 아이템 토글
 const toggleItem = (list, item) => {

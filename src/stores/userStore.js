@@ -11,6 +11,7 @@ export const useUserStore = defineStore('user', {
     profile: null,
     techStacks: [],
     isLoggingOut: false,
+    isAuthChecked: false,
   }),
   actions: {
     login({ email, userId }) {
@@ -28,6 +29,7 @@ export const useUserStore = defineStore('user', {
       this.nickname = null;
       this.profile = null;
       this.techStacks = [];
+      this.isAuthChecked = true; // 인증 확인은 완료된 상태로 설정
       
       try {
         sessionStorage.setItem('clientLoggedOut', '1');
@@ -74,13 +76,12 @@ export const useUserStore = defineStore('user', {
       }
       
       try {
-        const response = await fetch('/api/auth/status', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        console.log('📡 /api/auth/status API 호출 시작');
+        const response = await api.get('/auth/status');
+        console.log('📡 /api/auth/status API 응답:', response);
         
-        if (response.ok) {
-          const authData = await response.json();
+        if (response.status === 200) {
+          const authData = response.data;
           console.log('🔍 인증 상태 응답:', authData);
           
           if (this.isLoggingOut) {
@@ -93,6 +94,7 @@ export const useUserStore = defineStore('user', {
             this.userId = authData.userId;
             this.email = authData.email;
             this.nickname = authData.nickname;
+            this.isAuthChecked = true; // 인증 확인 완료
 
             try {
               sessionStorage.removeItem('clientLoggedOut');
@@ -114,12 +116,14 @@ export const useUserStore = defineStore('user', {
             this.clearUserData();
           }
         } else {
-          console.error('❌ 인증 상태 확인 API 호출 실패:', response.status);
+          console.error('❌ 인증 상태 확인 API 응답 상태 이상:', response.status);
           this.clearUserData();
         }
       } catch (error) {
         console.error('❌ 인증 상태 확인 중 오류:', error);
         this.clearUserData();
+      } finally {
+        this.isAuthChecked = true; // 성공/실패 상관없이 확인 완료 표시
       }
     },
     
