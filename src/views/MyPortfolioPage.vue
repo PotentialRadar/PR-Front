@@ -708,9 +708,7 @@ const careerErrors = reactive({})
 // 리뷰 데이터를 가져오는 API 함수
 const getUserReviews = async (userId) => {
   try {
-    console.log('리뷰 데이터 요청 시작:', userId)
     const response = await api.get(`/reviews/users/${userId}`)
-    console.log('리뷰 데이터 응답:', response.data)
     return response.data || []
   } catch (error) {
     console.error('리뷰 데이터 로드 실패:', error)
@@ -763,7 +761,6 @@ const careerData = computed(() => {
 const loadPortfolioData = async () => {
   loading.value = true
   try {
-    console.log('포트폴리오 데이터 로드 시작...')
     
     // httpOnly 쿠키 방식에서는 토큰 확인을 하지 않음
     // 서버에서 쿠키를 통해 자동으로 인증 처리됨
@@ -774,8 +771,7 @@ const loadPortfolioData = async () => {
       techStackApi.getAllTechStacks()
     ])
     
-    console.log('포트폴리오 응답:', portfolioResponse.data)
-    console.log('기술스택 응답:', allTechStacksResponse.data)
+    
     
     const portfolio = portfolioResponse.data
     
@@ -1738,6 +1734,7 @@ const onProjectsUpdated = async () => {
     const portfolioResponse = await portfolioApi.getPortfolio()
     const portfolio = portfolioResponse.data
     
+    
     // 프로젝트 데이터만 업데이트
     portfolioData.projects = portfolio.projects?.map(project => {
       const role = (project?.role || '').toUpperCase() === 'LEADER' || (project?.role || '').toUpperCase() === 'PM' || (project?.role || '').toUpperCase() === 'PROJECT_MANAGER' ? '팀장' : '팀원'
@@ -1754,7 +1751,7 @@ const onProjectsUpdated = async () => {
       }
     }) || []
     
-    console.log('프로젝트 선택 반영됨:', portfolioData.projects.length, '개')
+    
   } catch (error) {
     console.error('프로젝트 업데이트 실패:', error)
     // 실패 시 전체 로드로 폴백
