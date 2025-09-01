@@ -10,7 +10,12 @@
         <div class="header-content">
           <div class="profile-section">
             <div class="profile-image">
-              <img :src="portfolioData.userInfo.avatar" :alt="portfolioData.userInfo.name" />
+              <img 
+                :src="portfolioData.userInfo.avatar" 
+                :alt="portfolioData.userInfo.name" 
+                @error="handleImageError"
+                :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolioData.userInfo.userId || 'default'}'`"
+              />
             </div>
             
             <div class="profile-info">
@@ -704,6 +709,15 @@ const editData = reactive({})
 // 에러 상태 관리
 const educationErrors = reactive({})
 const careerErrors = reactive({})
+
+// 이미지 로드 에러 처리
+const handleImageError = (event) => {
+  console.error('포트폴리오 프로필 이미지 로드 실패:', portfolioData.userInfo.avatar);
+  // 이미 dicebear URL이 아닌 경우에만 변경
+  if (!event.target.src.includes('dicebear.com')) {
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolioData.userInfo.userId || 'default'}`;
+  }
+}
 
 // 리뷰 데이터를 가져오는 API 함수
 const getUserReviews = async (userId) => {

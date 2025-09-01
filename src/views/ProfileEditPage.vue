@@ -7,7 +7,12 @@
           <h3 class="section-title">프로필 이미지</h3>
           <div class="profile-image-section">
             <div class="current-avatar">
-              <img :src="formData.avatar" :alt="formData.name" />
+              <img 
+                :src="formData.avatar" 
+                :alt="formData.name" 
+                @error="handleImageError"
+                :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.userId || 'default'}'`"
+              />
               <div class="avatar-overlay" @click="triggerFileUpload">
                 <i class="bi bi-camera"></i>
               </div>
@@ -432,6 +437,15 @@ const selectAvatar = (avatarUrl) => {
   isCustomAvatar.value = false;
   uploadedImage.value = null;
 };
+
+// 이미지 로드 에러 처리
+const handleImageError = (event) => {
+  console.error('프로필 이미지 로드 실패:', formData.avatar);
+  // 이미 dicebear URL이 아닌 경우에만 변경
+  if (!event.target.src.includes('dicebear.com')) {
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.userId || 'default'}`;
+  }
+}
 
 // 파일 업로드 관련 메서드 추가
 const triggerFileUpload = () => {
