@@ -199,9 +199,15 @@ const formatDeadline = (deadline) => {
 };
 
 const goToDetail = () => {
+  const projectId = props.project.projectId || props.project.id;
+  console.log('🔗 ProjectCard goToDetail:', { 
+    projectId, 
+    rawProject: props.project,
+    fields: { projectId: props.project.projectId, id: props.project.id }
+  });
   router.push({
     name: 'ProjectDetail',
-    params: { id: props.project.projectId || props.project.id }
+    params: { id: projectId }
   });
 };
 
