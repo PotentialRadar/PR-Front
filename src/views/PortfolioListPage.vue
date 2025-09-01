@@ -155,7 +155,12 @@
                   <div class="card-header">
                     <div class="profile-section">
                       <div class="profile-avatar">
-                        <img :src="portfolio.avatar" :alt="portfolio.name" />
+                        <img 
+                          :src="portfolio.avatar" 
+                          :alt="portfolio.name" 
+                          @error="handleImageError($event, portfolio)"
+                          :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}'`"
+                        />
                       </div>
                       <div class="profile-info">
                         <h3 class="profile-name">{{ portfolio.name }}</h3>
@@ -466,6 +471,15 @@ const updateFilterResultCounts = async () => {
 
   } catch (error) {
     console.error('❌ 필터 결과 수 업데이트 실패 (Portfolio):', error)
+  }
+}
+
+// 이미지 로드 에러 처리
+const handleImageError = (event, portfolio) => {
+  console.error('이미지 로드 실패:', portfolio.avatar, portfolio);
+  // 이미 dicebear URL이 아닌 경우에만 변경
+  if (!event.target.src.includes('dicebear.com')) {
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`;
   }
 }
 
