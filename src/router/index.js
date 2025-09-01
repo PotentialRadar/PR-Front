@@ -322,16 +322,18 @@ router.beforeEach(async (to, from, next) => {
     clientLoggedOut
   });
   
-  // clientLoggedOut 플래그가 있는 경우에만 비인증으로 처리
-  let isAuthenticated = false;
-  if (clientLoggedOut) {
-    isAuthenticated = false;
-    console.log('🔍 클라이언트 로그아웃 플래그로 인한 비인증 처리');
-  } else {
-    // userStore에서 바로 인증 상태 확인 (별도 API 호출 없이)
-    isAuthenticated = userStore.isLoggedIn;
-    console.log('🔍 userStore 인증 상태:', isAuthenticated);
+  // 최초 내비게이션/새로고침 등으로 인증 체크 전이라면 서버에 확인 수행
+  if (!clientLoggedOut && !userStore.isAuthChecked) {
+    try {
+      await userStore.checkLogin();
+    } catch (_) {
+      // 무시: checkLogin 내부에서 상태 정리함
+    }
   }
+
+  // 최종 인증 여부 결정
+  const isAuthenticated = !clientLoggedOut && userStore.isLoggedIn;
+  console.log('🔍 최종 인증 여부:', isAuthenticated);
   
   // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하는 경우
   if (isAuthPage && isAuthenticated) {
