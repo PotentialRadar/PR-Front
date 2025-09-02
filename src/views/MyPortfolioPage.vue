@@ -586,11 +586,12 @@
                     <div class="reviewer-avatar">
                       <img 
                         :src="review.reviewerProfileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.reviewerId}`" 
-                        :alt="review.reviewerName"
+                        :alt="review.reviewerNickname"
+                        @error="handleReviewerImageError"
                       />
                     </div>
                     <div class="reviewer-details">
-                      <h6 class="reviewer-name">{{ review.reviewerName || '익명' }}</h6>
+                      <h6 class="reviewer-name">{{ review.reviewerNickname || '익명' }}</h6>
                       <p class="project-context">{{ review.projectTitle }}</p>
                     </div>
                   </div>
@@ -716,6 +717,19 @@ const handleImageError = (event) => {
   // 이미 dicebear URL이 아닌 경우에만 변경
   if (!event.target.src.includes('dicebear.com')) {
     event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolioData.userInfo.userId || 'default'}`;
+  }
+}
+
+// 리뷰어 이미지 로드 에러 처리
+const handleReviewerImageError = (event) => {
+  console.error('리뷰어 프로필 이미지 로드 실패:', event.target.src);
+  // 이미 dicebear URL이 아닌 경우에만 변경
+  if (!event.target.src.includes('dicebear.com')) {
+    // 현재 이미지의 seed를 추출하거나 기본값 사용
+    const currentSrc = event.target.src;
+    const seedMatch = currentSrc.match(/seed=([^&]*)/);
+    const seed = seedMatch ? seedMatch[1] : 'default';
+    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
   }
 }
 
