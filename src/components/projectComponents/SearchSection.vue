@@ -221,6 +221,26 @@ export default {
   },
   async mounted() {
     await this.loadTechTags()
+    
+    // 로그아웃 시 검색 상태 초기화 이벤트 리스너
+    window.addEventListener('user-logout', this.resetSearchState)
+  },
+  beforeUnmount() {
+    // 이벤트 리스너 정리
+    window.removeEventListener('user-logout', this.resetSearchState)
+  },
+  beforeRouteLeave(to, from, next) {
+    // 프로젝트 관련 페이지에서 완전히 다른 섹션으로 이동할 때만 검색 상태 초기화
+    const projectPages = ['/projects', '/new-project']
+    const isLeavingProjectSection = !projectPages.some(page => to.path.startsWith(page)) && 
+                                   !to.path.match(/^\/projects\/\d+$/) // 프로젝트 상세 페이지 패턴
+    
+    if (isLeavingProjectSection) {
+      this.resetSearchState()
+      console.log('🔄 프로젝트 섹션을 벗어남 - 검색 상태 초기화')
+    }
+    
+    next()
   },
   computed: {
     techParts() {
@@ -349,6 +369,16 @@ export default {
       this.selectedStatuses = []
       this.selectedExperienceRanges = []
       this.handleSearch()
+    },
+    
+    resetSearchState() {
+      this.searchQuery = ''
+      this.selectedTechParts = []
+      this.selectedTechStacks = []
+      this.selectedStatuses = []
+      this.selectedExperienceRanges = []
+      this.showFilters = false
+      console.log('🔄 SearchSection 검색 상태 초기화됨')
     }
   }
 }

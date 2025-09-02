@@ -232,8 +232,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onActivated, watch } from 'vue'
+import { ref, computed, onActivated, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { onBeforeRouteLeave } from 'vue-router'
 import { useTechTagStore } from '@/stores/techTagStore'
 
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -309,6 +310,43 @@ const loadPopularKeywords = async () => {
     popularKeywords.value = ['React', 'Vue.js', 'Node.js', 'Python']
   }
 }
+
+// 로그아웃 시 검색 상태 초기화 이벤트 리스너
+const resetSearchState = () => {
+  searchQuery.value = ''
+  selectedTechParts.value = []
+  selectedTechStacks.value = []
+  selectedExperiences.value = []
+  currentSearchParams.value = {}
+  isSearchMode.value = false
+  page.value = 1
+  sessionStorage.removeItem('portfolioListFilters')
+  console.log('🔄 PortfolioListPage 검색 상태 및 sessionStorage 초기화됨')
+}
+
+onMounted(() => {
+  // 로그아웃 이벤트 리스너 등록
+  window.addEventListener('user-logout', resetSearchState)
+})
+
+onUnmounted(() => {
+  // 이벤트 리스너 정리
+  window.removeEventListener('user-logout', resetSearchState)
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  // 포트폴리오 관련 페이지에서 완전히 다른 섹션으로 이동할 때만 검색 상태 초기화
+  const portfolioPages = ['/portfolios']
+  const isLeavingPortfolioSection = !portfolioPages.some(page => to.path.startsWith(page)) &&
+                                   !to.path.match(/^\/portfolio\/\d+$/) // 포트폴리오 상세 페이지 패턴
+  
+  if (isLeavingPortfolioSection) {
+    resetSearchState()
+    console.log('🔄 포트폴리오 섹션을 벗어남 - 검색 상태 초기화')
+  }
+  
+  next()
+})
 
 onActivated(async () => {
   try {

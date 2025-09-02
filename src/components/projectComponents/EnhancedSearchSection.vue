@@ -277,6 +277,35 @@ export default {
   async mounted() {
     await this.loadTechTags()
     this.debouncedSearch = debounce(this.handleSearch, 500)
+    
+    // 로그아웃 시 검색 상태 초기화 이벤트 리스너
+    window.addEventListener('user-logout', this.resetSearchState)
+  },
+  beforeUnmount() {
+    // 이벤트 리스너 정리
+    window.removeEventListener('user-logout', this.resetSearchState)
+  },
+  beforeRouteLeave(to, from, next) {
+    // 프로젝트 관련 페이지에서 완전히 다른 섹션으로 이동할 때만 검색 상태 초기화
+    const projectPages = ['/projects', '/new-project']
+    const portfolioPages = ['/portfolios']
+    
+    let isLeavingCurrentSection = false
+    
+    if (this.type === 'project') {
+      isLeavingCurrentSection = !projectPages.some(page => to.path.startsWith(page)) && 
+                               !to.path.match(/^\/projects\/\d+$/) // 프로젝트 상세 페이지 패턴
+    } else if (this.type === 'portfolio') {
+      isLeavingCurrentSection = !portfolioPages.some(page => to.path.startsWith(page)) &&
+                               !to.path.match(/^\/portfolio\/\d+$/) // 포트폴리오 상세 페이지 패턴
+    }
+    
+    if (isLeavingCurrentSection) {
+      this.resetSearchState()
+      console.log(`🔄 ${this.type} 섹션을 벗어남 - 검색 상태 초기화`)
+    }
+    
+    next()
   },
   computed: {
     techParts() {
@@ -438,6 +467,16 @@ export default {
         'ETC': '👤'
       }
       return emojis[exp] || '👤'
+    },
+    
+    resetSearchState() {
+      this.searchQuery = ''
+      this.selectedTechParts = []
+      this.selectedTechStacks = []
+      this.selectedStatuses = []
+      this.selectedExperienceRanges = []
+      this.showAdvancedFilters = false
+      console.log('🔄 EnhancedSearchSection 검색 상태 초기화됨')
     }
   }
 }
