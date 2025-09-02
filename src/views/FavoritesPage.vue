@@ -117,17 +117,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore' // userStore 임포트
-import { getLikedProjects, getLikedPortfolios, toggleLike } from '@/api/likes.js' // getLikedPortfolios 임포트
+import { useUserStore } from '@/stores/userStore'
+import { getLikedProjects, getLikedPortfolios, toggleLike } from '@/api/likes.js'
+import { useToast } from 'vue-toastification'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 
 const router = useRouter()
-const userStore = useUserStore() // userStore 사용
+const userStore = useUserStore()
+const toast = useToast()
 const activeTab = ref('projects')
 
 const favoriteProjects = ref([])
-const favoritePortfolios = ref([]) // 포트폴리오 상태 변수
+const favoritePortfolios = ref([])
 
 // --- Pagination State ---
 const currentPage = ref(1)
@@ -184,7 +186,7 @@ const handleFavoriteToggle = async (projectId) => {
     await loadFavoriteData(); // 목록 새로고침
   } catch (error) {
     console.error(`프로젝트 ${projectId} 좋아요 처리에 실패했습니다:`, error);
-    alert('오류가 발생했습니다. 다시 시도해주세요.');
+    toast.error('오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 
@@ -195,7 +197,7 @@ const removeFavoritePortfolio = async (portfolioUserId) => {
     await loadFavoriteData(); // 목록 새로고침
   } catch (error) {
     console.error(`포트폴리오 ${portfolioUserId} 좋아요 처리에 실패했습니다:`, error);
-    alert('오류가 발생했습니다. 다시 시도해주세요.');
+    toast.error('오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 

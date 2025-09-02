@@ -24,7 +24,7 @@
                   @click="toggleIsPrivate"
               >
                 <svg width="15" height="20" viewBox="0 0 15 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7.49951 0.157715C6.2858 0.158985 5.12215 0.641721 4.26385 1.49987C3.40556 2.35801 2.92279 3.52142 2.92131 4.73513V6.75441H1.84458C1.38055 6.75505 0.935623 6.93956 0.607506 7.26768C0.279388 7.5958 0.0948732 8.04073 0.0942383 8.50476V17.9293C0.0948732 18.3933 0.279388 18.8381 0.607506 19.1662C0.935623 19.4943 1.38055 19.679 1.84458 19.6797H13.1538C13.6179 19.679 14.0626 19.4943 14.3907 19.1662C14.7188 18.8381 14.9036 18.3933 14.9042 17.9293V8.50476C14.9036 8.04073 14.7188 7.5958 14.3907 7.26768C14.0626 6.93956 13.6179 6.75505 13.1538 6.75441H12.0771V4.73513C12.0756 3.52156 11.5929 2.35818 10.7348 1.50006C9.87665 0.641939 8.71308 0.159197 7.49951 0.157715ZM4.53963 4.73513C4.5409 3.9505 4.85314 3.1984 5.40796 2.64359C5.96278 2.08877 6.71488 1.77652 7.49951 1.77525C8.28414 1.77652 9.03643 2.08877 9.59125 2.64359C10.1461 3.1984 10.4583 3.9505 10.4596 4.73513V6.75441H4.53963V4.73513ZM13.2898 8.37038V18.0629H1.71255V8.37038H13.2898Z" fill="#262626"/>
+                  <path d="M7.49951 0.157715C6.2858 0.158985 5.12215 0.641721 4.26385 1.49987C3.40556 2.35801 2.92279 3.52142 2.92131 4.73513V6.75441H1.84458C1.38055 6.75505 0.935623 6.93956 0.607506 7.26768C0.279388 7.5958 0.0948732 8.04073 0.0942383 8.50476V17.9293C0.0948732 18.3933 0.279388 18.8381 0.607506 19.1662C0.935623 19.4943 1.38055 19.679 1.84458 19.6797H13.1538C13.6179 19.679 14.0626 19.4943 14.3907 19.1662C14.7188 18.8381 14.9036 18.3933 14.9042 17.9293V8.50476C14.9036 8.04073 14.7188 7.5958 14.3907 7.26768C14.0626 6.93956 13.6179 6.75505 13.1538 6.75441H12.0771V4.73513C12.0756 3.52156 11.5929 2.35818 10.7348 1.50006C9.87665 0.641939 8.71308 0.159197 7.49951 0.157715ZM4.53963 4.73513C4.53963 3.9505 4.85314 3.1984 5.40796 2.64359C5.96278 2.08877 6.71488 1.77652 7.49951 1.77525C8.28414 1.77652 9.03643 2.08877 9.59125 2.64359C10.1461 3.1984 10.4596 3.9505 10.4596 4.73513V6.75441H4.53963V4.73513ZM13.2898 8.37038V18.0629H1.71255V8.37038H13.2898Z" fill="#262626"/>
                 </svg>
               </div>
               <button class="submit-button" @click="submitComment" :disabled="submitting || !canSubmit">
@@ -86,9 +86,11 @@ import { useRouter } from 'vue-router';
 import CommentItem from './CommentItem.vue';
 import { listComments, createComment, updateComment, deleteComment } from '@/api/comments';
 import { useUserStore } from '@/stores/userStore';
+import { useToast } from 'vue-toastification';
 
 const router = useRouter();
 const userStore = useUserStore();
+const toast = useToast();
 
 const props = defineProps({
   projectId: { type: [Number, String], required: true },
@@ -101,19 +103,17 @@ const newComment = ref('');
 const isPrivate = ref(false);
 const activeReplyCommentId = ref(null);
 const newReplyText = ref('');
-const isReplyPrivate = ref(false); // NEW
+const isReplyPrivate = ref(false);
 const loading = ref(false);
 const error = ref(null);
 const submitting = ref(false);
-
-
 
 // 비밀 댓글 토글
 const toggleIsPrivate = () => {
   isPrivate.value = !isPrivate.value;
 };
 
-const toggleIsReplyPrivate = () => { // NEW
+const toggleIsReplyPrivate = () => {
   isReplyPrivate.value = !isReplyPrivate.value;
 };
 
@@ -123,8 +123,7 @@ const canSubmit = computed(() => (newComment.value?.trim().length || 0) >= MIN_L
 const canSubmitReply = computed(() => (newReplyText.value?.trim().length || 0) >= MIN_LEN);
 
 // 서버 DTO → UI 1개 노드 매핑
-// DTO: { commentId, userId, nickname, content, createdAt, updatedAt, isPrivate, children }
-function adaptOne(server, parentId = null, parentAuthorId = null) { // NEW parentAuthorId parameter
+function adaptOne(server, parentId = null, parentAuthorId = null) {
   const created = server.createdAt;
   return {
     id: server.commentId,
@@ -136,19 +135,18 @@ function adaptOne(server, parentId = null, parentAuthorId = null) { // NEW paren
     isReply: parentId !== null,
     parentId,
     isPrivate: !!server.isPrivate,
-    parentAuthorId: parentAuthorId, // NEW
+    parentAuthorId: parentAuthorId,
     _raw: server,
   };
 }
 
 // 트리 평탄화 (부모 다음에 자식들 순서)
-function flattenComments(list, parentId = null, acc = [], currentLevelParentAuthorId = null) { // NEW currentLevelParentAuthorId parameter
+function flattenComments(list, parentId = null, acc = [], currentLevelParentAuthorId = null) {
   if (!Array.isArray(list)) return acc;
   for (const node of list) {
-    const ui = adaptOne(node, parentId, currentLevelParentAuthorId); // Pass currentLevelParentAuthorId
+    const ui = adaptOne(node, parentId, currentLevelParentAuthorId);
     acc.push(ui);
     if (Array.isArray(node.children) && node.children.length) {
-      // When recursing, the current node's author becomes the parentAuthorId for its children
       flattenComments(node.children, ui.id, acc, ui._raw?.userId);
     }
   }
@@ -159,7 +157,7 @@ function flattenComments(list, parentId = null, acc = [], currentLevelParentAuth
 const handleAuthError = (e) => {
   const status = e?.response?.status;
   if (status === 401) {
-    alert('로그인이 필요합니다.');
+    toast.error('로그인이 필요합니다.');
     router.push({ name: 'Login', query: { redirect: router.currentRoute.value.fullPath }});
     return true;
   }
@@ -172,7 +170,6 @@ const loadComments = async () => {
   error.value = null;
   try {
     const { data } = await listComments(Number(props.projectId));
-    // 백은 List<CommentResponseDto> 반환
     const arr = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
     comments.value = flattenComments(arr);
   } catch (e) {
@@ -199,11 +196,12 @@ const submitComment = async () => {
       parentId: null,
     });
     newComment.value = '';
-    isPrivate.value = false; // 등록 후 초기화
+    isPrivate.value = false;
+    toast.success('댓글이 성공적으로 등록되었습니다.');
     await loadComments();
   } catch (e) {
     console.error(e);
-    if (!handleAuthError(e)) alert('댓글 등록에 실패했습니다.');
+    if (!handleAuthError(e)) toast.error('댓글 등록에 실패했습니다.');
   } finally {
     submitting.value = false;
   }
@@ -228,16 +226,17 @@ const submitReply = async () => {
   try {
     await createComment(Number(props.projectId), {
       content,
-      isPrivate: isReplyPrivate.value, // Changed from false
+      isPrivate: isReplyPrivate.value,
       parentId,
     });
     newReplyText.value = '';
     activeReplyCommentId.value = null;
-    isReplyPrivate.value = false; // Reset after submission // NEW
+    isReplyPrivate.value = false;
+    toast.success('답글이 성공적으로 등록되었습니다.');
     await loadComments();
   } catch (e) {
     console.error(e);
-    if (!handleAuthError(e)) alert('답글 등록에 실패했습니다.');
+    if (!handleAuthError(e)) toast.error('답글 등록에 실패했습니다.');
   } finally {
     submitting.value = false;
   }
@@ -250,10 +249,11 @@ const handleEditComment = async (commentId, nextText) => {
   submitting.value = true;
   try {
     await updateComment(Number(props.projectId), Number(commentId), { content });
+    toast.success('댓글이 수정되었습니다.');
     await loadComments();
   } catch (e) {
     console.error(e);
-    if (!handleAuthError(e)) alert('댓글 수정에 실패했습니다.');
+    if (!handleAuthError(e)) toast.error('댓글 수정에 실패했습니다.');
   } finally {
     submitting.value = false;
   }
@@ -266,10 +266,11 @@ const handleDeleteComment = async (commentId) => {
   submitting.value = true;
   try {
     await deleteComment(Number(props.projectId), Number(commentId));
+    toast.success('댓글이 삭제되었습니다.');
     await loadComments();
   } catch (e) {
     console.error(e);
-    if (!handleAuthError(e)) alert('댓글 삭제에 실패했습니다.');
+    if (!handleAuthError(e)) toast.error('댓글 삭제에 실패했습니다.');
   } finally {
     submitting.value = false;
   }

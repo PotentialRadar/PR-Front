@@ -119,6 +119,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toggleLike, isLiked as checkIsLiked } from '@/api/likes.js';
 import { useUserStore } from '@/stores/userStore.js';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
   project: {
@@ -130,6 +131,7 @@ const props = defineProps({
 const emit = defineEmits(['apply', 'like-updated']);
 const router = useRouter();
 const userStore = useUserStore();
+const toast = useToast();
 const isLoggedIn = computed(() => userStore.isLoggedIn);
 
 const isLiked = ref(false);
@@ -166,7 +168,7 @@ watch(() => userStore.userId, (newUserId, oldUserId) => {
 
 const handleLikeToggle = async () => {
   if (!userStore.isLoggedIn) {
-    alert('로그인이 필요합니다.');
+    toast.info('로그인이 필요합니다.');
     router.push('/login');
     return;
   }
@@ -178,7 +180,7 @@ const handleLikeToggle = async () => {
     emit('like-updated', { projectId, liked: response.liked, likeCount: response.likeCount });
   } catch (error) {
     console.error('Error toggling like:', error);
-    alert('좋아요 처리에 실패했습니다.');
+    toast.error('좋아요 처리에 실패했습니다.');
   }
 };
 

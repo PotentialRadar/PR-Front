@@ -532,7 +532,7 @@ const openApplyModal = (project) => {
   selectedProject.value = {
     title: project.title,
     description: project.description,
-    projectId: project.id,
+    projectId: project.projectId || project.id,
   };
   showApplyModal.value = true;
 };
@@ -550,7 +550,7 @@ const goToPortfolioSettings = () => {
 const handleApplicationSubmitted = async (applicationData) => {
   if (!selectedProject.value?.projectId) return;
   const payload = {
-    techPart: applicationData.applicationForm.part,
+    techPart: applicationData.applicationForm.techPart,
     applicationMessage: applicationData.applicationForm.message,
   };
   try {
