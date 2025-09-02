@@ -46,7 +46,6 @@
             <div class="filter-chips">
               <button v-for="part in techParts" :key="part" class="filter-chip" :class="{ 'active': selectedTechParts.includes(part) }" @click="toggleTechPart(part)">
                 {{ part }}
-                <span class="result-count">({{ getFilterResultCount('techPart', part) }})</span>
                 <span v-if="selectedTechParts.length > 0 && selectedTechParts.includes(part)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -61,7 +60,6 @@
             <div class="filter-chips">
               <button v-for="stack in popularTechStacks" :key="stack" class="filter-chip" :class="{ 'active': selectedTechStacks.includes(stack) }" @click="toggleTechStack(stack)">
                 {{ stack }}
-                <span class="result-count">({{ getFilterResultCount('techStack', stack) }})</span>
                 <span v-if="selectedTechStacks.length > 0 && selectedTechStacks.includes(stack)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -76,7 +74,6 @@
             <div class="filter-chips">
               <button v-for="experience in experienceRanges" :key="experience.value" class="filter-chip experience-chip" :class="{ 'active': selectedExperiences.includes(experience.value) }" @click="toggleExperience(experience.value)">
                 {{ experience.label }}
-                <span class="result-count">({{ getFilterResultCount('experience', experience.value) }})</span>
                 <span v-if="selectedExperiences.length > 0 && selectedExperiences.includes(experience.value)" class="logic-indicator">+</span>
               </button>
             </div>
@@ -155,7 +152,12 @@
                   <div class="card-header">
                     <div class="profile-section">
                       <div class="profile-avatar">
-                        <img :src="portfolio.avatar" :alt="portfolio.name" />
+                        <img 
+                          :src="portfolio.avatar" 
+                          :alt="portfolio.name" 
+                          @error="handleImageError($event, portfolio)"
+                          :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}'`"
+                        />
                       </div>
                       <div class="profile-info">
                         <h3 class="profile-name">{{ portfolio.name }}</h3>
@@ -230,13 +232,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onActivated, watch } from 'vue'
+import { ref, computed, onActivated, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { onBeforeRouteLeave } from 'vue-router'
 import { useTechTagStore } from '@/stores/techTagStore'
 
 import PageHeader from '@/components/common/PageHeader.vue'
 
-import { searchUsers, getPopularUserKeywords, getUserCountPreview } from '@/api/search'
+import { searchUsers, getPopularUserKeywords } from '@/api/search'
 import { getPortfolios, togglePortfolioLike, getPortfolioLikeStatus } from '@/api/user'
 
 const router = useRouter()
@@ -250,7 +253,6 @@ const selectedTechStacks = ref([])
 const selectedExperiences = ref([])
 
 const popularKeywords = ref([])
-const filterResultCounts = ref({}) // 각 필터별 결과 수 저장
 
 const selectPopularKeyword = (keyword) => {
   searchQuery.value = keyword
@@ -261,14 +263,9 @@ const selectPopularKeyword = (keyword) => {
 const techParts = computed(() => techTagStore.userTechParts)
 const baseTechStacks = computed(() => techTagStore.getUserPopularTechStacksTop20())
 
-// 필터 결과 수에 따라 정렬된 기술 스택
+// 기술 스택 (필터 정렬 제거)
 const popularTechStacks = computed(() => {
-  const stacks = baseTechStacks.value.slice()
-  return stacks.sort((a, b) => {
-    const countA = filterResultCounts.value[`techStack-${a}`] || 0
-    const countB = filterResultCounts.value[`techStack-${b}`] || 0
-    return countB - countA
-  })
+  return baseTechStacks.value
 })
 
 const experienceRanges = ref([
@@ -314,6 +311,43 @@ const loadPopularKeywords = async () => {
   }
 }
 
+// 로그아웃 시 검색 상태 초기화 이벤트 리스너
+const resetSearchState = () => {
+  searchQuery.value = ''
+  selectedTechParts.value = []
+  selectedTechStacks.value = []
+  selectedExperiences.value = []
+  currentSearchParams.value = {}
+  isSearchMode.value = false
+  page.value = 1
+  sessionStorage.removeItem('portfolioListFilters')
+  console.log('🔄 PortfolioListPage 검색 상태 및 sessionStorage 초기화됨')
+}
+
+onMounted(() => {
+  // 로그아웃 이벤트 리스너 등록
+  window.addEventListener('user-logout', resetSearchState)
+})
+
+onUnmounted(() => {
+  // 이벤트 리스너 정리
+  window.removeEventListener('user-logout', resetSearchState)
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  // 포트폴리오 관련 페이지에서 완전히 다른 섹션으로 이동할 때만 검색 상태 초기화
+  const portfolioPages = ['/portfolios']
+  const isLeavingPortfolioSection = !portfolioPages.some(page => to.path.startsWith(page)) &&
+                                   !to.path.match(/^\/portfolio\/\d+$/) // 포트폴리오 상세 페이지 패턴
+  
+  if (isLeavingPortfolioSection) {
+    resetSearchState()
+    console.log('🔄 포트폴리오 섹션을 벗어남 - 검색 상태 초기화')
+  }
+  
+  next()
+})
+
 onActivated(async () => {
   try {
     await Promise.all([
@@ -321,14 +355,12 @@ onActivated(async () => {
       loadPopularKeywords()
     ])
     handleSearch(false)
-    setTimeout(() => updateFilterResultCounts(), 1000)
   } catch (error) {
     console.error('❌ 초기 데이터 로드 실패 (PortfolioListPage):', error)
   }
 })
 
 watch([page], () => {
-  router.replace({ query: { ...route.query, page: page.value !== 1 ? page.value : undefined } })
   performSearch(currentSearchParams.value)
 })
 
@@ -418,71 +450,12 @@ const performSearch = async (searchParams) => {
   }
 }
 
-// 결과 수 미리보기 기능 (OR 방식으로 수정)
-const updateFilterResultCounts = async () => {
-  try {
-    // 기술 파트별 결과 수 계산 - 병렬 처리
-    await Promise.allSettled(
-      techParts.value.map(async (part) => {
-        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techParts: [part] })
-        filterResultCounts.value[`techPart-${part}`] = result.totalCount ?? 0
-      })
-    ).then(results => results.forEach((r, i) => { 
-      if (r.status === 'rejected') {
-        const part = techParts.value[i]
-        console.error(`❌ 기술 파트 "${part}" 결과 수 조회 실패:`, r.reason)
-        filterResultCounts.value[`techPart-${part}`] = 0 
-      }
-    }))
-
-    // 기술 스택별 결과 수 계산 - 병렬 처리
-    const stacks = [...popularTechStacks.value]
-    await Promise.allSettled(
-      stacks.map(async (stack) => {
-        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, techStacks: [stack] })
-        filterResultCounts.value[`techStack-${stack}`] = result.totalCount ?? 0
-      })
-    ).then(results => results.forEach((r, i) => { 
-      if (r.status === 'rejected') {
-        const stack = stacks[i]
-        console.error(`❌ 기술 스택 "${stack}" 결과 수 조회 실패:`, r.reason)
-        filterResultCounts.value[`techStack-${stack}`] = 0 
-      }
-    }))
-
-    // 경력별 결과 수 계산 - 병렬 처리
-    await Promise.allSettled(
-      experienceRanges.value.map(async (exp) => {
-        const result = await getUserCountPreview({ keyword: searchQuery.value.trim() || null, experienceRanges: [exp.value] })
-        filterResultCounts.value[`experience-${exp.value}`] = result.totalCount ?? 0
-      })
-    ).then(results => results.forEach((r, i) => { 
-      if (r.status === 'rejected') {
-        const exp = experienceRanges.value[i]
-        console.error(`❌ 경력 수준 "${exp.label}" 결과 수 조회 실패:`, r.reason)
-        filterResultCounts.value[`experience-${exp.value}`] = 0 
-      }
-    }))
-
-  } catch (error) {
-    console.error('❌ 필터 결과 수 업데이트 실패 (Portfolio):', error)
-  }
-}
-
-// 각 필터의 결과 수 가져오기
-const getFilterResultCount = (type, value) => {
-  const key = `${type}-${value}`
-  const count = filterResultCounts.value[key] || 0
-  return count
-}
-
 // 필터 아이템 토글
 const toggleItem = (list, item) => {
   const index = list.value.indexOf(item)
   if (index > -1) list.value.splice(index, 1)
   else list.value.push(item)
   handleSearch()
-  setTimeout(() => updateFilterResultCounts(), 500)
 }
 
 const toggleTechPart = (part) => {
