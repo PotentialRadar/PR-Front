@@ -29,13 +29,17 @@ export const useUserStore = defineStore('user', {
       this.nickname = null;
       this.profile = null;
       this.techStacks = [];
-      this.isAuthChecked = true; // 인증 확인은 완료된 상태로 설정
+      this.isAuthChecked = true;
       
       try {
         sessionStorage.setItem('clientLoggedOut', '1');
+        sessionStorage.removeItem('projectListFilters');
+        sessionStorage.removeItem('portfolioListFilters');
       } catch (_) {
         console.warn('sessionStorage 접근 실패');
       }
+      
+      window.dispatchEvent(new CustomEvent('user-logout'));
     },
 
     async logout() {
@@ -62,6 +66,9 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userTechStacks');
         localStorage.removeItem('projectFeedbacks');
+        
+        // 검색 상태 초기화를 위한 이벤트 발생
+        window.dispatchEvent(new CustomEvent('user-logout'));
         
         window.location.href = '/';
       }

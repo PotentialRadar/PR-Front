@@ -183,7 +183,8 @@
 </template>
 
 <script setup>
-import { ref, watch, onActivated, computed } from 'vue';
+import { ref, watch, onActivated, onMounted, onUnmounted, computed } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { useTechTagStore } from '@/stores/techTagStore';
@@ -256,6 +257,43 @@ const loadPopularKeywords = async () => {
     popularKeywords.value = ['React', '토이프로젝트', 'Spring Boot', 'Vue.js'];
   }
 };
+
+// 로그아웃 시 검색 상태 초기화 이벤트 리스너
+const resetSearchState = () => {
+  searchQuery.value = '';
+  selectedTechParts.value = [];
+  selectedTechStacks.value = [];
+  selectedStatuses.value = [];
+  currentSearchParams.value = {};
+  isSearchMode.value = false;
+  page.value = 1;
+  sessionStorage.removeItem('projectListFilters');
+  console.log('🔄 검색 상태 및 sessionStorage 초기화됨');
+};
+
+onMounted(() => {
+  // 로그아웃 이벤트 리스너 등록
+  window.addEventListener('user-logout', resetSearchState);
+});
+
+onUnmounted(() => {
+  // 이벤트 리스너 정리
+  window.removeEventListener('user-logout', resetSearchState);
+});
+
+onBeforeRouteLeave((to, from, next) => {
+  // 프로젝트 관련 페이지에서 완전히 다른 섹션으로 이동할 때만 검색 상태 초기화
+  const projectPages = ['/projects', '/new-project']
+  const isLeavingProjectSection = !projectPages.some(page => to.path.startsWith(page)) && 
+                                 !to.path.match(/^\/projects\/\d+$/) // 프로젝트 상세 페이지 패턴
+  
+  if (isLeavingProjectSection) {
+    resetSearchState()
+    console.log('🔄 프로젝트 섹션을 벗어남 - 검색 상태 초기화')
+  }
+  
+  next()
+});
 
 onActivated(async () => {
   try {
