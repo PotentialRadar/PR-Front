@@ -291,43 +291,68 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   console.log('🔍 라우터 가드:', { to: to.path, from: from.path });
   
+  // OAuth Success 페이지는 바로 통과
+  if (to.path === '/oauth/success') {
+    next();
+    return;
+  }
+  
   // 인증이 필요한 페이지인지 확인
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   
-  // 로그인/회원가입 페이지인지 확인 (이미 로그인된 사용자는 메인으로 리다이렉트)
+  // 로그인/회원가입 페이지인지 확인
   const authPages = ['/login', '/email-login', '/signUp'];
   const isAuthPage = authPages.includes(to.path);
-  // 클라이언트 로그아웃 플래그: 로그아웃 직후 서버의 상태 지연을 무시하고 비인증으로 처리
-  let clientLoggedOut = false;
-  try { clientLoggedOut = sessionStorage.getItem('clientLoggedOut') === '1' } catch (_) {}
   
-  // 인증 상태 확인 (OAuth Success 페이지는 제외)
-  let isAuthenticated = false;
-  if (to.path !== '/oauth/success') {
-    if (clientLoggedOut) {
-      isAuthenticated = false;
-      console.log('🔍 인증 상태(클라 로그아웃 우선):', isAuthenticated);
-    } else {
-      isAuthenticated = await checkAuth();
-      console.log('🔍 인증 상태:', isAuthenticated);
-    }
+  // 클라이언트 로그아웃 플래그 확인
+  let clientLoggedOut = false;
+  try { 
+    clientLoggedOut = sessionStorage.getItem('clientLoggedOut') === '1';
+  } catch (e) {
+    console.log('🔍 sessionStorage 접근 실패:', e);
   }
   
+  // userStore에서 인증 상태 확인
+  const { useUserStore } = await import('@/stores/userStore');
+  const userStore = useUserStore();
+  
+  console.log('🔍 라우터 가드 - 현재 상태:', {
+    isLoggedIn: userStore.isLoggedIn,
+    userId: userStore.userId,
+    clientLoggedOut
+  });
+  
+  // 최초 내비게이션/새로고침 등으로 인증 체크 전이라면 서버에 확인 수행
+  if (!clientLoggedOut && !userStore.isAuthChecked) {
+    try {
+      await userStore.checkLogin();
+    } catch (_) {
+      // 무시: checkLogin 내부에서 상태 정리함
+    }
+  }
+
+  // 최종 인증 여부 결정
+  const isAuthenticated = !clientLoggedOut && userStore.isLoggedIn;
+  console.log('🔍 최종 인증 여부:', isAuthenticated);
+  
   // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하는 경우
-  if (isAuthPage && isAuthenticated && !clientLoggedOut) {
+  if (isAuthPage && isAuthenticated) {
     console.log('✅ 이미 로그인됨 - 메인 페이지로 리다이렉트');
     next('/');
     return;
   }
+  
   // 클라 로그아웃 플래그가 있으면 인증 페이지 접근 허용하고 플래그 제거
   if (isAuthPage && clientLoggedOut) {
-    try { sessionStorage.removeItem('clientLoggedOut') } catch (_) {}
+    try { 
+      sessionStorage.removeItem('clientLoggedOut');
+      console.log('✅ clientLoggedOut 플래그 제거 완료');
+    } catch (_) {}
   }
   
   // 인증이 필요한 페이지 접근 처리
   if (requiresAuth) {
     if (!isAuthenticated) {
-      // 인증되지 않은 사용자는 로그인 페이지로 리다이렉트
       console.log('❌ 인증 필요 - 로그인 페이지로 리다이렉트');
       next({
         path: '/login',
@@ -338,7 +363,6 @@ router.beforeEach(async (to, from, next) => {
     
     // 권한 확인 (admin 전용 페이지 등)
     if (to.meta.role && !await hasRole(to.meta.role)) {
-      // 권한이 없는 사용자는 홈으로 리다이렉트
       console.log('❌ 권한 없음 - 메인 페이지로 리다이렉트');
       next('/');
       return;
@@ -349,46 +373,11 @@ router.beforeEach(async (to, from, next) => {
   next();
 });
 
-// httpOnly 쿠키 방식 인증 확인 함수
-async function checkAuth() {
-  try {
-    const response = await fetch('/api/auth/status', {
-      method: 'GET',
-      credentials: 'include', // 쿠키 포함
-    });
-    
-    if (response.ok) {
-      const authData = await response.json();
-      return authData.authenticated;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('❌ 라우터 가드 인증 확인 실패:', error);
-    return false;
-  }
-}
-
-// 역할 확인 함수 (httpOnly 쿠키 방식)
+// 역할 확인 함수 - userStore 사용
 async function hasRole(requiredRole) {
-  try {
-    const response = await fetch('/api/auth/status', {
-      method: 'GET',
-      credentials: 'include', // 쿠키 포함
-    });
-    
-    if (response.ok) {
-      const authData = await response.json();
-      // 실제로는 사용자의 역할 정보를 서버에서 받아와야 함
-      // 현재는 admin 권한 체크만 구현되어 있지 않으므로 false 반환
-      return false;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('❌ 라우터 가드 권한 확인 실패:', error);
-    return false;
-  }
+  // 현재는 admin 권한 체크가 구현되어 있지 않으므로 false 반환
+  // 추후 서버에서 역할 정보를 받아와서 처리
+  return false;
 }
 
 export default router;

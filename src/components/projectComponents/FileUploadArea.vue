@@ -66,6 +66,7 @@
 
 <script>
 import { ref, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 
 export default {
   name: 'FileUploadArea',
@@ -88,6 +89,7 @@ export default {
     const fileInput = ref(null)
     const selectedFiles = ref([...props.modelValue])
     const isDragOver = ref(false)
+    const toast = useToast()
 
     const triggerFileInput = () => {
       fileInput.value?.click()
@@ -145,7 +147,7 @@ export default {
       })
 
       if (errors.length > 0) {
-        alert(errors.join('\n'))
+        errors.forEach(error => toast.error(error));
       }
 
       if (validFiles.length > 0) {

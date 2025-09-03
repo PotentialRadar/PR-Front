@@ -98,6 +98,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
 import { portfolioApi } from '@/api/portfolio.js'
 import { useUserStore } from '@/stores/userStore'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   show: {
@@ -109,6 +110,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const userStore = useUserStore()
+const toast = useToast()
 const loading = ref(false)
 const saving = ref(false)
 const projects = ref([])
@@ -118,48 +120,25 @@ const selectedProjects = ref([])
 const loadProjects = async () => {
   loading.value = true
   try {
-    const currentUserId = userStore.userId
-    if (!currentUserId) return
-
-    const [createdRes, appliedRes] = await Promise.all([
-      getProjectsCreatedByUser(currentUserId),
-      getAppliedProjectsByUser(currentUserId)
-    ])
-
-    const created = (createdRes.data || []).map(p => ({
-      ...p,
-      isPM: true
-    }))
+    // 백엔드의 통합 API 사용
+    const response = await portfolioApi.getAvailableProjects();
     
-    const applied = (appliedRes.data || []).map(a => ({
-      ...(a.project || a),
-      isPM: false
-    }))
-
-    // 프로젝트 중복 제거 (projectId 기준)
-    const projectMap = new Map()
+    // 응답 데이터를 모달 형식으로 변환
+    projects.value = response.data.map(project => ({
+      projectId: project.projectId,
+      title: project.title || '',
+      description: project.description || '',
+      status: project.status || 'RECRUITING',
+      startDate: project.startDate,
+      endDate: project.endDate,
+      techStacks: project.techStacks || [],
+      isPM: project.role === 'LEADER' || project.role === 'PM'
+    }));
     
-    // PM인 프로젝트를 우선으로 처리
-    for (const project of [...created, ...applied]) {
-      const id = project.projectId
-      if (!projectMap.has(id) || project.isPM) {
-        projectMap.set(id, {
-          projectId: project.projectId,
-          title: project.title || '',
-          description: project.description || '',
-          status: project.status || 'RECRUITING',
-          startDate: project.startDate,
-          endDate: project.endDate,
-          techStacks: project.techStacks || [],
-          isPM: project.isPM || false
-        })
-      }
-    }
-    
-    projects.value = Array.from(projectMap.values())
-    
-    // 현재 포트폴리오에 있는 프로젝트들 로드
-    await loadCurrentPortfolioProjects()
+    // 현재 선택된 프로젝트 ID들 추출
+    selectedProjects.value = response.data
+      .filter(project => project.selectedInPortfolio)
+      .map(project => project.projectId);
     
   } catch (error) {
     console.error('프로젝트 로드 실패:', error)
@@ -169,17 +148,6 @@ const loadProjects = async () => {
   }
 }
 
-// 현재 포트폴리오에 저장된 프로젝트들 로드
-const loadCurrentPortfolioProjects = async () => {
-  try {
-    const response = await portfolioApi.getPortfolio()
-    const currentProjects = response.data.projects || []
-    selectedProjects.value = currentProjects.map(p => p.id || p.projectId)
-  } catch (error) {
-    console.error('현재 포트폴리오 프로젝트 로드 실패:', error)
-    selectedProjects.value = []
-  }
-}
 
 // 프로젝트 선택 토글
 const toggleProject = (project) => {
@@ -204,12 +172,13 @@ const saveSelection = async () => {
   
   saving.value = true
   try {
-    await portfolioApi.updateProjectSelection(selectedProjects.value)
+    const response = await portfolioApi.updateProjectSelection(selectedProjects.value)
     emit('saved')
+    toast.success('포트폴리오에 반영할 프로젝트를 저장했습니다.')
     closeModal()
   } catch (error) {
     console.error('프로젝트 선택 저장 실패:', error)
-    alert('프로젝트 선택을 저장하는데 실패했습니다.')
+    toast.error('프로젝트 선택을 저장하는데 실패했습니다.')
   } finally {
     saving.value = false
   }

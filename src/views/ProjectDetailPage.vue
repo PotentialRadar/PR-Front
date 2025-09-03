@@ -231,6 +231,8 @@ const load = async () => {
     project.value = null;
     return;
   }
+  
+  
   loading.value = true;
   error.value = null;
   
@@ -274,17 +276,23 @@ const load = async () => {
     };
     
   } catch (e) {
-    console.log('❌ API 호출 실패, fallback 데이터 사용 시도:', e.message);
+    console.log('❌ API 호출 실패:', e.message, '응답 상태:', e.response?.status);
     
-    // API 실패 시 fallback 데이터 사용
-    const fallbackProject = projects.find(p => p.id === projectId.value);
-    if (fallbackProject) {
-      project.value = fallbackProject;
-      console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
-    } else {
-      console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다.`);
-      error.value = e;
+    if (e.response?.status === 404) {
+      console.error(`❌ 프로젝트 ID ${projectId.value}가 서버에 존재하지 않습니다`);
+      error.value = new Error('Project not found');
       project.value = null;
+    } else {
+      // 다른 에러인 경우 fallback 데이터 시도
+      const fallbackProject = projects.find(p => p.id === projectId.value);
+      if (fallbackProject) {
+        project.value = fallbackProject;
+        console.log('📋 Fallback 프로젝트 데이터 사용:', fallbackProject.title);
+      } else {
+        console.warn(`⚠️ 프로젝트 ID ${projectId.value}를 찾을 수 없습니다.`);
+        error.value = e;
+        project.value = null;
+      }
     }
   } finally {
     loading.value = false;

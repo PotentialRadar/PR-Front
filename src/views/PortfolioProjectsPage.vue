@@ -9,13 +9,15 @@
           </button>
           <div>
             <h1 class="page-title">프로젝트 관리</h1>
-            <p class="page-subtitle">포트폴리오에 표시할 프로젝트를 선택하세요</p>
+            <p class="page-subtitle">
+              포트폴리오에 표시할 프로젝트를 선택하세요
+            </p>
           </div>
         </div>
         <div class="header-actions">
           <button @click="saveSelection" class="save-button" :disabled="saving">
             <i class="bi bi-check-lg"></i>
-            {{ saving ? '저장 중...' : '변경사항 저장' }}
+            {{ saving ? "저장 중..." : "변경사항 저장" }}
           </button>
         </div>
       </div>
@@ -33,7 +35,9 @@
       <div class="selection-summary">
         <div class="summary-info">
           <span class="selected-count">{{ selectedCount }}개 선택됨</span>
-          <span class="total-count">/ {{ availableProjects.length }}개 전체</span>
+          <span class="total-count"
+            >/ {{ availableProjects.length }}개 전체</span
+          >
         </div>
         <div class="selection-actions">
           <button @click="selectAll" class="action-btn">
@@ -53,12 +57,15 @@
           v-for="project in availableProjects"
           :key="project.projectId"
           class="project-card"
-          :class="{ 'selected': isSelected(project.projectId) }"
+          :class="{ selected: isSelected(project.projectId) }"
           @click="toggleProject(project.projectId)"
         >
           <!-- 선택 체크박스 -->
           <div class="selection-checkbox">
-            <div class="checkbox" :class="{ 'checked': isSelected(project.projectId) }">
+            <div
+              class="checkbox"
+              :class="{ checked: isSelected(project.projectId) }"
+            >
               <i v-if="isSelected(project.projectId)" class="bi bi-check"></i>
             </div>
           </div>
@@ -69,9 +76,12 @@
               <h3 class="project-title">{{ project.title }}</h3>
               <div class="project-badges">
                 <span class="role-badge" :class="project.role.toLowerCase()">
-                  {{ project.role === 'LEADER' ? '팀장' : '팀원' }}
+                  {{ project.role === "LEADER" ? "팀장" : "팀원" }}
                 </span>
-                <span class="status-badge" :class="project.status.toLowerCase()">
+                <span
+                  class="status-badge"
+                  :class="project.status.toLowerCase()"
+                >
                   {{ getStatusText(project.status) }}
                 </span>
               </div>
@@ -82,7 +92,9 @@
             <div class="project-details">
               <div class="detail-item">
                 <i class="bi bi-calendar-event"></i>
-                <span>{{ formatDateRange(project.startDate, project.endDate) }}</span>
+                <span>{{
+                  formatDateRange(project.startDate, project.endDate)
+                }}</span>
               </div>
               <div class="detail-item" v-if="project.techPart">
                 <i class="bi bi-code-slash"></i>
@@ -91,7 +103,10 @@
             </div>
 
             <!-- 기술 스택 -->
-            <div v-if="project.techStacks && project.techStacks.length > 0" class="tech-stacks">
+            <div
+              v-if="project.techStacks && project.techStacks.length > 0"
+              class="tech-stacks"
+            >
               <span
                 v-for="tech in project.techStacks.slice(0, 4)"
                 :key="tech"
@@ -126,7 +141,11 @@
     </div>
 
     <!-- 변경사항 확인 다이얼로그 -->
-    <div v-if="showConfirmDialog" class="confirm-dialog-overlay" @click="cancelSave">
+    <div
+      v-if="showConfirmDialog"
+      class="confirm-dialog-overlay"
+      @click="cancelSave"
+    >
       <div class="confirm-dialog" @click.stop>
         <div class="dialog-header">
           <h3>변경사항 저장</h3>
@@ -135,7 +154,9 @@
           </button>
         </div>
         <div class="dialog-content">
-          <p v-if="selectedCount === 0">프로젝트를 0개로 공개할까요? 공개 페이지에 표시되지 않습니다.</p>
+          <p v-if="selectedCount === 0">
+            프로젝트를 0개로 공개할까요? 공개 페이지에 표시되지 않습니다.
+          </p>
           <template v-else>
             <p>{{ selectedCount }}개의 프로젝트가 포트폴리오에 표시됩니다.</p>
             <p>변경사항을 저장하시겠습니까?</p>
@@ -144,7 +165,7 @@
         <div class="dialog-actions">
           <button @click="cancelSave" class="cancel-btn">취소</button>
           <button @click="confirmSave" class="confirm-btn" :disabled="saving">
-            {{ saving ? '저장 중...' : '저장' }}
+            {{ saving ? "저장 중..." : "저장" }}
           </button>
         </div>
       </div>
@@ -159,180 +180,192 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { portfolioApi } from '@/api/portfolio.js'
+import { ref, computed, onMounted, reactive } from "vue";
+import { useRouter } from "vue-router";
+import { portfolioApi } from "@/api/portfolio.js";
 
-const router = useRouter()
+const router = useRouter();
 
 // 상태 관리
-const loading = ref(true)
-const saving = ref(false)
-const availableProjects = ref([])
-const selectedProjectIds = ref([])
-const originalSelection = ref([])
-const showConfirmDialog = ref(false)
+const loading = ref(true);
+const saving = ref(false);
+const availableProjects = ref([]);
+const selectedProjectIds = ref([]);
+const originalSelection = ref([]);
+const showConfirmDialog = ref(false);
 
 // 토스트 알림
 const toast = reactive({
   visible: false,
-  message: '',
-  type: 'success' // success, error, warning, info
-})
+  message: "",
+  type: "success", // success, error, warning, info
+});
 
 // 계산된 속성
-const selectedCount = computed(() => selectedProjectIds.value.length)
+const selectedCount = computed(() => selectedProjectIds.value.length);
 
 const hasChanges = computed(() => {
-  return JSON.stringify([...selectedProjectIds.value].sort()) !== 
-         JSON.stringify([...originalSelection.value].sort())
-})
+  return (
+    JSON.stringify([...selectedProjectIds.value].sort()) !==
+    JSON.stringify([...originalSelection.value].sort())
+  );
+});
 
 // 메서드
-const showToast = (message, type = 'success') => {
-  toast.visible = true
-  toast.message = message
-  toast.type = type
+const showToast = (message, type = "success") => {
+  toast.visible = true;
+  toast.message = message;
+  toast.type = type;
   setTimeout(() => {
-    toast.visible = false
-  }, 3000)
-}
+    toast.visible = false;
+  }, 3000);
+};
 
 const getToastIcon = (type) => {
   switch (type) {
-    case 'success': return 'bi-check-circle-fill'
-    case 'error': return 'bi-exclamation-triangle-fill'
-    case 'warning': return 'bi-exclamation-circle-fill'
-    case 'info': return 'bi-info-circle-fill'
-    default: return 'bi-check-circle-fill'
+    case "success":
+      return "bi-check-circle-fill";
+    case "error":
+      return "bi-exclamation-triangle-fill";
+    case "warning":
+      return "bi-exclamation-circle-fill";
+    case "info":
+      return "bi-info-circle-fill";
+    default:
+      return "bi-check-circle-fill";
   }
-}
+};
 
 const loadAvailableProjects = async () => {
   try {
-    loading.value = true
-    const response = await portfolioApi.getAvailableProjects()
-    availableProjects.value = response.data
-    
+    loading.value = true;
+    const response = await portfolioApi.getAvailableProjects();
+    availableProjects.value = response.data;
+
     // 현재 선택된 프로젝트 ID들 추출
     selectedProjectIds.value = response.data
-      .filter(project => project.selectedInPortfolio)
-      .map(project => project.projectId)
-    
+      .filter((project) => project.selectedInPortfolio)
+      .map((project) => project.projectId);
+
     // 원래 선택상태 백업
-    originalSelection.value = [...selectedProjectIds.value]
-    
+    originalSelection.value = [...selectedProjectIds.value];
   } catch (error) {
-    console.error('프로젝트 목록 조회 실패:', error)
-    showToast('프로젝트 목록을 불러오는데 실패했습니다.', 'error')
+    console.error("프로젝트 목록 조회 실패:", error);
+    showToast("프로젝트 목록을 불러오는데 실패했습니다.", "error");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const isSelected = (projectId) => {
-  return selectedProjectIds.value.includes(projectId)
-}
+  return selectedProjectIds.value.includes(projectId);
+};
 
 const toggleProject = (projectId) => {
   if (isSelected(projectId)) {
-    selectedProjectIds.value = selectedProjectIds.value.filter(id => id !== projectId)
+    selectedProjectIds.value = selectedProjectIds.value.filter(
+      (id) => id !== projectId
+    );
   } else {
-    selectedProjectIds.value.push(projectId)
+    selectedProjectIds.value.push(projectId);
   }
-}
+};
 
 const selectAll = () => {
-  selectedProjectIds.value = availableProjects.value.map(project => project.projectId)
-}
+  selectedProjectIds.value = availableProjects.value.map(
+    (project) => project.projectId
+  );
+};
 
 const deselectAll = () => {
-  selectedProjectIds.value = []
-}
+  selectedProjectIds.value = [];
+};
 
 const saveSelection = () => {
   if (!hasChanges.value) {
-    showToast('변경사항이 없습니다.', 'info')
-    return
+    showToast("변경사항이 없습니다.", "info");
+    return;
   }
   // 0개 선택 시 경고 안내 후 확인 받기
   if (selectedProjectIds.value.length === 0) {
-    showToast('프로젝트를 0개로 공개할 예정입니다.', 'warning')
+    showToast("프로젝트를 0개로 공개할 예정입니다.", "warning");
   }
-  showConfirmDialog.value = true
-}
+  showConfirmDialog.value = true;
+};
 
 const confirmSave = async () => {
   try {
-    saving.value = true
-    await portfolioApi.updateProjectSelection(selectedProjectIds.value)
-    
+    saving.value = true;
+    await portfolioApi.updateProjectSelection(selectedProjectIds.value);
+
     // 원래 선택상태 업데이트
-    originalSelection.value = [...selectedProjectIds.value]
-    
-    showToast('프로젝트 선택이 저장되었습니다.', 'success')
-    showConfirmDialog.value = false
-    
+    originalSelection.value = [...selectedProjectIds.value];
+
+    showToast("프로젝트 선택이 저장되었습니다.", "success");
+    showConfirmDialog.value = false;
+
     // 잠시 후 포트폴리오 페이지로 이동
     setTimeout(() => {
-      router.push('/myPage/portfolio')
-    }, 1500)
-    
+      router.push("/myPage/portfolio");
+    }, 1500);
   } catch (error) {
-    console.error('프로젝트 선택 저장 실패:', error)
-    showToast('저장에 실패했습니다. 다시 시도해주세요.', 'error')
+    console.error("프로젝트 선택 저장 실패:", error);
+    showToast("저장에 실패했습니다. 다시 시도해주세요.", "error");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const cancelSave = () => {
-  showConfirmDialog.value = false
-}
+  showConfirmDialog.value = false;
+};
 
 const goBack = () => {
   if (hasChanges.value) {
-    if (confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) {
-      router.back()
+    if (confirm("저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?")) {
+      router.back();
     }
   } else {
-    router.back()
+    router.back();
   }
-}
+};
 
 const getStatusText = (status) => {
   const statusMap = {
-    'PLANNING': '기획중',
-    'RECRUITING': '모집중', 
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소됨'
-  }
-  return statusMap[status] || status
-}
+    PLANNING: "기획중",
+    RECRUITING: "모집중",
+    IN_PROGRESS: "진행중",
+    COMPLETED: "완료",
+    CANCELLED: "취소됨",
+  };
+  return statusMap[status] || status;
+};
 
 const formatDateRange = (startDate, endDate) => {
   const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    const date = new Date(dateStr)
-    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`
-  }
-  
-  const start = formatDate(startDate)
-  const end = formatDate(endDate)
-  
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+  };
+
+  const start = formatDate(startDate);
+  const end = formatDate(endDate);
+
   if (start && end) {
-    return `${start} ~ ${end}`
+    return `${start} ~ ${end}`;
   } else if (start) {
-    return `${start} ~`
+    return `${start} ~`;
   }
-  return '기간 미정'
-}
+  return "기간 미정";
+};
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
-  loadAvailableProjects()
-})
+  loadAvailableProjects();
+});
 </script>
 
 <style scoped>
@@ -348,7 +381,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -400,7 +433,7 @@ onMounted(() => {
 
 .save-button {
   padding: 12px 24px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 8px;
@@ -433,15 +466,19 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   border: 4px solid #f1f5f9;
-  border-top: 4px solid #4CAF50;
+  border-top: 4px solid #4caf50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 프로젝트 컨테이너 */
@@ -459,7 +496,7 @@ onMounted(() => {
   padding: 20px 24px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .summary-info {
@@ -471,7 +508,7 @@ onMounted(() => {
 .selected-count {
   font-size: 18px;
   font-weight: 700;
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .total-count {
@@ -499,8 +536,8 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  border-color: #4CAF50;
-  color: #4CAF50;
+  border-color: #4caf50;
+  color: #4caf50;
 }
 
 /* 프로젝트 그리드 */
@@ -522,13 +559,13 @@ onMounted(() => {
 }
 
 .project-card:hover {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .project-card.selected {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   background: #f8fff8;
 }
 
@@ -552,8 +589,8 @@ onMounted(() => {
 }
 
 .checkbox.checked {
-  background: #4CAF50;
-  border-color: #4CAF50;
+  background: #4caf50;
+  border-color: #4caf50;
   color: white;
 }
 
@@ -583,7 +620,8 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.role-badge, .status-badge {
+.role-badge,
+.status-badge {
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
@@ -690,7 +728,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 48px;
-  color: #4CAF50;
+  color: #4caf50;
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
@@ -727,7 +765,7 @@ onMounted(() => {
 .browse-projects-btn {
   display: inline-block;
   padding: 12px 24px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   text-decoration: none;
   border-radius: 8px;
@@ -747,7 +785,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -759,7 +797,7 @@ onMounted(() => {
   border-radius: 12px;
   width: 90%;
   max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
 .dialog-header {
@@ -810,7 +848,8 @@ onMounted(() => {
   padding: 0 24px 24px;
 }
 
-.cancel-btn, .confirm-btn {
+.cancel-btn,
+.confirm-btn {
   flex: 1;
   padding: 12px;
   border-radius: 8px;
@@ -832,7 +871,7 @@ onMounted(() => {
 
 .confirm-btn {
   border: none;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
 }
 
@@ -857,12 +896,12 @@ onMounted(() => {
   gap: 12px;
   font-weight: 600;
   z-index: 1001;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease;
 }
 
 .toast.success {
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
 }
 
@@ -897,44 +936,44 @@ onMounted(() => {
   .portfolio-projects-page {
     padding: 16px;
   }
-  
+
   .page-header {
     padding: 20px;
   }
-  
+
   .header-content {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .title-section {
     gap: 12px;
   }
-  
+
   .page-title {
     font-size: 24px;
   }
-  
+
   .projects-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .project-card {
     padding: 20px;
   }
-  
+
   .selection-summary {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .selection-actions {
     justify-content: center;
   }
-  
+
   .toast {
     left: 16px;
     right: 16px;

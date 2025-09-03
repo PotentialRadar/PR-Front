@@ -52,21 +52,21 @@
           </div>
         </div>
 
-        <!-- 포트폴리오 탭 콘텐츠 (기존과 동일) -->
+        <!-- 포트폴리오 탭 콘텐츠 -->
         <div v-if="activeTab === 'portfolios'" class="tab-content">
           <div v-if="favoritePortfolios.length > 0" class="portfolio-list-grid">
             <div v-for="portfolio in favoritePortfolios" :key="portfolio.userId" class="content-card portfolio-card">
               <div class="card-header">
                 <div class="portfolio-profile">
                   <div class="profile-avatar">
-                    <img :src="portfolio.userInfo.avatar" :alt="portfolio.userInfo.name" />
+                    <img :src="portfolio.profileImage || 'default-avatar.png'" :alt="portfolio.nickname" />
                   </div>
                   <div class="profile-details">
-                    <h3 class="profile-name">{{ portfolio.userInfo.name }}</h3>
-                    <p class="profile-job">{{ portfolio.userInfo.jobTitle }}</p>
+                    <h3 class="profile-name">{{ portfolio.nickname }}</h3>
+                    <p class="profile-job">{{ portfolio.jobTitle }}</p>
                     <div class="profile-category">
                       <i class="bi bi-tag"></i>
-                      <span>{{ portfolio.userInfo.category }}</span>
+                      <span>{{ portfolio.techPartName }}</span>
                     </div>
                   </div>
                 </div>
@@ -75,17 +75,17 @@
                 </button>
               </div>
               
-              <div class="portfolio-skills">
-                <span v-for="skill in portfolio.skills.slice(0, 4)" :key="skill" class="skill-tag">
+              <div class="portfolio-skills" v-if="portfolio.techStacks && portfolio.techStacks.length">
+                <span v-for="skill in portfolio.techStacks.slice(0, 4)" :key="skill" class="skill-tag">
                   {{ skill }}
                 </span>
-                <span v-if="portfolio.skills.length > 4" class="more-skills">
-                  +{{ portfolio.skills.length - 4 }}
+                <span v-if="portfolio.techStacks.length > 4" class="more-skills">
+                  +{{ portfolio.techStacks.length - 4 }}
                 </span>
               </div>
 
-              <div class="portfolio-intro" v-if="portfolio.introduction">
-                <p>{{ truncateText(portfolio.introduction, 80) }}</p>
+              <div class="portfolio-intro" v-if="portfolio.bio">
+                <p>{{ truncateText(portfolio.bio, 80) }}</p>
               </div>
               
               <div class="card-actions">
@@ -117,18 +117,23 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getLikedProjects, toggleLike } from '@/api/likes.js'
+import { useUserStore } from '@/stores/userStore'
+import { getLikedProjects, getLikedPortfolios, toggleLike } from '@/api/likes.js'
+import { useToast } from 'vue-toastification'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
-import ProjectCard from '@/components/projectComponents/ProjectCard.vue' // ProjectCard 임포트
+import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
 
 const router = useRouter()
+const userStore = useUserStore()
+const toast = useToast()
 const activeTab = ref('projects')
 
 const favoriteProjects = ref([])
+const favoritePortfolios = ref([])
 
 // --- Pagination State ---
 const currentPage = ref(1)
-const itemsPerPage = ref(6) // 한 페이지에 6개씩 표시
+const itemsPerPage = ref(6)
 
 const totalPages = computed(() => {
   return Math.ceil(favoriteProjects.value.length / itemsPerPage.value)
@@ -146,36 +151,6 @@ const handlePageChange = (page) => {
 }
 // ------------------------
 
-
-// 포트폴리오 데이터베이스 (기존 UI 유지를 위해 남겨둠)
-const portfolioDatabase = {
-  1: {
-    userId: 1,
-    userInfo: {
-      name: '김프론트',
-      jobTitle: 'Frontend Developer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend1',
-      category: 'Frontend'
-    },
-    introduction: '안녕하세요! 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자 김프론트입니다.',
-    skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'GraphQL']
-  },
-  2: {
-    userId: 2,
-    userInfo: {
-      name: '박디자이너',
-      jobTitle: 'UI/UX Designer',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=designer1',
-      category: 'Design'
-    },
-    introduction: 'UI/UX 디자이너 박디자이너입니다. 사용자 중심의 디자인 사고를 바탕으로 직관적이고 아름다운 인터페이스를 만들어갑니다.',
-    skills: ['Figma', 'Adobe XD', 'Sketch', 'Prototyping', 'User Research']
-  },
-  // ... (other portfolio data)
-}
-
-const favoritePortfolios = ref([])
-
 // 컴포넌트 마운트 시 좋아요 데이터 로드
 onMounted(() => {
   loadFavoriteData()
@@ -183,39 +158,46 @@ onMounted(() => {
 
 // 좋아요 데이터 로드 함수
 const loadFavoriteData = async () => {
+  if (!userStore.userId) return;
+
   try {
-    const projects = await getLikedProjects();
+    // 두 API를 병렬로 호출
+    const [projects, portfolios] = await Promise.all([
+      getLikedProjects(),
+      getLikedPortfolios(userStore.userId)
+    ]);
+
     console.log('Liked Projects API Response:', JSON.stringify(projects, null, 2));
     favoriteProjects.value = projects;
-  } catch (error) {
-    console.error('좋아요 프로젝트 목록을 불러오는 데 실패했습니다:', error)
-    favoriteProjects.value = []; // 에러 발생 시 빈 배열로 초기화
-  }
 
-  // 포트폴리오 부분은 일단 그대로 둡니다.
-  const favoritePortfolioIds = [2, 5, 6] 
-  favoritePortfolios.value = favoritePortfolioIds
-    .map(id => portfolioDatabase[id])
-    .filter(Boolean)
+    console.log('Liked Portfolios API Response:', JSON.stringify(portfolios, null, 2));
+    favoritePortfolios.value = portfolios;
+
+  } catch (error) {
+    console.error('좋아요 목록을 불러오는 데 실패했습니다:', error)
+    favoriteProjects.value = []; // 에러 발생 시 빈 배열로 초기화
+    favoritePortfolios.value = [];
+  }
 }
 
 const handleFavoriteToggle = async (projectId) => {
   try {
-    // 좋아요 토글 API 호출
     await toggleLike('PROJECT', projectId);
-    // 목록 새로고침
-    await loadFavoriteData();
+    await loadFavoriteData(); // 목록 새로고침
   } catch (error) {
     console.error(`프로젝트 ${projectId} 좋아요 처리에 실패했습니다:`, error);
-    alert('오류가 발생했습니다. 다시 시도해주세요.');
+    toast.error('오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 
-const removeFavoritePortfolio = (userId) => {
-  const index = favoritePortfolios.value.findIndex(p => p.userId === userId)
-  if (index > -1) {
-    favoritePortfolios.value.splice(index, 1)
-    console.log(`포트폴리오 ${userId} 좋아요 해제`)
+// 포트폴리오 좋아요 취소
+const removeFavoritePortfolio = async (portfolioUserId) => {
+  try {
+    await toggleLike('PORTFOLIO', portfolioUserId);
+    await loadFavoriteData(); // 목록 새로고침
+  } catch (error) {
+    console.error(`포트폴리오 ${portfolioUserId} 좋아요 처리에 실패했습니다:`, error);
+    toast.error('오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 
@@ -233,6 +215,16 @@ const goToProjects = () => {
 const goToPortfolios = () => {
   router.push('/portfolios')
 }
+
+const viewPortfolio = (userId) => {
+  router.push(`/portfolio/${userId}`)
+}
+
+const setActiveTab = (tab) => {
+  activeTab.value = tab;
+  // 탭 변경 시 데이터 다시 로드 (선택적)
+  loadFavoriteData();
+};
 </script>
 
 <style scoped>
