@@ -82,10 +82,12 @@ import { getProject, deleteProject, updateProjectStatus, getConfirmedProjectMemb
 import { getProjectMembers, updateMemberStatus } from '@/api/projectMember';
 import { PART_OPTIONS } from '@/constants/parts';
 import { useUserStore } from '@/stores/userStore'; // Import user store
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore(); // Get user store instance
+const toast = useToast();
 const projectId = ref(route.params.projectId);
 
 const project = ref(null);
@@ -186,21 +188,21 @@ onMounted(async () => {
 
 const handleStatusUpdate = async () => {
   if (!projectStatus.value) {
-    alert('변경할 상태를 선택해주세요.');
+    toast.warning('변경할 상태를 선택해주세요.');
     return;
   }
   try {
     const currentUserId = userStore.userId;
     if (!currentUserId) {
-      alert('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+      toast.error('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
       return;
     }
     await updateProjectStatus(projectId.value, projectStatus.value, currentUserId);
-    alert('프로젝트 상태가 성공적으로 변경되었습니다.');
+    toast.success('프로젝트 상태가 성공적으로 변경되었습니다.');
     router.push('/myPage/projects');
   } catch (err) {
     console.error('프로젝트 상태 변경 실패:', err);
-    alert('프로젝트 상태 변경에 실패했습니다.');
+    toast.error('프로젝트 상태 변경에 실패했습니다.');
   }
 };
 
@@ -208,11 +210,11 @@ const updateApplicantStatus = async (applicantId, status) => {
   try {
     const currentUserId = userStore.userId;
     if (!currentUserId) {
-      alert('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+      toast.error('오류: 사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
       return;
     }
     await updateMemberStatus(projectId.value, applicantId, currentUserId, status);
-    alert(`지원자가 성공적으로 ${status === 'ACCEPTED' ? '수락' : '거절'}되었습니다.`);
+    toast.success(`지원자가 성공적으로 ${status === 'ACCEPTED' ? '수락' : '거절'}되었습니다.`);
 
     const index = applicants.value.findIndex(a => a.id === applicantId);
     if (index !== -1) {
@@ -220,7 +222,7 @@ const updateApplicantStatus = async (applicantId, status) => {
     }
   } catch (err) {
     console.error(`지원자 ${status === 'ACCEPTED' ? '수락' : '거절'} 실패:`, err);
-    alert(`지원자 ${status === 'ACCEPTED' ? '수락' : '거절'}에 실패했습니다.`);
+    toast.error(`지원자 ${status === 'ACCEPTED' ? '수락' : '거절'}에 실패했습니다.`);
   }
 };
 
@@ -241,13 +243,15 @@ const confirmDelete = () => {
 const handleDeleteProject = async () => {
   try {
     await deleteProject(projectId.value);
-    alert('프로젝트가 성공적으로 삭제되었습니다.');
+    toast.success('프로젝트가 성공적으로 삭제되었습니다.');
     router.push('/projects'); // Redirect to project list page
   } catch (err) {
     console.error('프로젝트 삭제 실패:', err);
-    alert('프로젝트 삭제에 실패했습니다. 다시 시도해주세요.');
+    toast.error('프로젝트 삭제에 실패했습니다. 다시 시도해주세요.');
   }
 };
+
+
 
 </script>
 
