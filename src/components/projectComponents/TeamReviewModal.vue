@@ -45,6 +45,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { createTeamMemberReview } from '@/api/projects';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
   show: Boolean,
@@ -53,6 +54,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+const toast = useToast();
 
 const selectedReviewee = ref('');
 const rating = ref(0);
@@ -73,7 +75,7 @@ const setRating = (star) => {
 
 const submitReview = async () => {
   if (!selectedReviewee.value || rating.value === 0) {
-    alert('팀원과 평점을 모두 선택해주세요.');
+    toast.warning('팀원과 평점을 모두 선택해주세요.');
     return;
   }
 
@@ -85,14 +87,14 @@ const submitReview = async () => {
       comment: comment.value, // 코멘트 페이로드에 추가
     };
     await createTeamMemberReview(payload);
-    alert('리뷰가 성공적으로 제출되었습니다.');
+    toast.success('리뷰가 성공적으로 제출되었습니다.');
     close();
   } catch (error) {
     console.error('리뷰 제출 실패:', error);
     const errorMessage = error.response && error.response.data && error.response.data.message
                        ? error.response.data.message
                        : '리뷰 제출에 실패했습니다. 이미 해당 팀원에 대한 리뷰를 작성했을 수 있습니다.';
-    alert(errorMessage);
+    toast.error(errorMessage);
   }
 };
 

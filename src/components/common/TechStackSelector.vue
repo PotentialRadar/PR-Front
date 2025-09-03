@@ -185,6 +185,8 @@ export default {
         selectedTechnologies.value.push(tech)
       }
 
+      searchQuery.value = ''; // 선택 후 검색어 초기화
+
       emit('update:modelValue', [...selectedTechnologies.value])
       emit('change', [...selectedTechnologies.value])
       

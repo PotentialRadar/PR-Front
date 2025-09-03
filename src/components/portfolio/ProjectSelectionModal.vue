@@ -98,6 +98,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
 import { portfolioApi } from '@/api/portfolio.js'
 import { useUserStore } from '@/stores/userStore'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   show: {
@@ -109,6 +110,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const userStore = useUserStore()
+const toast = useToast()
 const loading = ref(false)
 const saving = ref(false)
 const projects = ref([])
@@ -172,10 +174,11 @@ const saveSelection = async () => {
   try {
     const response = await portfolioApi.updateProjectSelection(selectedProjects.value)
     emit('saved')
+    toast.success('포트폴리오에 반영할 프로젝트를 저장했습니다.')
     closeModal()
   } catch (error) {
     console.error('프로젝트 선택 저장 실패:', error)
-    alert('프로젝트 선택을 저장하는데 실패했습니다.')
+    toast.error('프로젝트 선택을 저장하는데 실패했습니다.')
   } finally {
     saving.value = false
   }

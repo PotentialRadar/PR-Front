@@ -49,3 +49,13 @@ export const isLiked = async (targetType, targetId) => {
     return { isLiked: false };
   }
 };
+
+// 사용자가 좋아요 한 포트폴리오 목록 조회
+export const getLikedPortfolios = async (userId) => {
+  const response = await axios.get('/likes/portfolios', {
+    params: {
+      userId,
+    },
+  });
+  return response.data;
+};
