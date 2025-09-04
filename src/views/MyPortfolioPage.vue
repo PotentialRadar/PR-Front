@@ -9,14 +9,14 @@
       <div class="portfolio-header">
         <div class="header-content">
           <div class="profile-section">
-            <div class="profile-image">
-              <img 
-                :src="portfolioData.userInfo.avatar" 
-                :alt="portfolioData.userInfo.name" 
-                @error="handleImageError"
-                :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolioData.userInfo.userId || 'default'}'`"
-              />
-            </div>
+            <ProfileImage 
+              :src="portfolioData.userInfo.avatar"
+              :user-id="portfolioData.userInfo.userId"
+              :name="portfolioData.userInfo.name"
+              size="xl"
+              :circular="true"
+              class="profile-image"
+            />
             
             <div class="profile-info">
               <h1 class="profile-name">
@@ -583,13 +583,14 @@
               >
                 <div class="review-header">
                   <div class="reviewer-info">
-                    <div class="reviewer-avatar">
-                      <img 
-                        :src="review.reviewerProfileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.reviewerId}`" 
-                        :alt="review.reviewerNickname"
-                        @error="handleReviewerImageError"
-                      />
-                    </div>
+                    <ProfileImage 
+                      :src="review.reviewerProfileImage"
+                      :user-id="review.reviewerId"
+                      :name="review.reviewerNickname"
+                      size="sm"
+                      :circular="true"
+                      class="reviewer-avatar"
+                    />
                     <div class="reviewer-details">
                       <h6 class="reviewer-name">{{ review.reviewerNickname || '익명' }}</h6>
                       <p class="project-context">{{ review.projectTitle }}</p>
@@ -659,6 +660,7 @@ import { useRouter } from 'vue-router'
 import { portfolioApi, techStackApi } from '@/api/portfolio.js'
 import api from '@/api/axios.js'
 import ProjectSelectionModal from '@/components/portfolio/ProjectSelectionModal.vue'
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 const router = useRouter()
 
@@ -711,27 +713,6 @@ const editData = reactive({})
 const educationErrors = reactive({})
 const careerErrors = reactive({})
 
-// 이미지 로드 에러 처리
-const handleImageError = (event) => {
-  console.error('포트폴리오 프로필 이미지 로드 실패:', portfolioData.userInfo.avatar);
-  // 이미 dicebear URL이 아닌 경우에만 변경
-  if (!event.target.src.includes('dicebear.com')) {
-    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolioData.userInfo.userId || 'default'}`;
-  }
-}
-
-// 리뷰어 이미지 로드 에러 처리
-const handleReviewerImageError = (event) => {
-  console.error('리뷰어 프로필 이미지 로드 실패:', event.target.src);
-  // 이미 dicebear URL이 아닌 경우에만 변경
-  if (!event.target.src.includes('dicebear.com')) {
-    // 현재 이미지의 seed를 추출하거나 기본값 사용
-    const currentSrc = event.target.src;
-    const seedMatch = currentSrc.match(/seed=([^&]*)/);
-    const seed = seedMatch ? seedMatch[1] : 'default';
-    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-  }
-}
 
 // 리뷰 데이터를 가져오는 API 함수
 const getUserReviews = async (userId) => {
