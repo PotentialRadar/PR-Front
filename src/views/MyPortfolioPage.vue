@@ -577,7 +577,7 @@
           <div v-if="portfolioData.reviews.length > 0" class="section-content">
             <div class="reviews-list">
               <div 
-                v-for="review in portfolioData.reviews" 
+                v-for="review in paginatedReviews" 
                 :key="review.reviewId"
                 class="review-card"
               >
@@ -618,6 +618,15 @@
                 </div>
               </div>
             </div>
+            
+            <!-- 페이지네이션 (4개 이상일 때만 표시) -->
+            <PaginationComponent 
+              v-if="portfolioData.reviews.length > 4"
+              :current-page="currentReviewPage" 
+              :total-pages="totalReviewPages" 
+              :page-group-size="3" 
+              @page-change="handleReviewPageChange" 
+            />
           </div>
           
           <div v-else class="empty-section">
@@ -661,6 +670,7 @@ import { portfolioApi, techStackApi } from '@/api/portfolio.js'
 import api from '@/api/axios.js'
 import ProjectSelectionModal from '@/components/portfolio/ProjectSelectionModal.vue'
 import ProfileImage from '@/components/common/ProfileImage.vue'
+import PaginationComponent from '@/components/common/PaginationComponent.vue'
 
 const router = useRouter()
 
@@ -705,6 +715,26 @@ const portfolioData = reactive({
   projects: [],
   reviews: []
 })
+
+// 리뷰 페이지네이션 상태
+const currentReviewPage = ref(1)
+const reviewsPerPage = 4
+
+// 리뷰 페이지네이션 계산
+const totalReviewPages = computed(() => {
+  return Math.ceil(portfolioData.reviews.length / reviewsPerPage)
+})
+
+const paginatedReviews = computed(() => {
+  const start = (currentReviewPage.value - 1) * reviewsPerPage
+  const end = start + reviewsPerPage
+  return portfolioData.reviews.slice(start, end)
+})
+
+// 리뷰 페이지 변경 핸들러
+const handleReviewPageChange = (page) => {
+  currentReviewPage.value = page
+}
 
 // 편집용 데이터
 const editData = reactive({})

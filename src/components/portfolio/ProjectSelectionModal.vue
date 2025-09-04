@@ -7,13 +7,13 @@
           <i class="bi bi-x"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <div v-if="loading" class="loading-state">
           <div class="loading-spinner"></div>
           <p>프로젝트를 불러오는 중...</p>
         </div>
-        
+
         <div v-else-if="projects.length === 0" class="empty-state">
           <div class="empty-icon">
             <i class="bi bi-folder-x"></i>
@@ -21,56 +21,75 @@
           <h4>참여한 프로젝트가 없습니다</h4>
           <p>프로젝트에 참여한 후 다시 시도해보세요.</p>
         </div>
-        
+
         <div v-else class="projects-section">
           <div class="selection-info">
             <div class="info-text">
               <i class="bi bi-info-circle"></i>
-              공개할 프로젝트를 선택하세요. 선택한 프로젝트는 포트폴리오에 표시됩니다.
+              공개할 프로젝트를 선택하세요. 선택한 프로젝트는 포트폴리오에
+              표시됩니다.
             </div>
             <div class="selection-count">
               {{ selectedProjects.length }}개 선택됨
             </div>
           </div>
-          
+
           <div class="projects-list">
-            <div 
-              v-for="project in projects" 
+            <div
+              v-for="project in projects"
               :key="project.projectId"
-              :class="['project-item', { 'selected': isProjectSelected(project.projectId) }]"
+              :class="[
+                'project-item',
+                { selected: isProjectSelected(project.projectId) },
+              ]"
               @click="toggleProject(project)"
             >
               <div class="project-checkbox">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   :checked="isProjectSelected(project.projectId)"
                   @click.stop
                   @change="toggleProject(project)"
                 />
               </div>
-              
+
               <div class="project-info">
                 <div class="project-header">
                   <h4 class="project-title">{{ project.title }}</h4>
                   <div class="project-badges">
-                    <span :class="['status-badge', getStatusClass(project.status)]">
+                    <span
+                      :class="['status-badge', getStatusClass(project.status)]"
+                    >
                       {{ getStatusText(project.status) }}
                     </span>
                     <span v-if="project.isPM" class="pm-badge">PM</span>
                   </div>
                 </div>
-                
+
                 <p class="project-description">{{ project.description }}</p>
-                
+
                 <div class="project-meta">
                   <div class="meta-item">
                     <i class="bi bi-calendar"></i>
-                    <span>{{ formatDateRange(project.startDate, project.endDate) }}</span>
+                    <span>{{
+                      formatDateRange(project.startDate, project.endDate)
+                    }}</span>
                   </div>
-                  <div class="meta-item" v-if="project.techStacks && project.techStacks.length > 0">
+                  <div
+                    class="meta-item"
+                    v-if="project.techStacks && project.techStacks.length > 0"
+                  >
                     <i class="bi bi-code-slash"></i>
-                    <span>{{ project.techStacks.slice(0, 2).map(ts => ts.techStackName || ts.name || ts).join(', ') }}
-                      <span v-if="project.techStacks.length > 2"> 외 {{ project.techStacks.length - 2 }}개</span>
+                    <span
+                      >{{
+                        project.techStacks
+                          .slice(0, 2)
+                          .map((ts) => ts.techStackName || ts.name || ts)
+                          .join(", ")
+                      }}
+                      <span v-if="project.techStacks.length > 2">
+                        외 {{ project.techStacks.length - 2 }}개</span
+                      >
                     </span>
                   </div>
                 </div>
@@ -79,11 +98,9 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button @click="closeModal" class="cancel-btn">
-          취소
-        </button>
+        <button @click="closeModal" class="cancel-btn">취소</button>
         <button @click="saveSelection" class="save-btn" :disabled="loading">
           <i class="bi bi-check-circle"></i>
           선택 완료 ({{ selectedProjects.length }}개)
@@ -94,153 +111,159 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
-import { portfolioApi } from '@/api/portfolio.js'
-import { useUserStore } from '@/stores/userStore'
-import { useToast } from 'vue-toastification'
+import { ref, computed, onMounted, watch } from "vue";
+import {
+  getProjectsCreatedByUser,
+  getAppliedProjectsByUser,
+} from "@/api/projects";
+import { portfolioApi } from "@/api/portfolio.js";
+import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false
-  }
-})
+    default: false,
+  },
+});
 
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits(["close", "saved"]);
 
-const userStore = useUserStore()
-const toast = useToast()
-const loading = ref(false)
-const saving = ref(false)
-const projects = ref([])
-const selectedProjects = ref([])
+const userStore = useUserStore();
+const loading = ref(false);
+const saving = ref(false);
+const projects = ref([]);
+const selectedProjects = ref([]);
 
 // 프로젝트 데이터 로드
 const loadProjects = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // 백엔드의 통합 API 사용
     const response = await portfolioApi.getAvailableProjects();
-    
+
     // 응답 데이터를 모달 형식으로 변환
-    projects.value = response.data.map(project => ({
+    projects.value = response.data.map((project) => ({
       projectId: project.projectId,
-      title: project.title || '',
-      description: project.description || '',
-      status: project.status || 'RECRUITING',
+      title: project.title || "",
+      description: project.description || "",
+      status: project.status || "RECRUITING",
       startDate: project.startDate,
       endDate: project.endDate,
       techStacks: project.techStacks || [],
-      isPM: project.role === 'LEADER' || project.role === 'PM'
+      isPM: project.role === "LEADER" || project.role === "PM",
     }));
-    
+
     // 현재 선택된 프로젝트 ID들 추출
     selectedProjects.value = response.data
-      .filter(project => project.selectedInPortfolio)
-      .map(project => project.projectId);
-    
+      .filter((project) => project.selectedInPortfolio)
+      .map((project) => project.projectId);
   } catch (error) {
-    console.error('프로젝트 로드 실패:', error)
-    projects.value = []
+    console.error("프로젝트 로드 실패:", error);
+    projects.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-
+};
 
 // 프로젝트 선택 토글
 const toggleProject = (project) => {
-  const projectId = project.projectId
-  const index = selectedProjects.value.indexOf(projectId)
-  
+  const projectId = project.projectId;
+  const index = selectedProjects.value.indexOf(projectId);
+
   if (index > -1) {
-    selectedProjects.value.splice(index, 1)
+    selectedProjects.value.splice(index, 1);
   } else {
-    selectedProjects.value.push(projectId)
+    selectedProjects.value.push(projectId);
   }
-}
+};
 
 // 프로젝트가 선택되었는지 확인
 const isProjectSelected = (projectId) => {
-  return selectedProjects.value.includes(projectId)
-}
+  return selectedProjects.value.includes(projectId);
+};
 
 // 선택 저장
 const saveSelection = async () => {
-  if (saving.value) return
-  
-  saving.value = true
+  if (saving.value) return;
+
+  saving.value = true;
   try {
-    const response = await portfolioApi.updateProjectSelection(selectedProjects.value)
-    emit('saved')
-    toast.success('포트폴리오에 반영할 프로젝트를 저장했습니다.')
-    closeModal()
+    const response = await portfolioApi.updateProjectSelection(
+      selectedProjects.value
+    );
+    emit("saved");
+    closeModal();
   } catch (error) {
-    console.error('프로젝트 선택 저장 실패:', error)
-    toast.error('프로젝트 선택을 저장하는데 실패했습니다.')
+    console.error("프로젝트 선택 저장 실패:", error);
+    alert("프로젝트 선택을 저장하는데 실패했습니다.");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // 모달 닫기
 const closeModal = () => {
-  emit('close')
-}
+  emit("close");
+};
 
 // 상태 관련 유틸리티
 const getStatusClass = (status) => {
   const statusMap = {
-    'RECRUITING': 'recruiting',
-    'IN_PROGRESS': 'in-progress', 
-    'COMPLETED': 'completed',
-    'CANCELLED': 'cancelled'
-  }
-  return statusMap[status] || 'recruiting'
-}
+    RECRUITING: "recruiting",
+    IN_PROGRESS: "in-progress",
+    COMPLETED: "completed",
+    CANCELLED: "cancelled",
+  };
+  return statusMap[status] || "recruiting";
+};
 
 const getStatusText = (status) => {
   const statusMap = {
-    'RECRUITING': '모집중',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소됨'
-  }
-  return statusMap[status] || status
-}
+    RECRUITING: "모집중",
+    IN_PROGRESS: "진행중",
+    COMPLETED: "완료",
+    CANCELLED: "취소됨",
+  };
+  return statusMap[status] || status;
+};
 
 const formatDateRange = (startDate, endDate) => {
-  if (!startDate && !endDate) return '-'
-  
+  if (!startDate && !endDate) return "-";
+
   const formatDate = (dateStr) => {
-    if (!dateStr) return '?'
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('ko-KR', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    }).replace(/\. /g, '.').replace(/\.$/, '')
-  }
-  
-  const start = formatDate(startDate)
-  const end = endDate ? formatDate(endDate) : '진행중'
-  
-  return `${start} ~ ${end}`
-}
+    if (!dateStr) return "?";
+    const date = new Date(dateStr);
+    return date
+      .toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+      .replace(/\. /g, ".")
+      .replace(/\.$/, "");
+  };
+
+  const start = formatDate(startDate);
+  const end = endDate ? formatDate(endDate) : "진행중";
+
+  return `${start} ~ ${end}`;
+};
 
 // 모달이 열릴 때 데이터 로드
-watch(() => props.show, (newShow) => {
-  if (newShow) {
-    loadProjects()
+watch(
+  () => props.show,
+  (newShow) => {
+    if (newShow) {
+      loadProjects();
+    }
   }
-})
+);
 
 onMounted(() => {
   if (props.show) {
-    loadProjects()
+    loadProjects();
   }
-})
+});
 </script>
 
 <style scoped>
@@ -288,7 +311,7 @@ onMounted(() => {
   align-items: center;
   padding: 24px 30px;
   border-bottom: 2px solid #f0f0f0;
-  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
   color: white;
 }
 
@@ -335,14 +358,18 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #4CAF50;
+  border-top: 4px solid #4caf50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -365,7 +392,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 36px;
-  color: #4CAF50;
+  color: #4caf50;
   margin-bottom: 8px;
 }
 
@@ -402,13 +429,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #4CAF50;
+  color: #4caf50;
   font-size: 14px;
   font-weight: 500;
 }
 
 .selection-count {
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   padding: 6px 16px;
   border-radius: 20px;
@@ -442,7 +469,7 @@ onMounted(() => {
 }
 
 .project-item.selected {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   background: rgba(76, 175, 80, 0.05);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
 }
@@ -455,7 +482,7 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #4CAF50;
+  accent-color: #4caf50;
 }
 
 .project-info {
@@ -516,7 +543,7 @@ onMounted(() => {
 }
 
 .pm-badge {
-  background: linear-gradient(135deg, #FFD700, #FFA000);
+  background: linear-gradient(135deg, #ffd700, #ffa000);
   color: #fff;
   padding: 4px 8px;
   border-radius: 12px;
@@ -551,7 +578,7 @@ onMounted(() => {
 }
 
 .meta-item i {
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .modal-footer {
@@ -568,7 +595,7 @@ onMounted(() => {
   border: 2px solid rgba(76, 175, 80, 0.2);
   border-radius: 8px;
   background: #fff;
-  color: #4CAF50;
+  color: #4caf50;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -576,7 +603,7 @@ onMounted(() => {
 }
 
 .cancel-btn:hover {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   background: rgba(76, 175, 80, 0.05);
 }
 
@@ -587,7 +614,7 @@ onMounted(() => {
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
-  background: #4CAF50;
+  background: #4caf50;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -596,7 +623,7 @@ onMounted(() => {
 }
 
 .save-btn:hover:not(:disabled) {
-  background: #66BB6A;
+  background: #66bb6a;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
