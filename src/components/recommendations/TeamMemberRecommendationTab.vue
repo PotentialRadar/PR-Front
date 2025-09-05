@@ -75,12 +75,12 @@
       >
         <!-- 프로필 헤더 -->
         <div class="member-header">
-          <img 
-            :src="getMemberProfileImage(member)" 
-            :alt="member.name || member.nickname"
-            class="profile-image"
-            @error="handleMemberImageError($event, member.userId)"
-            loading="lazy"
+          <ProfileImage 
+            :src="member.profileImage"
+            :user-id="member.userId"
+            :name="member.name || member.nickname"
+            size="md"
+            :circular="true"
           />
           <div class="member-info">
             <h4 class="member-name">{{ member.name || member.nickname }}</h4>
@@ -199,6 +199,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -292,17 +293,6 @@ const getMemberTechStacks = (member) => {
   }
 }
 
-// 프로필 이미지 처리
-const getMemberProfileImage = (member) => {
-  if (member.profileImage && 
-      member.profileImage.startsWith('http') && 
-      !member.profileImage.includes('example.com') &&
-      !member.profileImage.includes('placeholder')) {
-    return member.profileImage
-  }
-  
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-}
 
 // 매칭도 점수에 따른 클래스 분류
 const getScoreClass = (score) => {
@@ -328,34 +318,6 @@ const getAvailabilityClass = (member) => {
   return 'available' // 기본값
 }
 
-const handleMemberImageError = (event, userId) => {
-  console.warn(`팀원 프로필 이미지 로드 실패 (사용자 ${userId}):`, event.target.src)
-  
-  if (!event.target.src.includes('dicebear.com')) {
-    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-    return
-  }
-  
-  if (event.target.src.includes('avataaars')) {
-    event.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=User${userId}&backgroundColor=4f46e5,7c3aed,db2777,dc2626,ea580c`
-    return
-  }
-  
-  if (event.target.src.includes('initials')) {
-    event.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${userId}&backgroundColor=22c55e,3b82f6,8b5cf6,f59e0b,ef4444`
-    return
-  }
-  
-  if (event.target.src.includes('shapes')) {
-    event.target.src = `https://ui-avatars.com/api/?name=User${userId}&background=4CAF50&color=fff&size=60`
-    return
-  }
-  
-  // 모든 API 실패 시
-  event.target.style.opacity = '0'
-  event.target.style.background = 'linear-gradient(135deg, #4CAF50, #81C784)'
-  event.target.alt = 'U'
-}
 </script>
 
 <style scoped>
@@ -615,20 +577,6 @@ const handleMemberImageError = (event, userId) => {
   position: relative;
 }
 
-.profile-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e9ecef;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
-  transition: all 0.2s ease;
-}
-
-.profile-image:hover {
-  transform: scale(1.05);
-  border-color: #4CAF50;
-}
 
 .member-info {
   flex: 1;
