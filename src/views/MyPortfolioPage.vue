@@ -15,7 +15,6 @@
               :name="portfolioData.userInfo.name"
               size="xl"
               :circular="true"
-              class="profile-image"
             />
             
             <div class="profile-info">
@@ -1854,21 +1853,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.profile-image {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid #E0E0E0;
-}
-
-.profile-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .profile-name {
