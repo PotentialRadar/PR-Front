@@ -76,12 +76,12 @@
       >
         <!-- 프로필 헤더 -->
         <div class="member-header">
-          <img 
-            :src="getMemberProfileImage(member)" 
-            :alt="member.name || member.nickname"
-            class="profile-image"
-            @error="handleMemberImageError($event, member.userId)"
-            loading="lazy"
+          <ProfileImage 
+            :src="member.profileImage"
+            :user-id="member.userId"
+            :name="member.name || member.nickname"
+            size="md"
+            :circular="true"
           />
           <div class="member-info">
             <h4 class="member-name">{{ member.name || member.nickname }}</h4>
@@ -209,6 +209,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -302,17 +303,6 @@ const getMemberTechStacks = (member) => {
   }
 }
 
-// 프로필 이미지 처리
-const getMemberProfileImage = (member) => {
-  if (member.profileImage && 
-      member.profileImage.startsWith('http') && 
-      !member.profileImage.includes('example.com') &&
-      !member.profileImage.includes('placeholder')) {
-    return member.profileImage
-  }
-  
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-}
 
 // 매칭도 점수에 따른 클래스 분류
 const getScoreClass = (score) => {
@@ -640,20 +630,6 @@ const handleMemberImageError = (event, userId) => {
   position: relative;
 }
 
-.profile-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e9ecef;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
-  transition: all 0.2s ease;
-}
-
-.profile-image:hover {
-  transform: scale(1.05);
-  border-color: #4CAF50;
-}
 
 .member-info {
   flex: 1;
