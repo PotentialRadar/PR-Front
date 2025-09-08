@@ -7,11 +7,12 @@
           <h3 class="section-title">프로필 이미지</h3>
           <div class="profile-image-section">
             <div class="current-avatar">
-              <img 
-                :src="formData.avatar" 
-                :alt="formData.name" 
-                @error="handleImageError"
-                :onerror="`this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.userId || 'default'}'`"
+              <ProfileImage
+                class="edit-avatar"
+                :src="formData.avatar"
+                :user-id="userStore.userId"
+                :name="formData.name"
+                :circular="true"
               />
               <div class="avatar-overlay" @click="triggerFileUpload">
                 <i class="bi bi-camera"></i>
@@ -319,6 +320,7 @@ import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { updateUserProfile, checkNickname, getTechParts } from "@/api/user";
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 const router = useRouter();
 
@@ -438,14 +440,7 @@ const selectAvatar = (avatarUrl) => {
   uploadedImage.value = null;
 };
 
-// 이미지 로드 에러 처리
-const handleImageError = (event) => {
-  console.error('프로필 이미지 로드 실패:', formData.avatar);
-  // 이미 dicebear URL이 아닌 경우에만 변경
-  if (!event.target.src.includes('dicebear.com')) {
-    event.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.userId || 'default'}`;
-  }
-}
+// 이미지 에러 처리는 ProfileImage 컴포넌트에서 공통 처리
 
 // 파일 업로드 관련 메서드 추가
 const triggerFileUpload = () => {
@@ -858,6 +853,13 @@ onUnmounted(() => {
   overflow: hidden;
   border: 4px solid #e0e0e0;
   flex-shrink: 0;
+}
+
+/* ProfileImage 컴포넌트 크기 오버라이드 */
+.current-avatar :deep(.profile-image-container),
+.current-avatar :deep(.profile-image) {
+  width: 120px !important;
+  height: 120px !important;
 }
 
 .current-avatar img {

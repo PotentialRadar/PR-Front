@@ -186,7 +186,7 @@ const getProficiencyLevel = (proficiency) => {
 .skill-rating {
   display: flex;
   align-items: center;
-  margin-left: 8px;
+  padding: 0 8px;
   flex-shrink: 0;
 }
 

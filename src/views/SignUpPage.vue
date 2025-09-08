@@ -23,8 +23,14 @@
               type="button"
               class="verification-button"
               @click="requestVerification"
+              :disabled="resendCooldown > 0"
             >
-              {{ verificationRequested ? "인증번호 재전송" : "인증번호 받기" }}
+              <template v-if="resendCooldown > 0">
+                재전송 ({{ resendCooldown }}초)
+              </template>
+              <template v-else>
+                {{ verificationRequested ? "인증번호 재전송" : "인증번호 받기" }}
+              </template>
             </button>
           </div>
 
@@ -41,19 +47,49 @@
               v-model="formData.verificationCode"
               type="text"
               class="form-input confirm-input"
-              :class="{ 'disabled-input': isVerified }"
+              :class="{ 
+                'disabled-input': isVerified || isVerificationExpired,
+                'expired-input': isVerificationExpired 
+              }"
               placeholder="인증번호를 입력해주세요."
-              :disabled="isVerified"
+              :disabled="isVerified || isVerificationExpired"
               required
             />
             <button
               type="button"
               class="verification-button confirm-mail"
               @click="verifyCode"
-              :disabled="isVerified"
+              :disabled="isVerified || isVerificationExpired || !formData.verificationCode.trim()"
             >
               인증번호 확인
             </button>
+          </div>
+
+          <!-- 타이머 및 상태 표시 -->
+          <div v-if="verificationRequested" class="verification-status">
+            <div class="timer-container" v-if="!isVerified">
+              <div class="timer-progress">
+                <div 
+                  class="timer-bar" 
+                  :class="{ 'expired': isVerificationExpired, 'warning': timeRemaining < 60 }"
+                  :style="{ width: `${(timeRemaining / 300) * 100}%` }"
+                ></div>
+              </div>
+              <div class="timer-text" :class="{ 'expired': isVerificationExpired, 'warning': timeRemaining < 60 }">
+                <i class="bi" :class="isVerificationExpired ? 'bi-clock-history' : 'bi-clock'"></i>
+                <span v-if="!isVerificationExpired">{{ formatTime(timeRemaining) }} 남음</span>
+                <span v-else class="expired-text">인증시간 만료</span>
+              </div>
+            </div>
+            
+            <div v-if="isVerified" class="verification-success">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>이메일 인증 완료</span>
+            </div>
+
+            <div v-if="isVerificationExpired" class="verification-expired">
+              <p class="expired-message">인증번호가 만료되었습니다. 새로운 인증번호를 요청해주세요.</p>
+            </div>
           </div>
         </div>
 
@@ -141,7 +177,7 @@ import {
   checkNickname,
   signUp,
 } from "@/api/user";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { debounce } from "lodash";
@@ -162,6 +198,13 @@ const isVerified = ref(false);
 const nickNameTouched = ref(false);
 const emailTouched = ref(false);
 const isNickNameAvailable = ref(null); // null: 확인 전, true: 사용 가능, false: 중복됨
+
+// 타이머 관련
+const timeRemaining = ref(300); // 5분 = 300초
+const timerInterval = ref(null);
+const isVerificationExpired = ref(false);
+const resendCooldown = ref(0);
+const resendInterval = ref(null);
 
 const isEmailValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -231,9 +274,71 @@ const isFormValid = computed(() => {
     isPasswordValid.value &&
     isPasswordMatch.value &&
     isNickNameValid.value &&
-    isNickNameAvailable.value === true
+    isNickNameAvailable.value === true &&
+    isVerified.value
   );
 });
+
+// 시간 포맷팅 함수
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+// 타이머 시작
+const startTimer = () => {
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
+  
+  timeRemaining.value = 300; // 5분
+  isVerificationExpired.value = false;
+  
+  timerInterval.value = setInterval(() => {
+    timeRemaining.value--;
+    
+    if (timeRemaining.value <= 0) {
+      clearInterval(timerInterval.value);
+      isVerificationExpired.value = true;
+      formData.value.verificationCode = '';
+      toast.warning("인증시간이 만료되었습니다. 새로운 인증번호를 요청해주세요.", {
+        position: "top-center",
+        timeout: 3000,
+        hideProgressBar: true,
+      });
+    }
+  }, 1000);
+};
+
+// 재전송 쿨타임 시작
+const startResendCooldown = () => {
+  resendCooldown.value = 30; // 30초
+  
+  if (resendInterval.value) {
+    clearInterval(resendInterval.value);
+  }
+  
+  resendInterval.value = setInterval(() => {
+    resendCooldown.value--;
+    
+    if (resendCooldown.value <= 0) {
+      clearInterval(resendInterval.value);
+    }
+  }, 1000);
+};
+
+// 타이머 정리
+const clearTimers = () => {
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+    timerInterval.value = null;
+  }
+  if (resendInterval.value) {
+    clearInterval(resendInterval.value);
+    resendInterval.value = null;
+  }
+};
 
 const goBack = () => {
   router.go(-1);
@@ -252,6 +357,11 @@ const requestVerification = async () => {
     return;
   }
 
+  // 재전송 쿨타임 체크
+  if (resendCooldown.value > 0) {
+    return;
+  }
+
   verificationRequested.value = true;
   isVerified.value = false;
   formData.value.verificationCode = "";
@@ -259,9 +369,14 @@ const requestVerification = async () => {
   try {
     await sendVerificationCode(formData.value.email);
 
-    toast.success("인증메일이 전송됐어요", {
+    // 타이머 시작
+    startTimer();
+    // 재전송 쿨타임 시작
+    startResendCooldown();
+
+    toast.success("인증메일이 전송됐어요! 5분 내에 인증을 완료해주세요.", {
       position: "top-center",
-      timeout: 2000,
+      timeout: 3000,
       toastClassName: "signup-toast",
       bodyClassName: "signup-toast-body",
       hideProgressBar: true,
@@ -272,6 +387,7 @@ const requestVerification = async () => {
       timeout: 2000,
       hideProgressBar: true,
     });
+    verificationRequested.value = false;
   }
 };
 
@@ -351,6 +467,24 @@ const verifyCode = async () => {
   // [Backend Required] 입력된 인증번호 유효성 확인
   // 인증번호 확인 요청
   // ex) /api/users/verify-code
+  if (!formData.value.verificationCode.trim()) {
+    toast.error("인증번호를 입력해주세요.", {
+      position: "top-center",
+      timeout: 2000,
+      hideProgressBar: true,
+    });
+    return;
+  }
+
+  if (isVerificationExpired.value) {
+    toast.error("인증시간이 만료되었습니다. 새로운 인증번호를 요청해주세요.", {
+      position: "top-center",
+      timeout: 2000,
+      hideProgressBar: true,
+    });
+    return;
+  }
+
   try {
     const response = await verifyEmailCode(
       formData.value.email,
@@ -358,13 +492,14 @@ const verifyCode = async () => {
     );
     if (response.data.success) {
       isVerified.value = true;
-      toast.success("인증이 완료되었습니다.", {
+      clearTimers(); // 인증 완료 시 타이머 정지
+      toast.success("🎉 이메일 인증이 완료되었습니다!", {
         position: "top-center",
-        timeout: 2000,
+        timeout: 3000,
         hideProgressBar: true,
       });
     } else {
-      toast.error("인증번호가 일치하지 않습니다.", {
+      toast.error("인증번호가 일치하지 않습니다. 다시 확인해주세요.", {
         position: "top-center",
         timeout: 2000,
         hideProgressBar: true,
@@ -378,6 +513,11 @@ const verifyCode = async () => {
     });
   }
 };
+
+// 컴포넌트 언마운트 시 타이머 정리
+onUnmounted(() => {
+  clearTimers();
+});
 </script>
 
 <style scoped>
@@ -554,6 +694,119 @@ const verifyCode = async () => {
 .disabled-input {
   background-color: var(--color-grey-95);
   cursor: not-allowed;
+}
+
+.expired-input {
+  border-color: #ff6b6b;
+  background-color: #fff5f5;
+}
+
+/* 인증 상태 스타일 */
+.verification-status {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timer-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.timer-progress {
+  flex: 1;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+  transition: width 1s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.timer-bar.warning {
+  background: linear-gradient(90deg, #ff9800 0%, #ffb74d 100%);
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+.timer-bar.expired {
+  background: linear-gradient(90deg, #f44336 0%, #ef5350 100%);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+.timer-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4caf50;
+  white-space: nowrap;
+}
+
+.timer-text.warning {
+  color: #ff9800;
+}
+
+.timer-text.expired {
+  color: #f44336;
+}
+
+.timer-text i {
+  font-size: 16px;
+}
+
+.verification-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e8f5e8 0%, #f1f8f1 100%);
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.verification-success i {
+  color: #4caf50;
+  font-size: 18px;
+}
+
+.verification-expired {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%);
+  border: 1px solid #ff6b6b;
+  border-radius: 8px;
+}
+
+.expired-message {
+  color: #d32f2f;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.expired-text {
+  font-weight: 600;
 }
 
 /* Mobile responsiveness */

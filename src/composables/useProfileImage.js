@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 export function useProfileImage(user = {}, options = {}) {
   const {
     fallbackType = 'dicebear',
-    defaultImage = '/default-avatar.png'
+    defaultImage = '/default-avatar.svg'
   } = options
 
   // 이미지 에러 상태

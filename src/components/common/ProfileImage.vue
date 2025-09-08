@@ -1,9 +1,11 @@
 <template>
-  <div class="profile-image-container" :class="sizeClass">
+  <div class="profile-image-container" :class="[sizeClass, { circular }]">
     <img
       :src="currentSrc"
-      :alt="alt"
+      :alt="computedAlt"
       :class="['profile-image', { circular, rounded }]"
+      referrerpolicy="no-referrer"
+      crossorigin="anonymous"
       @error="handleImageError"
       @load="handleImageLoad"
     />
@@ -86,7 +88,7 @@ const getFallbackUrl = () => {
     // 이니셜 기반 이미지 (추후 구현 가능)
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(props.name)}&background=random`
   } else {
-    return '/default-avatar.png'
+    return '/default-avatar.svg'
   }
 }
 
@@ -103,11 +105,38 @@ const handleImageLoad = () => {
   hasError.value = false
 }
 
-// src 변경 시 처리
+// 정규화된 이미지 URL 생성 (상대 경로 -> 환경기반 절대 경로)
+const resolveUrl = (url) => {
+  if (!url) return ''
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  // data, blob, http(s)인 경우 그대로 사용
+  if (/^(data:|blob:|https?:\/\/)/i.test(trimmed)) return trimmed
+  // protocol-relative //example.com/...
+  if (/^\/\//.test(trimmed)) return `${window.location.protocol}${trimmed}`
+
+  // 상대 경로 처리: 환경변수로 자산 베이스를 우선 사용
+  const assetBase = import.meta.env.VITE_ASSET_BASE_URL || import.meta.env.VITE_API_BASE_URL || ''
+  if (assetBase) {
+    const base = String(assetBase).replace(/\/$/, '')
+    const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+    return `${base}${path}`
+  }
+  // 환경설정이 없으면 현재 오리진 기준
+  try {
+    const u = new URL(trimmed, window.location.origin)
+    return u.toString()
+  } catch (_) {
+    return trimmed
+  }
+}
+
+// src 변경 시 처리 (정규화 포함)
 watch(() => props.src, (newSrc) => {
   hasError.value = false
-  if (newSrc && newSrc.trim()) {
-    currentSrc.value = newSrc
+  const resolved = resolveUrl(newSrc)
+  if (resolved) {
+    currentSrc.value = resolved
   } else {
     currentSrc.value = getFallbackUrl()
   }
@@ -119,6 +148,11 @@ watch(() => props.src, (newSrc) => {
   position: relative;
   display: inline-block;
   flex-shrink: 0;
+}
+
+.profile-image-container.circular {
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .profile-image {
