@@ -164,7 +164,7 @@
             <button @click="submitAIFeedback('THUMBS_DOWN')" class="feedback-btn thumbs-down">
               👎 관심없어요
             </button>
-            <button @click="submitAIFeedback('NOT_INTERESTED')" class="feedback-btn not-interested">
+            <button @click="submitAIFeedback('HIDE')" class="feedback-btn hide">
               🚫 이런 추천 그만 받기
             </button>
           </div>
@@ -317,8 +317,8 @@ onMounted(async () => {
     
     // AI 추천에서 온 경우 피드백 섹션 표시 (3초 후)
     if (isFromAIRecommendation.value) {
-      // sessionStorage로 이미 피드백을 요청했는지 확인
-      const feedbackKey = `ai_feedback_shown_${projectId.value}`;
+      // sessionStorage로 이미 피드백을 요청했는지 확인 (사용자별로)
+      const feedbackKey = `ai_feedback_shown_${userStore.userId}_${projectId.value}`;
       const alreadyShown = sessionStorage.getItem(feedbackKey);
       
       if (alreadyShown) {
@@ -545,7 +545,11 @@ const submitAIFeedback = async (action) => {
     console.log('📝 AI 추천 피드백 제출:', feedbackData);
     
     // 액션을 기존 API 형식에 맞게 변환
-    const actionPath = action === 'THUMBS_UP' ? 'like' : 'dislike';
+    let actionPath = 'like';
+    if (action === 'THUMBS_UP') actionPath = 'like';
+    else if (action === 'THUMBS_DOWN') actionPath = 'dislike';
+    else if (action === 'HIDE') actionPath = 'hide';
+    
     const response = await api.post(`/recommend/feedback/${recommendationHistoryId.value}/${actionPath}`, {}, {
       headers: {
         'User-Id': userStore.userId?.toString()
@@ -560,7 +564,7 @@ const submitAIFeedback = async (action) => {
       const messages = {
         'THUMBS_UP': '👍 피드백 감사합니다! 비슷한 프로젝트를 더 추천해드릴게요.',
         'THUMBS_DOWN': '👎 피드백이 반영되었습니다.',
-        'NOT_INTERESTED': '🚫 해당 유형의 추천을 줄이도록 하겠습니다.'
+        'HIDE': '🚫 해당 유형의 추천을 줄이도록 하겠습니다.'
       };
       
       toast.success(messages[action] || '피드백이 기록되었습니다.', {
@@ -1442,9 +1446,10 @@ document.addEventListener('keydown', (e) => {
   background: #fff8f8;
 }
 
-.feedback-btn.not-interested:hover {
-  border-color: #ffc107;
-  background: #fffef8;
+.feedback-btn.hide:hover {
+  border-color: #6c757d;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #495057;
 }
 
 .feedback-skip {

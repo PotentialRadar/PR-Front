@@ -10,12 +10,16 @@
         <p class="modal-question">이 AI 추천이 어떠셨나요?</p>
         <div class="feedback-buttons">
           <button @click="$emit('feedback', 'THUMBS_UP')" class="feedback-btn thumbs-up">
-            👍 좋은 추천이에요!
+            👍 관심있어요!
             <span class="sub-text">상세페이지로 이동합니다</span>
           </button>
           <button @click="$emit('feedback', 'THUMBS_DOWN')" class="feedback-btn thumbs-down">
-            👎 별로예요
+            👎 관심없어요
             <span class="sub-text">피드백을 남기고 이동합니다</span>
+          </button>
+          <button @click="$emit('feedback', 'HIDE')" class="feedback-btn hide">
+            🚫 추천그만받기
+            <span class="sub-text">이 프로젝트는 더이상 추천되지 않습니다</span>
           </button>
         </div>
         <div class="feedback-skip">
@@ -164,6 +168,12 @@ defineEmits(['close', 'feedback', 'go-to-project'])
   border-color: #dc3545;
   background: linear-gradient(135deg, #fff8f8 0%, #f5e8e8 100%);
   color: #721c24;
+}
+
+.feedback-btn.hide:hover {
+  border-color: #6c757d;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #495057;
 }
 
 .sub-text {
