@@ -1,7 +1,7 @@
 <template>
   <div class="tech-stack-selector">
-    <!-- 선택된 기술 스택들 (항상 위에 고정) -->
-    <div class="selected-section">
+    <!-- 선택된 기술 스택들 (hideSelected prop에 따라 표시/숨김) -->
+    <div class="selected-section" :style="{ display: hideSelected ? 'none' : 'block' }">
       <div v-if="selectedTechnologies.length > 0">
         <div class="selected-header">
           <span class="selected-title">선택된 기술 스택 ({{ selectedTechnologies.length }}개)</span>
@@ -18,12 +18,6 @@
             <i class="bi bi-x-circle-fill tech-remove"></i>
           </div>
         </div>
-      </div>
-      
-      <!-- 빈 상태 안내 -->
-      <div v-else class="empty-state">
-        <i class="bi bi-stack"></i>
-        <span>아래 검색창에서 기술 스택을 선택해주세요</span>
       </div>
     </div>
 
@@ -50,7 +44,6 @@
           @mousedown.prevent="toggleTechnology(tech)"
           :class="['dropdown-item', { 'selected': isSelected(tech) }]"
         >
-          <span class="tech-category">{{ getCategoryLabel(tech.category) }}</span>
           <span class="tech-name">{{ tech.name }}</span>
           <i v-if="isSelected(tech)" class="bi bi-check-circle-fill tech-check-dropdown"></i>
         </div>
@@ -67,6 +60,7 @@
 
 <script>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { getAllTechStacks, searchTechStacks } from '@/api/tech'
 
 export default {
   name: 'TechStackSelector',
@@ -78,6 +72,10 @@ export default {
     error: {
       type: String,
       default: ''
+    },
+    hideSelected: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['update:modelValue', 'change'],
@@ -87,77 +85,16 @@ export default {
     const selectedTechnologies = ref([...props.modelValue])
     const searchContainer = ref(null)
     const searchInput = ref(null)
+    const loading = ref(false)
 
-    const availableTechnologies = ref([
-      // Web/Frontend
-      { id: 1, name: 'HTML', category: 'frontend' },
-      { id: 2, name: 'CSS', category: 'frontend' },
-      { id: 3, name: 'SCSS', category: 'frontend' },
-      { id: 4, name: 'Tailwind CSS', category: 'frontend' },
-      { id: 5, name: 'JavaScript', category: 'frontend' },
-      { id: 6, name: 'TypeScript', category: 'frontend' },
-      { id: 7, name: 'React', category: 'frontend' },
-      { id: 8, name: 'Next.js', category: 'frontend' },
-      { id: 9, name: 'Vue.js', category: 'frontend' },
-      { id: 10, name: 'Nuxt.js', category: 'frontend' },
-      { id: 11, name: 'Angular', category: 'frontend' },
-      { id: 12, name: 'Svelte', category: 'frontend' },
-      
-      // Backend
-      { id: 13, name: 'Java', category: 'backend' },
-      { id: 14, name: 'Spring', category: 'backend' },
-      { id: 15, name: 'Spring Boot', category: 'backend' },
-      { id: 16, name: 'Node.js', category: 'backend' },
-      { id: 17, name: 'Express', category: 'backend' },
-      { id: 18, name: 'Python', category: 'backend' },
-      { id: 19, name: 'Django', category: 'backend' },
-      { id: 20, name: 'FastAPI', category: 'backend' },
-      { id: 21, name: 'PHP', category: 'backend' },
-      { id: 22, name: 'Laravel', category: 'backend' },
-      { id: 23, name: 'Ruby on Rails', category: 'backend' },
-      { id: 24, name: 'Go', category: 'backend' },
-      { id: 25, name: 'Rust', category: 'backend' },
-      { id: 26, name: '.NET', category: 'backend' },
-      { id: 27, name: 'C#', category: 'backend' },
-
-      // Mobile
-      { id: 28, name: 'React Native', category: 'mobile' },
-      { id: 29, name: 'Flutter', category: 'mobile' },
-      { id: 30, name: 'Swift', category: 'mobile' },
-      { id: 31, name: 'Kotlin', category: 'mobile' },
-      { id: 32, name: 'Xamarin', category: 'mobile' },
-      { id: 33, name: 'Ionic', category: 'mobile' },
-      
-      // DB/Cache
-      { id: 34, name: 'MySQL', category: 'database' },
-      { id: 35, name: 'PostgreSQL', category: 'database' },
-      { id: 36, name: 'SQLite', category: 'database' },
-      { id: 37, name: 'MongoDB', category: 'database' },
-      { id: 38, name: 'Redis', category: 'database' },
-      { id: 39, name: 'Oracle', category: 'database' },
-      { id: 40, name: 'MariaDB', category: 'database' },
-      
-      // DevOps/Infra
-      { id: 41, name: 'Docker', category: 'devops' },
-      { id: 42, name: 'Kubernetes', category: 'devops' },
-      { id: 43, name: 'Jenkins', category: 'devops' },
-      { id: 44, name: 'GitHub Actions', category: 'devops' },
-      { id: 45, name: 'AWS', category: 'cloud' },
-      { id: 46, name: 'Google Cloud', category: 'cloud' },
-      { id: 47, name: 'Azure', category: 'cloud' },
-
-      // Other
-      { id: 48, name: 'Unity', category: 'other' }
-    ])
+    const availableTechnologies = ref([])
 
     const filteredTechnologies = computed(() => {
       if (!searchQuery.value.trim()) {
         return [] // 검색어가 없으면 아무것도 표시하지 않음
       }
       
-      return availableTechnologies.value.filter(tech =>
-        tech.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
+      return searchTechStacks(availableTechnologies.value, searchQuery.value)
     })
 
     const getCategoryLabel = (category) => {
@@ -215,6 +152,29 @@ export default {
       emit('change', [])
     }
 
+    // 기술 스택 데이터 로드
+    const loadTechStacks = async () => {
+      try {
+        loading.value = true
+        const techStacks = await getAllTechStacks()
+        
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        availableTechnologies.value = techStacks.map(tech => ({
+          id: tech.techStackId,
+          name: tech.name,
+          category: 'general' // 백엔드에 카테고리가 없으므로 기본값 설정
+        }))
+        
+        console.log(`✅ ${techStacks.length}개의 기술 스택 로드 완료`)
+      } catch (error) {
+        console.error('기술 스택 로드 실패:', error)
+        // 실패시 빈 배열 사용 (하드코딩 데이터 제거)
+        availableTechnologies.value = []
+      } finally {
+        loading.value = false
+      }
+    }
+
     // 외부 클릭 감지로 드롭다운 닫기
     const handleClickOutside = (event) => {
       if (searchContainer.value && !searchContainer.value.contains(event.target)) {
@@ -222,8 +182,9 @@ export default {
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       document.addEventListener('click', handleClickOutside)
+      await loadTechStacks()
     })
 
     onUnmounted(() => {
@@ -242,11 +203,13 @@ export default {
       filteredTechnologies,
       searchContainer,
       searchInput,
+      loading,
       getCategoryLabel,
       isSelected,
       toggleTechnology,
       removeTechnology,
-      clearAll
+      clearAll,
+      loadTechStacks
     }
   }
 }
@@ -334,10 +297,10 @@ export default {
 .dropdown-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
-  gap: 12px;
   border-bottom: 1px solid var(--color-grey-95, #F5F5F5);
 }
 
@@ -348,16 +311,6 @@ export default {
 .dropdown-item.selected {
   background: rgba(76, 175, 80, 0.1);
   border-left: 3px solid #4CAF50;
-}
-
-.tech-category {
-  font-size: 11px;
-  color: var(--color-grey-67, #AAA);
-  background: var(--color-grey-95, #F5F5F5);
-  padding: 2px 6px;
-  border-radius: 4px;
-  min-width: 60px;
-  text-align: center;
 }
 
 .tech-name {
