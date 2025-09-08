@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import api from '@/api/axios'
@@ -228,6 +228,30 @@ const fetchPopularProjects = async (limit = 5) => {
   }
 }
 
+// 페이지 포커스 감지 (포트폴리오에서 돌아올 때 기술스택 새로고침)
+const handleVisibilityChange = async () => {
+  if (!document.hidden && userStore.isLoggedIn) {
+    console.log('🔄 메인 페이지 포커스 복귀 - 기술스택 새로고침')
+    try {
+      const techStacks = await userStore.fetchTechStacks()
+      console.log('✅ 포커스 복귀: 기술스택 새로고침 완료', {
+        techStackCount: techStacks.length,
+        hasUserTechStack: hasUserTechStack.value
+      })
+      
+      // AI 탭이 활성화되어 있고 기술스택이 새로 추가되었으면 추천 실행
+      if (activeTab.value === 'ai' && techStacks.length > 0) {
+        console.log('🤖 포커스 복귀: AI 추천 새로고침')
+        const recommendations = await fetchAIRecommendations()
+        aiRecommendedProjects.value = recommendations
+        hasLoadedAIOnce.value = true
+      }
+    } catch (error) {
+      console.error('❌ 포커스 복귀 기술스택 로드 실패:', error)
+    }
+  }
+}
+
 // 컴포넌트 마운트 시 프로젝트 데이터 로드
 onMounted(async () => {
   try {
@@ -256,9 +280,17 @@ onMounted(async () => {
         console.error('❌ 메인 페이지 기술스택 로드 실패:', error)
       }
     }
+    
+    // 페이지 포커스 이벤트 리스너 추가
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   } catch (error) {
     console.error('❌ 메인 페이지 초기화 실패:', error)
   }
+})
+
+// 컴포넌트 언마운트 시 이벤트 리스너 제거
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 // AI 추천 API 호출
