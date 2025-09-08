@@ -29,7 +29,7 @@ export const searchProjects = async (params = {}) => {
     queryParams.append('page', params.page || 0)
     queryParams.append('size', params.size || 20)
     
-            if (params.sort) queryParams.append('sort', params.sort)
+            if (params.sort) queryParams.append('sortBy', params.sort)
     
     const response = await api.get(`/search/projects?${queryParams.toString()}`)
     return response.data
@@ -69,6 +69,8 @@ export const searchUsers = async (params = {}) => {
     
     queryParams.append('page', params.page || 0)
     queryParams.append('size', params.size || 20)
+    
+    if (params.sort) queryParams.append('sortBy', params.sort)
     
     const response = await api.get(`/search/users?${queryParams.toString()}`)
     return response.data
