@@ -308,33 +308,38 @@ const performSearch = async (searchParams) => {
   loading.value = true;
   error.value = null;
   try {
+    // 검색/필터 조건이 있을 때는 전체 데이터를 가져와서 프론트엔드에서 정렬 및 페이지네이션
+    const hasSearchConditions = 
+      searchParams.keyword || 
+      (searchParams.techParts && searchParams.techParts.length > 0) || 
+      (searchParams.techStacks && searchParams.techStacks.length > 0) || 
+      (searchParams.experienceRanges && searchParams.experienceRanges.length > 0);
+
     const finalParams = { 
       ...searchParams, 
-      page: page.value - 1, 
-      size: 8, // 페이지 사이즈 조정 - 8개씩
-      sort: sortByToParam(sortBy.value)
+      page: hasSearchConditions ? 0 : page.value - 1, 
+      size: hasSearchConditions ? 1000 : 8, // 검색 시 대량 데이터 가져오기
+      sort: convertSortToBackend(sortBy.value)
     };
-    
-    const hasSearchConditions = 
-      finalParams.keyword || 
-      (finalParams.techParts && finalParams.techParts.length > 0) || 
-      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
-      (finalParams.experienceRanges && finalParams.experienceRanges.length > 0);
     
     let result;
     if (hasSearchConditions) {
+      // 검색/필터 조건이 있으면 Elasticsearch 사용 (정렬 옵션 포함)
       result = await searchUsers(finalParams);
     } else {
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순/생성일순)
+      console.log('🗄️ Using RDB API for portfolios...');
       const rdbParams = {
         page: page.value - 1,
         size: 8,
-        sortBy: sortBy.value === 'popularity' ? 'likeCount' : 'recent'
+        sortBy: getSortByParam(sortBy.value)
       };
+      console.log('🔧 RDB params for portfolios:', rdbParams);
       result = await getPortfolios(rdbParams);
     }
     
     const data = result.data || result;
-    portfolios.value = (data.content || data.portfolios)?.map(user => ({
+    let portfolioList = (data.content || data.portfolios)?.map(user => ({
       userId: user.userId,
       id: user.userId,
       name: user.nickname || `User ${user.userId}`,
@@ -348,8 +353,35 @@ const performSearch = async (searchParams) => {
       bio: user.bio || '',
     })) || [];
     
-    totalPages.value = data.totalPages || 1;
-    totalPortfolios.value = data.totalElements || 0;
+    if (hasSearchConditions) {
+      // 검색/필터 조건이 있을 때: 전체 데이터 정렬 후 페이지네이션
+      // 1. 프론트엔드에서 정렬
+      if (sortBy.value === 'popularity') {
+        portfolioList = portfolioList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+      } else if (sortBy.value === 'recent') {
+        portfolioList = portfolioList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+      
+      // 2. 페이지네이션 적용
+      const pageSize = 8;
+      const startIndex = (page.value - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const totalElements = portfolioList.length;
+      
+      portfolios.value = portfolioList.slice(startIndex, endIndex);
+      totalPages.value = Math.ceil(totalElements / pageSize);
+      totalPortfolios.value = totalElements;
+      
+    } else {
+      // 검색/필터 조건이 없을 때: 기존 방식 (백엔드 페이지네이션)
+      if (sortBy.value === 'popularity') {
+        portfolioList = portfolioList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+      }
+      
+      portfolios.value = portfolioList;
+      totalPages.value = data.totalPages || 1;
+      totalPortfolios.value = data.totalElements || 0;
+    }
 
   } catch (err) {
     console.error('검색 실패:', err);
@@ -408,7 +440,44 @@ const goToPage = (newPage) => {
 
 const setSortBy = (sortType) => {
   sortBy.value = sortType;
-  handleSearch();
+  // 페이지를 1로 리셋
+  page.value = 1;
+  
+  // 현재 UI 상태에서 검색 파라미터를 직접 구성
+  const searchParams = {
+    keyword: searchQuery.value.trim() || null,
+    techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
+    techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
+    experienceRanges: selectedExperiences.value.length > 0 ? selectedExperiences.value : null
+  };
+  
+  // currentSearchParams도 업데이트
+  currentSearchParams.value = searchParams;
+  isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
+  
+  performSearch(searchParams);
+};
+
+const getSortByParam = (sortType) => {
+  switch (sortType) {
+    case 'popularity': return 'likeCount';
+    case 'created': return 'createdAt'; 
+    case 'recent':
+    default: return 'recent';
+  }
+};
+
+// 프론트엔드 정렬 값을 백엔드 형식으로 변환
+const convertSortToBackend = (sortValue) => {
+  switch (sortValue) {
+    case 'recent':
+      return 'latest';
+    case 'popularity':
+      // 백엔드 popularity 정렬이 작동하지 않으므로 latest 사용 후 프론트에서 정렬
+      return 'latest';
+    default:
+      return 'latest';
+  }
 };
 
 const sortByToParam = (v) => {
