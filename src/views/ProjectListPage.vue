@@ -146,18 +146,12 @@
             </div>
           </div>
 
-          <div class="pagination-bar">
-            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
-            <button
-                v-for="p in totalPages"
-                :key="p"
-                :class="{ active: page === p }"
-                @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
-          </div>
+          <PaginationComponent 
+            :current-page="page" 
+            :total-pages="totalPages" 
+            :page-group-size="5" 
+            @page-change="handlePageChange" 
+          />
         </div>
       </div>
     </div>
@@ -193,6 +187,7 @@ import PageHeader from '@/components/common/PageHeader.vue';
 import SortOptions from '@/components/projectComponents/SortOptions.vue';
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+import PaginationComponent from '@/components/common/PaginationComponent.vue';
 // import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'; // This component is not used in the template
 
 import { applyProject } from '@/api/projectMember';
@@ -351,7 +346,7 @@ const performSearch = async (searchParams) => {
     const finalParams = {
       ...searchParams,
       page: page.value - 1,
-      size: 8,
+      size: 5,
       sort: sort.value,
     };
     
@@ -379,7 +374,7 @@ const performSearch = async (searchParams) => {
       
       if (sort.value === 'likeCount,desc') {
         // 좋아요순 정렬
-        const url = `/projects?page=${page.value - 1}&size=8&sort=likeCount,desc`;
+        const url = `/projects?page=${page.value - 1}&size=5&sort=likeCount,desc`;
         console.log('🔧 Popular sort URL:', url);
         result = await api.get(url);
         console.log('📊 Popular sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, likeCount: p.likeCount})));
@@ -387,7 +382,7 @@ const performSearch = async (searchParams) => {
         // 최신순이나 기본값
         const rdbParams = {
           page: page.value - 1,
-          size: 8,
+          size: 5,
           sort: sort.value
         };
         console.log('🔧 RDB params for latest sort:', rdbParams);
@@ -434,6 +429,12 @@ const goToPage = (p) => {
   if (p >= 1 && p <= totalPages.value) {
     page.value = p;
     window.scrollTo(0, 0);
+  }
+};
+
+const handlePageChange = (newPage) => {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    page.value = newPage;
   }
 };
 
@@ -844,33 +845,6 @@ const handleLikeUpdate = ({ projectId, liked, likeCount }) => {
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
 .empty-message h3 { font-size: 20px; font-weight: 600; }
 
-/* 페이지네이션 */
-.pagination-bar {
-  margin-top: 24px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-.pagination-bar button {
-  background: #fff;
-  border: 1px solid #D1D5DB;
-  border-radius: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-.pagination-bar button:hover {
-  background: #F1F8E9;
-  border-color: #C8E6C9;
-  color: #2E7D32;
-}
-.pagination-bar button.active {
-  background: #4CAF50;
-  color: #fff;
-  border-color: #4CAF50;
-}
-.pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
 
 /* 토스트 */
 .success-toast, .fail-toast { position: fixed; top: 80px; right: 30px; color: white; padding: 16px 24px; border-radius: 12px; z-index: 1001; animation: slideInRight 0.3s ease; box-shadow: 0 8px 25px rgba(0,0,0,0.15); }

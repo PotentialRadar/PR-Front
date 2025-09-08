@@ -278,6 +278,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
 import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
+import { portfolioApi } from '@/api/portfolio.js'
 import { useUserStore } from '@/stores/userStore';
 import { PART_OPTIONS } from '@/constants/parts';
 import { updateMemberStatus, getProjectMembers, getConfirmedProjectMembers } from '@/api/projectMember.js';
@@ -328,30 +329,6 @@ const ENUM_TO_CLASS = {
 const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
 
 // ===== 정규화 유틸 =====
-const toTechTags = (list) => {
-  if (!Array.isArray(list)) return []
-  return list.map(ts => (typeof ts === 'string' ? { techStackName: ts } : ts))
-}
-
-const normalizeProject = (p, currentUserId, isPM) => {
-  const projectId = p.projectId ?? p.id;
-  const teamLeaderId = p.teamLeaderId ?? p.leaderId ?? p.ownerId ?? (isPM ? currentUserId : null);
-  
-  return {
-    projectId,
-    title: p.title ?? '',
-    description: p.description ?? '',
-    status: p.status ?? 'RECRUITING',
-    startDate: p.startDate ?? null,
-    endDate: p.endDate ?? null,
-    recruitCount: p.recruitCount ?? 0,
-    techStacks: toTechTags(p.techStacks ?? []),
-    appliedCount: p.appliedCount ?? 0,
-    teamLeaderId,
-    isPM: teamLeaderId === currentUserId,
-    members: p.members ?? [], // 멤버 목록 추가
-  };
-};
 
 // ===== 데이터 로드 =====
 onMounted(async () => {
@@ -362,20 +339,26 @@ onMounted(async () => {
       return
     }
 
-    const [createdRes, appliedRes] = await Promise.all([
-      getProjectsCreatedByUser(currentUserId),
-      getAppliedProjectsByUser(currentUserId)
-    ])
-
-    const created = (createdRes.data || []).map(p => normalizeProject(p, currentUserId, true));
-    const applied = (appliedRes.data || []).map(a => normalizeProject(a.project || a, currentUserId, false));
-
-    const map = new Map()
-    for (const p of [...applied, ...created]) map.set(p.projectId, p)
-    projects.value = Array.from(map.values())
+    // 백엔드의 통합 API 사용
+    const response = await portfolioApi.getAvailableProjects()
+    
+    // 응답 데이터를 기존 형식에 맞게 변환
+    projects.value = (response.data || []).map(project => ({
+      projectId: project.projectId,
+      title: project.title || '',
+      description: project.description || '',
+      status: project.status || 'RECRUITING',
+      startDate: project.startDate,
+      endDate: project.endDate,
+      recruitCount: project.recruitCount || 0,
+      techStacks: project.techStacks || [],
+      isPM: project.role === 'LEADER' || project.role === 'PM',
+      role: project.role || 'MEMBER',
+      members: project.members || []
+    }))
 
   } catch (e) {
-    console.error('내 프로젝트/지원 프로젝트 로드 실패:', e)
+    console.error('내 프로젝트 로드 실패:', e)
     projects.value = []
   } finally {
     isLoading.value = false

@@ -119,8 +119,14 @@
           >
             📧 팀 초대
           </button>
-          <button class="profile-btn" @click="viewProfile(member)">
-            👤 프로필 보기
+          <button 
+            class="profile-btn" 
+            :class="{ 'disabled': !member.isPortfolioOpen }"
+            @click="viewProfile(member)"
+            :disabled="!member.isPortfolioOpen"
+            :title="member.isPortfolioOpen ? '포트폴리오 보기' : '비공개 포트폴리오'"
+          >
+            👤 {{ member.isPortfolioOpen ? '프로필 보기' : '비공개 프로필' }}
           </button>
         </div>
       </div>
@@ -643,9 +649,25 @@ watch([() => props.projectId, () => props.requiredSkills], ([newProjectId, newSk
   border: 2px solid #4CAF50;
 }
 
-.profile-btn:hover {
+.profile-btn:hover:not(:disabled) {
   background: #4CAF50;
   color: white;
+}
+
+.profile-btn.disabled,
+.profile-btn:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.profile-btn.disabled:hover,
+.profile-btn:disabled:hover {
+  background: #f8f9fa;
+  color: #6c757d;
+  transform: none;
 }
 
 .no-results {

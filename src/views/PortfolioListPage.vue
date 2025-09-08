@@ -158,18 +158,12 @@
             </div>
           </div>
 
-          <div class="pagination-bar" v-if="totalPages > 1">
-            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
-            <button
-                v-for="p in totalPages"
-                :key="p"
-                :class="{ active: page === p }"
-                @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
-          </div>
+          <PaginationComponent 
+            :current-page="page" 
+            :total-pages="totalPages" 
+            :page-group-size="5" 
+            @page-change="handlePageChange" 
+          />
         </div>
       </div>
     </div>
@@ -185,6 +179,7 @@ import { useUserStore } from '@/stores/userStore';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import PortfolioCard from '@/components/portfolioComponents/PortfolioCard.vue';
+import PaginationComponent from '@/components/common/PaginationComponent.vue';
 
 import { searchUsers, getPopularUserKeywords } from '@/api/search';
 import { getPortfolios } from '@/api/user';
@@ -316,7 +311,7 @@ const performSearch = async (searchParams) => {
     const finalParams = { 
       ...searchParams, 
       page: page.value - 1, 
-      size: 12, // 페이지 사이즈 조정
+      size: 8, // 페이지 사이즈 조정 - 8개씩
       sort: sortByToParam(sortBy.value)
     };
     
@@ -332,7 +327,7 @@ const performSearch = async (searchParams) => {
     } else {
       const rdbParams = {
         page: page.value - 1,
-        size: 12,
+        size: 8,
         sortBy: sortBy.value === 'popularity' ? 'likeCount' : 'recent'
       };
       result = await getPortfolios(rdbParams);
@@ -398,6 +393,12 @@ const clearSearch = () => { searchQuery.value = ''; handleSearch(); };
 
 // 유틸리티
 const getActiveFilterCount = () => selectedTechParts.value.length + selectedTechStacks.value.length + selectedExperiences.value.length;
+
+const handlePageChange = (newPage) => {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    page.value = newPage;
+  }
+};
 
 const goToPage = (newPage) => {
   if (newPage >= 1 && newPage <= totalPages.value) {
@@ -469,9 +470,4 @@ const sortByToParam = (v) => {
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
 .empty-message h3 { font-size: 20px; font-weight: 600; }
-.pagination-bar { margin-top: 24px; display: flex; justify-content: center; gap: 8px; }
-.pagination-bar button { background: #fff; border: 1px solid #D1D5DB; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-.pagination-bar button:hover { background: #F1F8E9; border-color: #C8E6C9; color: #2E7D32; }
-.pagination-bar button.active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
-.pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
 </style>

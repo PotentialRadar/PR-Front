@@ -71,16 +71,17 @@
         v-for="member in memberRecommendations" 
         :key="member.userId"
         class="member-card"
-        @click="$emit('member-click', member.userId)"
+        :class="{ 'portfolio-private': !member.isPortfolioOpen }"
+        @click="handleMemberCardClick(member)"
       >
         <!-- 프로필 헤더 -->
         <div class="member-header">
-          <img 
-            :src="getMemberProfileImage(member)" 
-            :alt="member.name || member.nickname"
-            class="profile-image"
-            @error="handleMemberImageError($event, member.userId)"
-            loading="lazy"
+          <ProfileImage 
+            :src="member.profileImage"
+            :user-id="member.userId"
+            :name="member.name || member.nickname"
+            size="md"
+            :circular="true"
           />
           <div class="member-info">
             <h4 class="member-name">{{ member.name || member.nickname }}</h4>
@@ -188,8 +189,14 @@
           >
             {{ invitedMembers.has(member.userId) ? '초대됨' : '📧 팀 초대' }}
           </button>
-          <button class="profile-btn" @click="$emit('member-click', member.userId)">
-            👤 프로필 보기
+          <button 
+            class="profile-btn" 
+            :class="{ 'disabled': !member.isPortfolioOpen }"
+            @click.stop="viewProfile(member.userId)"
+            :disabled="!member.isPortfolioOpen"
+            :title="member.isPortfolioOpen ? '포트폴리오 보기' : '비공개 포트폴리오'"
+          >
+            👤 {{ member.isPortfolioOpen ? '프로필 보기' : '비공개 프로필' }}
           </button>
         </div>
       </div>
@@ -199,6 +206,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -240,7 +251,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['project-change', 'reload', 'member-click', 'invite-member'])
+defineEmits(['project-change', 'reload', 'invite-member'])
 
 // 계산된 속성
 const userTechNames = computed(() => 
@@ -292,17 +303,6 @@ const getMemberTechStacks = (member) => {
   }
 }
 
-// 프로필 이미지 처리
-const getMemberProfileImage = (member) => {
-  if (member.profileImage && 
-      member.profileImage.startsWith('http') && 
-      !member.profileImage.includes('example.com') &&
-      !member.profileImage.includes('placeholder')) {
-    return member.profileImage
-  }
-  
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.userId}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-}
 
 // 매칭도 점수에 따른 클래스 분류
 const getScoreClass = (score) => {
@@ -326,6 +326,21 @@ const getAvailabilityClass = (member) => {
   if (member.availabilityStatus === 'BUSY') return 'busy'
   if (member.availabilityStatus === 'AVAILABLE') return 'available'
   return 'available' // 기본값
+}
+
+// 프로필 보기 함수
+const viewProfile = (userId) => {
+  router.push(`/portfolio/${userId}`)
+}
+
+// 팀원 카드 클릭 핸들러
+const handleMemberCardClick = (member) => {
+  if (!member.isPortfolioOpen) {
+    // 알림을 표시하거나 다른 동작을 수행할 수 있음
+    alert('이 팀원의 포트폴리오는 비공개 상태입니다.')
+    return
+  }
+  viewProfile(member.userId)
 }
 
 const handleMemberImageError = (event, userId) => {
@@ -615,20 +630,6 @@ const handleMemberImageError = (event, userId) => {
   position: relative;
 }
 
-.profile-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e9ecef;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
-  transition: all 0.2s ease;
-}
-
-.profile-image:hover {
-  transform: scale(1.05);
-  border-color: #4CAF50;
-}
 
 .member-info {
   flex: 1;
@@ -867,9 +868,37 @@ const handleMemberImageError = (event, userId) => {
   border: 2px solid #4CAF50;
 }
 
-.profile-btn:hover {
+.profile-btn:hover:not(:disabled) {
   background: #4CAF50;
   color: white;
+}
+
+.profile-btn.disabled,
+.profile-btn:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.profile-btn.disabled:hover,
+.profile-btn:disabled:hover {
+  background: #f8f9fa;
+  color: #6c757d;
+  transform: none;
+}
+
+/* 비공개 포트폴리오 카드 스타일 */
+.member-card.portfolio-private {
+  opacity: 0.9;
+  border: 1px solid #e9ecef;
+}
+
+.member-card.portfolio-private:hover {
+  cursor: help;
+  border-color: #ffc107;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
 }
 
 /* 반응형 디자인 */

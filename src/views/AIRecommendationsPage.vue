@@ -140,13 +140,13 @@
 
 
         <!-- 로딩 상태 -->
-        <div v-if="isLoading" class="loading-state">
+        <div v-if="isLoading || !allDataLoaded" class="loading-state">
           <div class="loading-spinner"></div>
           <p>AI가 당신에게 맞는 프로젝트를 분석하고 있습니다...</p>
         </div>
 
         <!-- 로그인 안된 상태 -->
-        <div v-else-if="!userStore.isLoggedIn" class="empty-state">
+        <div v-else-if="!userStore.isLoggedIn && allDataLoaded" class="empty-state">
           <div class="empty-icon">🔐</div>
           <h3>AI 추천을 위해 로그인이 필요합니다</h3>
           <p>개인 맞춤형 프로젝트 추천을 받으려면 먼저 로그인해주세요.</p>
@@ -183,7 +183,7 @@
         </div>
 
         <!-- 기술스택 미설정 상태 -->
-        <div v-else-if="userTechStacks.length === 0" class="empty-state">
+        <div v-else-if="userTechStacks.length === 0 && allDataLoaded" class="empty-state">
           <div class="empty-icon">🔧</div>
           <h3>기술스택을 설정해주세요</h3>
           <p>포트폴리오 페이지에서 기술스택과 경험 수준을 설정하시면 AI가 맞춤형 프로젝트를 추천해드립니다.</p>
@@ -220,7 +220,7 @@
         </div>
 
         <!-- 추천 결과 없음 (로그인 되어 있고 기술스택도 설정됨) -->
-        <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && !isLoading && recommendations.length === 0" class="empty-state">
+        <div v-else-if="userStore.isLoggedIn && userTechStacks.length > 0 && allDataLoaded && recommendations.length === 0" class="empty-state">
           <div class="empty-icon">🔍</div>
           <h3>추천 가능한 프로젝트가 없습니다</h3>
           <p>다른 기술스택이나 경험 수준으로 다시 시도해보세요.</p>
@@ -230,7 +230,7 @@
         </div>
 
         <!-- 프로젝트 추천 탭 -->
-        <div v-if="activeTab === 'projects' && userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0" class="projects-grid">
+        <div v-if="activeTab === 'projects' && userStore.isLoggedIn && userTechStacks.length > 0 && recommendations.length > 0 && allDataLoaded" class="projects-grid">
           <ProjectCard
             v-for="project in recommendations" 
             :key="project.projectId"
@@ -241,7 +241,7 @@
         </div>
 
         <!-- 팀원 추천 탭 -->
-        <div v-if="activeTab === 'members'" class="members-tab">
+        <div v-if="activeTab === 'members' && allDataLoaded" class="members-tab">
           <TeamMemberRecommendation 
             v-if="selectedProject"
             :key="selectedProject.projectId"
@@ -316,6 +316,9 @@ const userProjects = ref([]) // 사용자가 팀장인 프로젝트들
 const isTeamLeader = ref(false) // 팀장 여부
 const selectedProjectId = ref(null) // 선택된 프로젝트 ID
 
+// 모든 데이터 로드 완료 상태
+const allDataLoaded = ref(false)
+
 // 피드백 모달 관련
 const showFeedbackModal = ref(false)
 const selectedProjectForFeedback = ref(null)
@@ -349,12 +352,14 @@ const getUserFeedbackStats = async () => {
 }
 
 // 메서드
-const loadRecommendations = async () => {
+const loadRecommendations = async (skipLoadingState = false) => {
   if (userTechStacks.value.length === 0) {
     return
   }
 
-  isLoading.value = true
+  if (!skipLoadingState) {
+    isLoading.value = true
+  }
   
   try {
     // 사용자 피드백 통계 가져오기
@@ -396,7 +401,7 @@ const loadRecommendations = async () => {
     console.log('📦 AI 추천 응답:', data)
     
     // AI 추천 처리 시간을 더 길게 보이도록 2초 딜레이 추가
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
     recommendations.value = data || []
     
@@ -444,7 +449,9 @@ const loadRecommendations = async () => {
       timeout: 3000
     })
   } finally {
-    isLoading.value = false
+    if (!skipLoadingState) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -506,7 +513,9 @@ const switchToMembersTab = () => {
 
 
 
-const handleTechStackSave = (techStacks) => {
+const handleTechStackSave = async (techStacks) => {
+  allDataLoaded.value = false  // 새로 로드할 때는 화면 숨김
+  
   userTechStacks.value = techStacks
   showTechStackModal.value = false
   
@@ -518,8 +527,9 @@ const handleTechStackSave = (techStacks) => {
     timeout: 2000
   })
   
-  // 추천 다시 로드
-  loadRecommendations()
+  // 추천 다시 로드 (기술스택 저장 후에는 별도 로딩 상태 사용)
+  await loadRecommendations(false)
+  allDataLoaded.value = true
 }
 
 const isUserTech = (techName) => {
@@ -787,6 +797,9 @@ onMounted(async () => {
   try {
     console.log('🔄 AI 추천 페이지 마운트 시작')
     
+    // 모든 데이터 로드 완료 플래그 초기화
+    allDataLoaded.value = false
+    
     // 로그인 상태 체크 (이미 로그인된 경우 스킵)
     if (!userStore.isLoggedIn) {
       try {
@@ -798,93 +811,106 @@ onMounted(async () => {
       }
     }
     
-    // 인기 프로젝트 로드 (로그인 안된 상태에서 표시용)
-    await loadPopularProjects()
+    // 로딩 상태를 true로 설정하여 UI에서 스피너 표시
+    isLoading.value = true
     
-    // 팀장 상태 확인 (로그인된 경우만)
-    if (userStore.isLoggedIn && userStore.userId) {
-      try {
-        await checkTeamLeaderStatus()
-      } catch (error) {
-        console.error('❌ 팀장 상태 확인 실패:', error)
-        // 팀장 상태 확인 실패해도 계속 진행
+    try {
+      // 병렬로 실행할 작업들
+      const loadTasks = []
+      
+      // 1. 인기 프로젝트 로드 (항상 실행)
+      loadTasks.push(loadPopularProjects())
+      
+      // 2. 로그인된 사용자만 실행할 작업들
+      if (userStore.isLoggedIn && userStore.userId) {
+        // 팀장 상태 확인
+        loadTasks.push(
+          checkTeamLeaderStatus().catch(error => {
+            console.error('❌ 팀장 상태 확인 실패:', error)
+            isTeamLeader.value = false
+            userProjects.value = []
+          })
+        )
+        
+        // 기술스택 로드 + AI 추천
+        loadTasks.push(
+          (async () => {
+            try {
+              console.log('🔧 기술스택 조회 시도')
+              console.log('🔍 현재 userStore 상태:', {
+                isLoggedIn: userStore.isLoggedIn,
+                userId: userStore.userId,
+                techStacksLength: userStore.techStacks?.length || 0
+              })
+              
+              // 기술스택 로딩 - DB에서 최신 데이터를 가져와 userStore와 동기화
+              console.log('🔧 DB에서 기술스택 새로 조회 중...')
+              const dbTechStacks = await userStore.fetchTechStacks()
+              
+              if (dbTechStacks && dbTechStacks.length > 0) {
+                // DB에서 가져온 기술스택을 AI 추천용 형태로 변환
+                userTechStacks.value = dbTechStacks.map(tech => ({
+                  name: tech.stackName || tech.techStackName || tech.name,
+                  level: tech.skillLevel || tech.level || 3
+                }))
+                console.log('✅ DB에서 기술스택 로드 성공:', userTechStacks.value)
+                
+                // userStore에 기술스택 동기화
+                userStore.techStacks = dbTechStacks
+                
+                // AI 추천 로드 (병렬 처리에 포함, 별도 로딩 상태 스킵)
+                await loadRecommendations(true)
+              } else {
+                console.log('⚠️ DB에 기술스택 없음 - localStorage 확인')
+                const savedTechStacks = localStorage.getItem('userTechStacks')
+                if (savedTechStacks) {
+                  try {
+                    userTechStacks.value = JSON.parse(savedTechStacks)
+                    console.log('✅ localStorage에서 기술스택 로드:', userTechStacks.value)
+                    await loadRecommendations(true)
+                  } catch (error) {
+                    console.error('❌ 기술스택 데이터 파싱 오류:', error)
+                    localStorage.removeItem('userTechStacks')
+                    userTechStacks.value = []
+                  }
+                } else {
+                  console.log('⚠️ DB와 localStorage 모두에 기술스택 없음')
+                  userTechStacks.value = []
+                }
+              }
+            } catch (error) {
+              console.error('❌ 기술스택 로딩 실패:', error)
+              userTechStacks.value = []
+            }
+          })()
+        )
+      } else {
+        console.log('👤 비로그인 사용자 - 기술스택 로딩 생략')
+        userTechStacks.value = []
         isTeamLeader.value = false
         userProjects.value = []
       }
-    } else {
-      console.log('👤 비로그인 사용자 - 팀장 상태 체크 생략')
-      isTeamLeader.value = false
-      userProjects.value = []
+      
+      // 모든 작업을 병렬로 실행하고 완료될 때까지 대기
+      console.log('🔄 모든 데이터 로드 작업 병렬 실행 중...')
+      await Promise.all(loadTasks)
+      console.log('✅ 모든 데이터 로드 작업 완료')
+      
+      // 모든 데이터 로드 완료를 알림 - 이제 UI 렌더링 시작
+      allDataLoaded.value = true
+      
+    } finally {
+      // 로딩 완료
+      isLoading.value = false
     }
     
-    // 저장된 기술스택 불러오기 (로그인 상태에서만)
-    if (userStore.isLoggedIn && userStore.userId) {
-      try {
-        console.log('🔧 기술스택 조회 시도 - userStore 먼저 확인')
-    console.log('🔍 현재 userStore 상태:', {
+    console.log('📋 AI 추천 페이지 초기화 완료:', {
       isLoggedIn: userStore.isLoggedIn,
       userId: userStore.userId,
-      techStacksLength: userStore.techStacks?.length || 0,
-      techStacks: userStore.techStacks
-    })
-        
-        // 먼저 userStore에 이미 기술스택이 있는지 확인
-        if (userStore.techStacks && userStore.techStacks.length > 0) {
-          console.log('✅ userStore에서 기술스택 발견:', userStore.techStacks)
-          // userStore의 기술스택을 AI 추천용 형태로 변환
-          userTechStacks.value = userStore.techStacks.map(tech => ({
-            name: tech.stackName || tech.techStackName || tech.name,
-            level: tech.skillLevel || tech.level || 3
-          }))
-          console.log('✅ userStore에서 기술스택 로드 성공:', userTechStacks.value)
-          console.log('🔍 기술스택 상세 정보:', userTechStacks.value.map(tech => `${tech.name} (Lv.${tech.level})`).join(', '))
-          await loadRecommendations()
-        } else {
-          console.log('⚠️ userStore에 기술스택 없음 - DB에서 새로 조회')
-          const dbTechStacks = await userStore.fetchTechStacks()
-          if (dbTechStacks && dbTechStacks.length > 0) {
-            // DB에서 가져온 기술스택을 AI 추천용 형태로 변환
-            userTechStacks.value = dbTechStacks.map(tech => ({
-              name: tech.stackName || tech.techStackName || tech.name,
-              level: tech.skillLevel || tech.level || 3
-            }))
-            console.log('✅ DB에서 기술스택 로드 성공:', userTechStacks.value)
-            await loadRecommendations()
-          } else {
-            console.log('⚠️ DB에 기술스택 없음 - localStorage 확인')
-            // DB에 기술스택이 없으면 localStorage 확인
-            const savedTechStacks = localStorage.getItem('userTechStacks')
-            if (savedTechStacks) {
-              try {
-                userTechStacks.value = JSON.parse(savedTechStacks)
-                await loadRecommendations()
-              } catch (error) {
-                console.error('❌ 기술스택 데이터 파싱 오류:', error)
-                localStorage.removeItem('userTechStacks')
-                userTechStacks.value = []
-              }
-            } else {
-              console.log('⚠️ DB와 localStorage 모두에 기술스택 없음')
-              userTechStacks.value = []
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ 기술스택 로딩 실패:', error)
-        userTechStacks.value = []
-        // 기술스택 로딩 실패해도 페이지는 계속 진행
-      }
-    } else {
-      console.log('👤 비로그인 사용자 - 기술스택 로딩 생략')
-      // 비로그인 상태에서는 기술스택 관련 데이터 초기화
-      userTechStacks.value = []
-    }
-    
-    
-    console.log('📋 AI 추천 페이지 로드 완료:', {
-      isLoggedIn: userStore.isLoggedIn,
-      userId: userStore.userId,
-      techStacksCount: userTechStacks.value.length
+      techStacksCount: userTechStacks.value.length,
+      recommendationsCount: recommendations.value.length,
+      popularProjectsCount: popularProjects.value.length,
+      allDataLoaded: allDataLoaded.value
     })
     
   } catch (error) {
@@ -896,6 +922,8 @@ onMounted(async () => {
     userTechStacks.value = []
     popularProjects.value = []
     recommendations.value = []
+    allDataLoaded.value = true  // 실패해도 화면은 보여주기
+    isLoading.value = false
     
     // 사용자에게 알림
     toast.error('페이지 로드 중 오류가 발생했습니다. 새로고침해주세요.', {
@@ -913,19 +941,43 @@ watch(() => userStore.isLoggedIn, (newValue, oldValue) => {
       // 로그아웃 시 기술스택 데이터 초기화
       userTechStacks.value = []
       recommendations.value = []
+      allDataLoaded.value = false  // 데이터 초기화시 화면도 다시 숨김
       localStorage.removeItem('userTechStacks')
       localStorage.removeItem('projectFeedbacks')
       console.log('🧹 로그아웃으로 인한 데이터 초기화 완료')
+      
+      // 로그아웃 후에는 다시 화면 표시 (비로그인 상태 UI)
+      setTimeout(() => {
+        allDataLoaded.value = true
+      }, 100)
     }
   } catch (error) {
     console.error('🚨 로그인 상태 변화 처리 중 오류:', error)
   }
 }, { immediate: false })
 
-// 페이지 포커스 시 기술스택 재확인 (포트폴리오에서 돌아왔을 때)
+// 페이지 포커스 시 데이터 재확인 (다른 페이지에서 돌아왔을 때)
 const handleVisibilityChange = async () => {
-  if (!document.hidden && userStore.isLoggedIn && userTechStacks.value.length === 0) {
-    await loadTechStacksFromPortfolio()
+  if (!document.hidden && userStore.isLoggedIn) {
+    console.log('🔄 페이지 포커스 복귀 - 데이터 상태 확인')
+    
+    // 기술스택이 없으면 포트폴리오에서 로드 시도
+    if (userTechStacks.value.length === 0) {
+      console.log('🔧 기술스택이 없어서 포트폴리오에서 로드 시도')
+      allDataLoaded.value = false  // 새로 로드할 때는 다시 숨김
+      await loadTechStacksFromPortfolio()
+      allDataLoaded.value = true
+    } 
+    // 기술스택이 있으면 좋아요 데이터 변경 가능성으로 추천 새로고침 고려
+    else {
+      console.log('🔍 기술스택 있음 - 최신 피드백 데이터 반영 확인')
+      if (checkForDataRefresh()) {
+        console.log('🔄 페이지 포커스 복귀 - 최신 데이터 반영을 위해 추천 새로고침')
+        allDataLoaded.value = false  // 새로고침할 때는 다시 숨김
+        await loadRecommendations(false)
+        allDataLoaded.value = true
+      }
+    }
   }
 }
 
@@ -933,6 +985,36 @@ const handleVisibilityChange = async () => {
 onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
+
+// 페이지 간 이동 감지 및 데이터 새로고침 체크
+const checkForDataRefresh = () => {
+  const lastRecommendationTime = sessionStorage.getItem('lastRecommendationTime')
+  const lastPageVisit = sessionStorage.getItem('lastPageVisit') 
+  const currentPage = window.location.pathname
+  const now = Date.now()
+  
+  // 마지막 추천으로부터 5초 이상 지났거나 처음 접속인 경우
+  const timeDiff = lastRecommendationTime ? now - parseInt(lastRecommendationTime) : 999999
+  
+  // 다른 페이지에서 왔는지 확인 (프로젝트 페이지에서 올 가능성이 높음)
+  const pageChanged = lastPageVisit && lastPageVisit !== currentPage
+  
+  if (timeDiff > 5000 || pageChanged) { // 5초 간격 또는 페이지 변경
+    console.log('🔄 데이터 새로고침 조건 충족:', { 
+      timeDiff: Math.round(timeDiff/1000) + '초', 
+      pageChanged,
+      lastPage: lastPageVisit,
+      currentPage 
+    })
+    sessionStorage.setItem('lastRecommendationTime', now.toString())
+    sessionStorage.setItem('lastPageVisit', currentPage)
+    return true
+  }
+  
+  // 현재 페이지 방문 기록
+  sessionStorage.setItem('lastPageVisit', currentPage)
+  return false
+}
 
 // 컴포넌트 언마운트 시 이벤트 리스너 제거
 onUnmounted(() => {

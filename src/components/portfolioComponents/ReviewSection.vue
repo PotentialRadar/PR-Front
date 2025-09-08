@@ -16,7 +16,7 @@
       
       <div v-else class="review-list">
         <div 
-          v-for="(review, index) in processedReviews" 
+          v-for="(review, index) in paginatedReviews" 
           :key="review.reviewId || index"
           class="review-item"
         >
@@ -56,13 +56,23 @@
             </div>
           </div>
         </div>
+        
+        <!-- 페이지네이션 (3개 이상일 때만 표시) -->
+        <PaginationComponent 
+          v-if="processedReviews.length > 4"
+          :current-page="currentReviewPage" 
+          :total-pages="totalReviewPages" 
+          :page-group-size="3" 
+          @page-change="handleReviewPageChange" 
+        />
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import PaginationComponent from '@/components/common/PaginationComponent.vue'
 
 // Props
 const props = defineProps({
@@ -102,6 +112,10 @@ const formatReviewDate = (dateString) => {
   }
 }
 
+// 페이지네이션 상태
+const currentReviewPage = ref(1)
+const reviewsPerPage = 4
+
 // 처리된 리뷰 데이터
 const processedReviews = computed(() => {
   return props.reviews.map(review => ({
@@ -110,6 +124,22 @@ const processedReviews = computed(() => {
     timeAgo: formatReviewDate(review.createdAt)
   }))
 })
+
+// 페이지네이션 계산
+const totalReviewPages = computed(() => {
+  return Math.ceil(processedReviews.value.length / reviewsPerPage)
+})
+
+const paginatedReviews = computed(() => {
+  const start = (currentReviewPage.value - 1) * reviewsPerPage
+  const end = start + reviewsPerPage
+  return processedReviews.value.slice(start, end)
+})
+
+// 페이지 변경 핸들러
+const handleReviewPageChange = (page) => {
+  currentReviewPage.value = page
+}
 
 // 이미지 에러 핸들링
 const handleImageError = (event) => {
