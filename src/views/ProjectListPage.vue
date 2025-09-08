@@ -352,40 +352,32 @@ const performSearch = async (searchParams) => {
 
     const finalParams = {
       ...searchParams,
-      page: hasSearchConditions ? 0 : page.value - 1,
-      size: hasSearchConditions ? 1000 : 5, // 검색 시 대량 데이터 가져오기
+      page: page.value - 1,
+      size: 5,
       sort: convertSortToBackend(sort.value),
     };
     
     let result;
     if (hasSearchConditions) {
-      // 검색/필터 조건이 있으면 Elasticsearch 사용 (정렬 옵션 포함)
+      // 검색/필터 조건이 있을 때만 Elasticsearch 사용 (정렬 포함)
+      console.log('🔍 Using Elasticsearch with conditions:', finalParams);
       result = await searchProjects(finalParams);
     } else {
-      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순/마감순)
-      console.log('🗄️ Using RDB API...');
-      console.log('🔍 Current sort.value:', sort.value, typeof sort.value);
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (기존 방식)
+      console.log('🗄️ Using RDB API for basic listing with sort:', sort.value);
       
       if (sort.value === 'likeCount,desc') {
-        // 좋아요순 정렬
         const url = `/projects?page=${page.value - 1}&size=5&sort=likeCount,desc`;
-        console.log('🔧 Popular sort URL:', url);
         result = await api.get(url);
-        console.log('📊 Popular sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, likeCount: p.likeCount})));
       } else if (sort.value === 'recruitDeadline,asc') {
-        // 마감순 정렬
         const url = `/projects?page=${page.value - 1}&size=5&sort=recruitDeadline,asc`;
-        console.log('🔧 Deadline sort URL:', url);
         result = await api.get(url);
-        console.log('📊 Deadline sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, deadline: p.recruitDeadline})));
       } else {
-        // 최신순이나 기본값
         const rdbParams = {
           page: page.value - 1,
           size: 5,
           sort: sort.value
         };
-        console.log('🔧 RDB params for latest sort:', rdbParams);
         result = await listProjects(rdbParams);
       }
     }
@@ -394,45 +386,9 @@ const performSearch = async (searchParams) => {
     const data = result.data || result;
     let projectList = data.content || [];
     
-    if (hasSearchConditions) {
-      // 검색/필터 조건이 있을 때: 전체 데이터 정렬 후 페이지네이션
-      // 1. 프론트엔드에서 정렬
-      if (sort.value === 'likeCount,desc') {
-        projectList = projectList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      } else if (sort.value === 'recruitDeadline,asc') {
-        projectList = projectList.sort((a, b) => {
-          const dateA = a.recruitDeadline ? new Date(a.recruitDeadline) : new Date('9999-12-31');
-          const dateB = b.recruitDeadline ? new Date(b.recruitDeadline) : new Date('9999-12-31');
-          return dateA - dateB;
-        });
-      } else if (sort.value === 'createdAt,desc') {
-        projectList = projectList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
-      
-      // 2. 페이지네이션 적용
-      const pageSize = 5;
-      const startIndex = (page.value - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const totalElements = projectList.length;
-      
-      projects.value = projectList.slice(startIndex, endIndex);
-      totalPages.value = Math.ceil(totalElements / pageSize);
-      
-    } else {
-      // 검색/필터 조건이 없을 때: 기존 방식 (백엔드 페이지네이션)
-      if (sort.value === 'likeCount,desc') {
-        projectList = projectList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      } else if (sort.value === 'recruitDeadline,asc') {
-        projectList = projectList.sort((a, b) => {
-          const dateA = a.recruitDeadline ? new Date(a.recruitDeadline) : new Date('9999-12-31');
-          const dateB = b.recruitDeadline ? new Date(b.recruitDeadline) : new Date('9999-12-31');
-          return dateA - dateB;
-        });
-      }
-      
-      projects.value = projectList;
-      totalPages.value = data.totalPages || 1;
-    }
+    // Elasticsearch에서 이미 정렬되어 온 데이터 사용
+    projects.value = projectList;
+    totalPages.value = data.totalPages || 1;
   } catch (err) {
     console.error('❌ 프로젝트 로드 실패:', err);
     console.error('❌ 에러 상세:', {
@@ -624,8 +580,7 @@ const convertSortToBackend = (sortValue) => {
     case 'createdAt,desc':
       return 'latest';
     case 'likeCount,desc':
-      // 백엔드 popularity 정렬이 작동하지 않으므로 latest 사용 후 프론트에서 정렬
-      return 'latest';
+      return 'popular';
     case 'recruitDeadline,asc':
       return 'deadline';
     default:

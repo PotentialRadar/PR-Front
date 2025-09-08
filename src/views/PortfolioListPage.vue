@@ -317,24 +317,24 @@ const performSearch = async (searchParams) => {
 
     const finalParams = { 
       ...searchParams, 
-      page: hasSearchConditions ? 0 : page.value - 1, 
-      size: hasSearchConditions ? 1000 : 8, // 검색 시 대량 데이터 가져오기
+      page: page.value - 1, 
+      size: 8,
       sort: convertSortToBackend(sortBy.value)
     };
     
     let result;
     if (hasSearchConditions) {
-      // 검색/필터 조건이 있으면 Elasticsearch 사용 (정렬 옵션 포함)
+      // 검색/필터 조건이 있을 때만 Elasticsearch 사용 (정렬 포함)
+      console.log('🔍 Using Elasticsearch for portfolio search with conditions:', finalParams);
       result = await searchUsers(finalParams);
     } else {
-      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순/생성일순)
-      console.log('🗄️ Using RDB API for portfolios...');
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (기존 방식)
+      console.log('🗄️ Using RDB API for basic portfolio listing with sort:', sortBy.value);
       const rdbParams = {
         page: page.value - 1,
         size: 8,
         sortBy: getSortByParam(sortBy.value)
       };
-      console.log('🔧 RDB params for portfolios:', rdbParams);
       result = await getPortfolios(rdbParams);
     }
     
@@ -353,35 +353,10 @@ const performSearch = async (searchParams) => {
       bio: user.bio || '',
     })) || [];
     
-    if (hasSearchConditions) {
-      // 검색/필터 조건이 있을 때: 전체 데이터 정렬 후 페이지네이션
-      // 1. 프론트엔드에서 정렬
-      if (sortBy.value === 'popularity') {
-        portfolioList = portfolioList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      } else if (sortBy.value === 'recent') {
-        portfolioList = portfolioList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
-      
-      // 2. 페이지네이션 적용
-      const pageSize = 8;
-      const startIndex = (page.value - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const totalElements = portfolioList.length;
-      
-      portfolios.value = portfolioList.slice(startIndex, endIndex);
-      totalPages.value = Math.ceil(totalElements / pageSize);
-      totalPortfolios.value = totalElements;
-      
-    } else {
-      // 검색/필터 조건이 없을 때: 기존 방식 (백엔드 페이지네이션)
-      if (sortBy.value === 'popularity') {
-        portfolioList = portfolioList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      }
-      
-      portfolios.value = portfolioList;
-      totalPages.value = data.totalPages || 1;
-      totalPortfolios.value = data.totalElements || 0;
-    }
+    // Elasticsearch에서 이미 정렬되어 온 데이터 사용
+    portfolios.value = portfolioList;
+    totalPages.value = data.totalPages || 1;
+    totalPortfolios.value = data.totalElements || 0;
 
   } catch (err) {
     console.error('검색 실패:', err);
@@ -473,8 +448,7 @@ const convertSortToBackend = (sortValue) => {
     case 'recent':
       return 'latest';
     case 'popularity':
-      // 백엔드 popularity 정렬이 작동하지 않으므로 latest 사용 후 프론트에서 정렬
-      return 'latest';
+      return 'popular';
     default:
       return 'latest';
   }
