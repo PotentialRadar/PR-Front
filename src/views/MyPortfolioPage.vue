@@ -1857,18 +1857,7 @@ onMounted(() => {
 }
 
 .profile-image {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid #E0E0E0;
-}
-
-.profile-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .profile-name {
