@@ -268,7 +268,7 @@ const load = async () => {
       teamLeaderId: data.teamLeaderId,
       author: {
         userId: data.teamLeaderId,
-        name: `팀장 ${data.teamLeaderId}`,
+        name: data.teamLeaderNickname,
         email: `leader${data.teamLeaderId}@example.com`
       },
       attachments: data.attachments || [],
