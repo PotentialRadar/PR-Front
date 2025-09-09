@@ -62,9 +62,10 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, watch } from 'vue'
-import { togglePortfolioLike, getPortfolioLikeStatus, getPortfolioLikeCount } from '@/api/user'
-import ToastNotification from '../common/ToastNotification.vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { useUserStore } from '@/stores/userStore';
+import { toggleLike as apiToggleLike, isLiked as apiIsLiked, getLikeCount as apiGetLikeCount } from '@/api/likes.js';
+import ToastNotification from '../common/ToastNotification.vue';
 
 // Props
 const props = defineProps({
@@ -137,7 +138,8 @@ const handleImageLoad = () => {
 // Reactive data
 const isLiked = ref(false)
 const likeCount = ref(0)
-const isLoggedIn = computed(() => !!localStorage.getItem('accessToken'))
+const userStore = useUserStore();
+const isLoggedIn = computed(() => userStore.isLoggedIn);
 const showContactModal = ref(false)
 
 // Toast notification state
@@ -160,64 +162,67 @@ const hideToast = () => {
 
 const toggleLike = async () => {
   if (!isLoggedIn.value) {
-    showToast('로그인 후 좋아요를 누를 수 있습니다.', 'info')
-    return
+    showToast('로그인 후 좋아요를 누를 수 있습니다.', 'info');
+    return;
   }
-  
-  try {
-    console.log('좋아요 토글 시작:', props.userId, '현재 상태:', isLiked.value)
-    const response = await togglePortfolioLike(props.userId)
-    console.log('좋아요 API 응답:', response.data)
-    
-    isLiked.value = response.data.liked
-    likeCount.value = response.data.likeCount
 
-    // Show feedback toast
+  try {
+    const response = await apiToggleLike('PORTFOLIO', props.userId);
+    isLiked.value = response.liked;
+    likeCount.value = response.likeCount;
+
     if (isLiked.value) {
-      showToast('포트폴리오에 좋아요를 표시했습니다!', 'success')
+      showToast('포트폴리오를 좋아합니다!', 'success');
     } else {
-      showToast('좋아요가 취소되었습니다.', 'info')
+      showToast('포트폴리오 좋아요를 취소했습니다.', 'info');
     }
   } catch (error) {
-    console.error('좋아요 처리 실패:', error)
-    showToast('좋아요 처리에 실패했습니다.', 'error')
+    console.error('좋아요 처리 실패:', error);
+    showToast('좋아요 처리에 실패했습니다.', 'error');
   }
-}
+};
 
 const openChatModal = () => {
-  showContactModal.value = true
-  showToast('채팅 기능은 준비 중입니다.', 'info')
-}
+  showContactModal.value = true;
+  showToast('채팅 기능은 준비 중입니다.', 'info');
+};
 
 const closeContactModal = () => {
-  showContactModal.value = false
-}
+  showContactModal.value = false;
+};
 
 const handleContactSend = (formData) => {
-  console.log('Chat message sent:', formData)
-  // Here you would typically send the data to your API
-}
+  console.log('Chat message sent:', formData);
+};
 
 // Sharing functionality
 const getPortfolioUrl = () => {
-  return window.location.href
-}
+  return window.location.href;
+};
 
 const loadLikeData = async () => {
+  if (!props.userId) return;
   try {
-    // 좋아요 개수는 누구나 볼 수 있음
-    const countResponse = await getPortfolioLikeCount(props.userId)
-    likeCount.value = countResponse.data
-    
-    // 좋아요 상태는 로그인한 사용자만
     if (isLoggedIn.value) {
-      const statusResponse = await getPortfolioLikeStatus(props.userId)
-      isLiked.value = statusResponse.data.isLiked || statusResponse.data.liked
+      // 로그인 사용자는 상태와 개수를 모두 조회
+      const [statusRes, countRes] = await Promise.all([
+        apiIsLiked('PORTFOLIO', props.userId),
+        apiGetLikeCount('PORTFOLIO', props.userId)
+      ]);
+      isLiked.value = statusRes.isLiked;
+      likeCount.value = countRes; // API가 숫자(likeCount)를 직접 반환한다고 가정
+    } else {
+      // 비로그인 사용자는 개수만 조회
+      const countRes = await apiGetLikeCount('PORTFOLIO', props.userId);
+      isLiked.value = false;
+      likeCount.value = countRes; // API가 숫자(likeCount)를 직접 반환한다고 가정
     }
   } catch (error) {
-    console.error('좋아요 데이터 로드 실패:', error)
+    console.error('좋아요 데이터 로드 실패:', error);
+    isLiked.value = false;
+    likeCount.value = 0;
   }
-}
+};
 
 onMounted(() => {
   if (props.userId) {

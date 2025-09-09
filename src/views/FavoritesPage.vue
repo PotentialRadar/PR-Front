@@ -75,9 +75,12 @@
                     </div>
                   </div>
                 </div>
-                <button class="favorite-btn active" @click="removeFavoritePortfolio(portfolio.userId)">
-                  <i class="bi bi-heart-fill"></i>
-                </button>
+                <div class="like-container">
+                  <button class="favorite-btn active" @click="removeFavoritePortfolio(portfolio.userId)">
+                    <i class="bi bi-heart-fill"></i>
+                  </button>
+                  <span class="like-count">{{ portfolio.likeCount || 0 }}</span>
+                </div>
               </div>
               
               <div class="portfolio-skills" v-if="portfolio.techStacks && portfolio.techStacks.length">
@@ -441,6 +444,18 @@ const setActiveTab = (tab) => {
   color: #666;
   line-height: 1.5;
   margin: 0;
+}
+
+.like-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.like-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
 }
 
 .card-actions {
