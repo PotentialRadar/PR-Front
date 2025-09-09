@@ -371,19 +371,19 @@ const loadRecommendations = async (skipLoadingState = false) => {
     console.log('📊 사용자 피드백 통계:', feedbackStats);
     
     // 피드백 통계에 따른 추천 매개변수 조정
-    let minScore = 0.25; // 기본값
-    let minOverlap = 0.15; // 기본값
+    let minScore = 0.1; // 기본값 (AI 서버 테스트에서 작동하는 값)
+    let minOverlap = 0.05; // 기본값 (AI 서버 테스트에서 작동하는 값)
     
     if (feedbackStats.hasEnoughData) {
       // 피드백 데이터가 충분한 경우 개인화 적용
       if (feedbackStats.likeRatio > 0.7) {
         // 좋아요 비율이 높으면 더 까다롭게 추천
-        minScore = 0.35;
-        minOverlap = 0.2;
+        minScore = 0.3;
+        minOverlap = 0.15;
       } else if (feedbackStats.likeRatio < 0.3) {
         // 좋아요 비율이 낮으면 더 다양하게 추천
         minScore = 0.15;
-        minOverlap = 0.1;
+        minOverlap = 0.08;
       }
     }
     
