@@ -276,8 +276,12 @@
               <span class="sub-text">상세페이지로 이동합니다</span>
             </button>
             <button @click="submitFeedbackAndGoToProject('THUMBS_DOWN')" class="feedback-btn thumbs-down">
-              👎 별로예요
+              👎 관심없어요
               <span class="sub-text">피드백을 남기고 이동합니다</span>
+            </button>
+            <button @click="submitFeedbackOnly('HIDE')" class="feedback-btn hide">
+              🚫 추천그만받기
+              <span class="sub-text">이 프로젝트는 더이상 추천되지 않습니다</span>
             </button>
           </div>
           <div class="feedback-skip">
@@ -367,19 +371,19 @@ const loadRecommendations = async (skipLoadingState = false) => {
     console.log('📊 사용자 피드백 통계:', feedbackStats);
     
     // 피드백 통계에 따른 추천 매개변수 조정
-    let minScore = 0.25; // 기본값
-    let minOverlap = 0.15; // 기본값
+    let minScore = 0.1; // 기본값 (AI 서버 테스트에서 작동하는 값)
+    let minOverlap = 0.05; // 기본값 (AI 서버 테스트에서 작동하는 값)
     
     if (feedbackStats.hasEnoughData) {
       // 피드백 데이터가 충분한 경우 개인화 적용
       if (feedbackStats.likeRatio > 0.7) {
         // 좋아요 비율이 높으면 더 까다롭게 추천
-        minScore = 0.35;
-        minOverlap = 0.2;
+        minScore = 0.3;
+        minOverlap = 0.15;
       } else if (feedbackStats.likeRatio < 0.3) {
         // 좋아요 비율이 낮으면 더 다양하게 추천
         minScore = 0.15;
-        minOverlap = 0.1;
+        minOverlap = 0.08;
       }
     }
     
@@ -673,18 +677,32 @@ const submitAIFeedback = async (action) => {
   if (!project) return;
   
   try {
-    console.log('📝 AI 추천 피드백 제출:', { projectId: project.projectId, action });
+    console.log('📝 AI 추천 피드백 제출:', { 
+      projectId: project.projectId, 
+      recommendationHistoryId: project.recommendationHistoryId, 
+      action 
+    });
     
-    // 기존 API 사용 (임시로 프로젝트 ID를 추천 이력 ID로 사용)
-    const actionPath = action === 'THUMBS_UP' ? 'like' : 'dislike';
-    await api.post(`/recommend/feedback/${project.projectId}/${actionPath}`);
+    // 올바른 recommendationHistoryId 사용
+    let actionPath = 'like';
+    if (action === 'THUMBS_UP') actionPath = 'like';
+    else if (action === 'THUMBS_DOWN') actionPath = 'dislike'; 
+    else if (action === 'HIDE') actionPath = 'hide';
+    
+    await api.post(`/recommend/feedback/${project.recommendationHistoryId}/${actionPath}`);
     
     // 피드백 제출 완료 표시
     feedbackSubmitted.value.add(project.projectId);
     
+    // HIDE 액션의 경우 추천 목록에서 즉시 제거
+    if (action === 'HIDE') {
+      recommendations.value = recommendations.value.filter(r => r.projectId !== project.projectId);
+    }
+    
     const messages = {
       'THUMBS_UP': '좋은 추천이라고 피드백을 남겼습니다! 👍',
-      'THUMBS_DOWN': '피드백이 기록되었습니다. 더 나은 추천을 위해 참고하겠습니다.'
+      'THUMBS_DOWN': '피드백이 기록되었습니다. 더 나은 추천을 위해 참고하겠습니다.',
+      'HIDE': '해당 프로젝트를 추천에서 제외했습니다. 🚫'
     };
     
     toast.success(messages[action] || '피드백이 기록되었습니다.', {
@@ -710,6 +728,11 @@ const submitFeedbackAndGoToProject = async (action) => {
   if (selectedProjectForFeedback.value) {
     goToProject(selectedProjectForFeedback.value);
   }
+}
+
+// 피드백만 제출하고 페이지 이동 안함 (숨김 처리용)
+const submitFeedbackOnly = async (action) => {
+  await submitAIFeedback(action);
 }
 
 // 암시적 조회 피드백 제출
@@ -2177,6 +2200,12 @@ onUnmounted(() => {
   border-color: #dc3545;
   background: linear-gradient(135deg, #fff8f8 0%, #f5e8e8 100%);
   color: #721c24;
+}
+
+.feedback-btn.hide:hover {
+  border-color: #6c757d;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #495057;
 }
 
 .sub-text {
