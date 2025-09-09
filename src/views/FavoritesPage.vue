@@ -58,9 +58,14 @@
             <div v-for="portfolio in favoritePortfolios" :key="portfolio.userId" class="content-card portfolio-card">
               <div class="card-header">
                 <div class="portfolio-profile">
-                  <div class="profile-avatar">
-                    <img :src="portfolio.profileImage || 'default-avatar.png'" :alt="portfolio.nickname" />
-                  </div>
+                  <ProfileImage 
+                    :src="portfolio.profileImage"
+                    :user-id="portfolio.userId"
+                    :name="portfolio.nickname"
+                    size="md"
+                    :circular="true"
+                    class="profile-avatar"
+                  />
                   <div class="profile-details">
                     <h3 class="profile-name">{{ portfolio.nickname }}</h3>
                     <p class="profile-job">{{ portfolio.jobTitle }}</p>
@@ -122,6 +127,7 @@ import { getLikedProjects, getLikedPortfolios, toggleLike } from '@/api/likes.js
 import { useToast } from 'vue-toastification'
 import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue'
+import ProfileImage from '@/components/common/ProfileImage.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

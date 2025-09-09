@@ -62,8 +62,6 @@ export const useUserStore = defineStore('user', {
         this.isLoggingOut = false;
         console.log('✅ 로그아웃 상태 정리 완료');
         
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userTechStacks');
         localStorage.removeItem('projectFeedbacks');
         

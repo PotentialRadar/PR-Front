@@ -146,18 +146,12 @@
             </div>
           </div>
 
-          <div class="pagination-bar">
-            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
-            <button
-                v-for="p in totalPages"
-                :key="p"
-                :class="{ active: page === p }"
-                @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
-          </div>
+          <PaginationComponent 
+            :current-page="page" 
+            :total-pages="totalPages" 
+            :page-group-size="5" 
+            @page-change="handlePageChange" 
+          />
         </div>
       </div>
     </div>
@@ -193,6 +187,7 @@ import PageHeader from '@/components/common/PageHeader.vue';
 import SortOptions from '@/components/projectComponents/SortOptions.vue';
 import ProjectCard from '@/components/projectComponents/ProjectCard.vue';
 import ApplyModal from '@/components/projectComponents/ApplyModal.vue';
+import PaginationComponent from '@/components/common/PaginationComponent.vue';
 // import PaginationComponent from '@/components/projectComponents/PaginationComponent.vue'; // This component is not used in the template
 
 import { applyProject } from '@/api/projectMember';
@@ -348,60 +343,52 @@ const performSearch = async (searchParams) => {
   loading.value = true;
   error.value = null;
   try {
+    // 검색/필터 조건이 있을 때는 전체 데이터를 가져와서 프론트엔드에서 정렬 및 페이지네이션
+    const hasSearchConditions = 
+      searchParams.keyword || 
+      (searchParams.techParts && searchParams.techParts.length > 0) || 
+      (searchParams.techStacks && searchParams.techStacks.length > 0) || 
+      (searchParams.statuses && searchParams.statuses.length > 0);
+
     const finalParams = {
       ...searchParams,
       page: page.value - 1,
-      size: 8,
-      sort: sort.value,
+      size: 5,
+      sort: convertSortToBackend(sort.value),
     };
-    
-    // 검색 조건이 있는지 확인 (키워드, 기술 파트, 기술 스택, 상태 필터)
-    const hasSearchConditions = 
-      finalParams.keyword || 
-      (finalParams.techParts && finalParams.techParts.length > 0) || 
-      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
-      (finalParams.statuses && finalParams.statuses.length > 0);
-    
-    console.log('🔍 Search conditions check:', {
-      hasSearchConditions,
-      finalParams
-    });
     
     let result;
     if (hasSearchConditions) {
-      // 검색/필터 조건이 있으면 Elasticsearch 사용
-      console.log('📊 Using Elasticsearch API...');
+      // 검색/필터 조건이 있을 때만 Elasticsearch 사용 (정렬 포함)
+      console.log('🔍 Using Elasticsearch with conditions:', finalParams);
       result = await searchProjects(finalParams);
     } else {
-      // 검색/필터 조건이 없으면 RDB에서 가져오기 (최신순/인기순)
-      console.log('🗄️ Using RDB API...');
-      console.log('🔍 Current sort.value:', sort.value, typeof sort.value);
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (기존 방식)
+      console.log('🗄️ Using RDB API for basic listing with sort:', sort.value);
       
       if (sort.value === 'likeCount,desc') {
-        // 좋아요순 정렬
-        const url = `/projects?page=${page.value - 1}&size=8&sort=likeCount,desc`;
-        console.log('🔧 Popular sort URL:', url);
+        const url = `/projects?page=${page.value - 1}&size=5&sort=likeCount,desc`;
         result = await api.get(url);
-        console.log('📊 Popular sort response - first 3 projects:', result.data?.content?.slice(0, 3).map(p => ({id: p.projectId, likeCount: p.likeCount})));
+      } else if (sort.value === 'recruitDeadline,asc') {
+        const url = `/projects?page=${page.value - 1}&size=5&sort=recruitDeadline,asc`;
+        result = await api.get(url);
       } else {
-        // 최신순이나 기본값
         const rdbParams = {
           page: page.value - 1,
-          size: 8,
+          size: 5,
           sort: sort.value
         };
-        console.log('🔧 RDB params for latest sort:', rdbParams);
         result = await listProjects(rdbParams);
       }
-      console.log('✅ RDB API response:', result);
-      console.log('📊 Projects with likeCount:', result.data?.content?.map(p => ({id: p.projectId, title: p.title.substring(0,20), likeCount: p.likeCount})));
     }
     
     // axios 응답 구조에 맞게 데이터 추출
     const data = result.data || result;
-    projects.value = data.content || [];
+    let projectList = data.content || [];
+    
+    // Elasticsearch에서 이미 정렬되어 온 데이터 사용
+    projects.value = projectList;
     totalPages.value = data.totalPages || 1;
-    console.log('📋 Final projects:', projects.value.length, 'projects loaded');
   } catch (err) {
     console.error('❌ 프로젝트 로드 실패:', err);
     console.error('❌ 에러 상세:', {
@@ -427,12 +414,33 @@ const selectPopularKeyword = (keyword) => {
 
 const handleSortChange = (newSort) => {
   sort.value = newSort;
-  handleSearch();
+  // 페이지를 1로 리셋
+  page.value = 1;
+  
+  // 현재 UI 상태에서 검색 파라미터를 직접 구성
+  const searchParams = {
+    keyword: searchQuery.value.trim() || null,
+    techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
+    techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
+    statuses: selectedStatuses.value.length > 0 ? selectedStatuses.value : null
+  };
+  
+  // currentSearchParams도 업데이트
+  currentSearchParams.value = searchParams;
+  isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
+  
+  performSearch(searchParams);
 };
 
 const goToPage = (p) => {
   if (p >= 1 && p <= totalPages.value) {
     page.value = p;
+  }
+};
+
+const handlePageChange = (newPage) => {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    page.value = newPage;
   }
 };
 
@@ -563,6 +571,20 @@ const handleApplicationSubmitted = async (applicationData) => {
     setTimeout(() => (showFailToast.value = false), 3000);
   } finally {
     closeApplyModal();
+  }
+};
+
+// 프론트엔드 정렬 값을 백엔드 형식으로 변환
+const convertSortToBackend = (sortValue) => {
+  switch (sortValue) {
+    case 'createdAt,desc':
+      return 'latest';
+    case 'likeCount,desc':
+      return 'popular';
+    case 'recruitDeadline,asc':
+      return 'deadline';
+    default:
+      return 'latest';
   }
 };
 
@@ -843,33 +865,6 @@ const handleLikeUpdate = ({ projectId, liked, likeCount }) => {
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
 .empty-message h3 { font-size: 20px; font-weight: 600; }
 
-/* 페이지네이션 */
-.pagination-bar {
-  margin-top: 24px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-.pagination-bar button {
-  background: #fff;
-  border: 1px solid #D1D5DB;
-  border-radius: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-.pagination-bar button:hover {
-  background: #F1F8E9;
-  border-color: #C8E6C9;
-  color: #2E7D32;
-}
-.pagination-bar button.active {
-  background: #4CAF50;
-  color: #fff;
-  border-color: #4CAF50;
-}
-.pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
 
 /* 토스트 */
 .success-toast, .fail-toast { position: fixed; top: 80px; right: 30px; color: white; padding: 16px 24px; border-radius: 12px; z-index: 1001; animation: slideInRight 0.3s ease; box-shadow: 0 8px 25px rgba(0,0,0,0.15); }

@@ -158,18 +158,12 @@
             </div>
           </div>
 
-          <div class="pagination-bar" v-if="totalPages > 1">
-            <button @click="goToPage(page - 1)" :disabled="page === 1">이전</button>
-            <button
-                v-for="p in totalPages"
-                :key="p"
-                :class="{ active: page === p }"
-                @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button @click="goToPage(page + 1)" :disabled="page === totalPages">다음</button>
-          </div>
+          <PaginationComponent 
+            :current-page="page" 
+            :total-pages="totalPages" 
+            :page-group-size="5" 
+            @page-change="handlePageChange" 
+          />
         </div>
       </div>
     </div>
@@ -185,6 +179,7 @@ import { useUserStore } from '@/stores/userStore';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import PortfolioCard from '@/components/portfolioComponents/PortfolioCard.vue';
+import PaginationComponent from '@/components/common/PaginationComponent.vue';
 
 import { searchUsers, getPopularUserKeywords } from '@/api/search';
 import { getPortfolios } from '@/api/user';
@@ -313,33 +308,38 @@ const performSearch = async (searchParams) => {
   loading.value = true;
   error.value = null;
   try {
+    // 검색/필터 조건이 있을 때는 전체 데이터를 가져와서 프론트엔드에서 정렬 및 페이지네이션
+    const hasSearchConditions = 
+      searchParams.keyword || 
+      (searchParams.techParts && searchParams.techParts.length > 0) || 
+      (searchParams.techStacks && searchParams.techStacks.length > 0) || 
+      (searchParams.experienceRanges && searchParams.experienceRanges.length > 0);
+
     const finalParams = { 
       ...searchParams, 
       page: page.value - 1, 
-      size: 12, // 페이지 사이즈 조정
-      sort: sortByToParam(sortBy.value)
+      size: 8,
+      sort: convertSortToBackend(sortBy.value)
     };
-    
-    const hasSearchConditions = 
-      finalParams.keyword || 
-      (finalParams.techParts && finalParams.techParts.length > 0) || 
-      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
-      (finalParams.experienceRanges && finalParams.experienceRanges.length > 0);
     
     let result;
     if (hasSearchConditions) {
+      // 검색/필터 조건이 있을 때만 Elasticsearch 사용 (정렬 포함)
+      console.log('🔍 Using Elasticsearch for portfolio search with conditions:', finalParams);
       result = await searchUsers(finalParams);
     } else {
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (기존 방식)
+      console.log('🗄️ Using RDB API for basic portfolio listing with sort:', sortBy.value);
       const rdbParams = {
         page: page.value - 1,
-        size: 12,
-        sortBy: sortBy.value === 'popularity' ? 'likeCount' : 'recent'
+        size: 8,
+        sortBy: getSortByParam(sortBy.value)
       };
       result = await getPortfolios(rdbParams);
     }
     
     const data = result.data || result;
-    portfolios.value = (data.content || data.portfolios)?.map(user => ({
+    let portfolioList = (data.content || data.portfolios)?.map(user => ({
       userId: user.userId,
       id: user.userId,
       name: user.nickname || `User ${user.userId}`,
@@ -353,6 +353,8 @@ const performSearch = async (searchParams) => {
       bio: user.bio || '',
     })) || [];
     
+    // Elasticsearch에서 이미 정렬되어 온 데이터 사용
+    portfolios.value = portfolioList;
     totalPages.value = data.totalPages || 1;
     totalPortfolios.value = data.totalElements || 0;
 
@@ -399,6 +401,12 @@ const clearSearch = () => { searchQuery.value = ''; handleSearch(); };
 // 유틸리티
 const getActiveFilterCount = () => selectedTechParts.value.length + selectedTechStacks.value.length + selectedExperiences.value.length;
 
+const handlePageChange = (newPage) => {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    page.value = newPage;
+  }
+};
+
 const goToPage = (newPage) => {
   if (newPage >= 1 && newPage <= totalPages.value) {
     page.value = newPage;
@@ -407,7 +415,43 @@ const goToPage = (newPage) => {
 
 const setSortBy = (sortType) => {
   sortBy.value = sortType;
-  handleSearch();
+  // 페이지를 1로 리셋
+  page.value = 1;
+  
+  // 현재 UI 상태에서 검색 파라미터를 직접 구성
+  const searchParams = {
+    keyword: searchQuery.value.trim() || null,
+    techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
+    techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
+    experienceRanges: selectedExperiences.value.length > 0 ? selectedExperiences.value : null
+  };
+  
+  // currentSearchParams도 업데이트
+  currentSearchParams.value = searchParams;
+  isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
+  
+  performSearch(searchParams);
+};
+
+const getSortByParam = (sortType) => {
+  switch (sortType) {
+    case 'popularity': return 'likeCount';
+    case 'created': return 'createdAt'; 
+    case 'recent':
+    default: return 'recent';
+  }
+};
+
+// 프론트엔드 정렬 값을 백엔드 형식으로 변환
+const convertSortToBackend = (sortValue) => {
+  switch (sortValue) {
+    case 'recent':
+      return 'latest';
+    case 'popularity':
+      return 'popular';
+    default:
+      return 'latest';
+  }
 };
 
 const sortByToParam = (v) => {
@@ -469,9 +513,4 @@ const sortByToParam = (v) => {
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
 .empty-message h3 { font-size: 20px; font-weight: 600; }
-.pagination-bar { margin-top: 24px; display: flex; justify-content: center; gap: 8px; }
-.pagination-bar button { background: #fff; border: 1px solid #D1D5DB; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-.pagination-bar button:hover { background: #F1F8E9; border-color: #C8E6C9; color: #2E7D32; }
-.pagination-bar button.active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
-.pagination-bar button:disabled { opacity: 0.5; cursor: default; background: #F3F4F6; }
 </style>

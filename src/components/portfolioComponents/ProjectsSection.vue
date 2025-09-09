@@ -23,7 +23,7 @@
       <div v-else class="projects-content">
         <div class="projects-grid">
           <div 
-            v-for="(project, index) in processedProjects" 
+            v-for="(project, index) in paginatedProjects" 
             :key="index"
             class="project-card-wrapper"
           >
@@ -55,13 +55,23 @@
             </div>
           </div>
         </div>
+        
+        <!-- 페이지네이션 (3개 이상일 때만 표시) -->
+        <PaginationComponent 
+          v-if="processedProjects.length > 3"
+          :current-page="currentProjectPage" 
+          :total-pages="totalProjectPages" 
+          :page-group-size="3" 
+          @page-change="handleProjectPageChange" 
+        />
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import PaginationComponent from '@/components/common/PaginationComponent.vue'
 
 // Props
 const props = defineProps({
@@ -128,6 +138,10 @@ const getRoleBadgeColor = (role) => {
   }
 }
 
+// 페이지네이션 상태
+const currentProjectPage = ref(1)
+const projectsPerPage = 3
+
 // 처리된 프로젝트 데이터
 const processedProjects = computed(() => {
   return props.projects.map(project => ({
@@ -146,6 +160,22 @@ const processedProjects = computed(() => {
     ]
   }))
 })
+
+// 페이지네이션 계산
+const totalProjectPages = computed(() => {
+  return Math.ceil(processedProjects.value.length / projectsPerPage)
+})
+
+const paginatedProjects = computed(() => {
+  const start = (currentProjectPage.value - 1) * projectsPerPage
+  const end = start + projectsPerPage
+  return processedProjects.value.slice(start, end)
+})
+
+// 페이지 변경 핸들러
+const handleProjectPageChange = (page) => {
+  currentProjectPage.value = page
+}
 </script>
 
 <style scoped>

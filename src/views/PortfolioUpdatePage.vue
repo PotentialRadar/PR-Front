@@ -245,35 +245,10 @@
           </div>
 
           <div class="section-content">
-            <div class="skills-input-section">
-              <div class="skill-input-group">
-                <input
-                  type="text"
-                  v-model="newSkill"
-                  @keyup.enter="addSkill"
-                  class="form-input"
-                  placeholder="기술 스택을 입력하고 Enter를 누르세요"
-                />
-                <button @click="addSkill" class="add-skill-btn" :disabled="!newSkill.trim()">
-                  <i class="bi bi-plus"></i>
-                </button>
-              </div>
-              
-              <div v-if="formData.skills.length > 0" class="skills-display">
-                <TransitionGroup name="skill" tag="div" class="skills-list">
-                  <div 
-                    v-for="(skill, index) in formData.skills" 
-                    :key="`skill-${skill}-${index}`"
-                    class="skill-tag"
-                  >
-                    <span>{{ skill }}</span>
-                    <button @click="removeSkill(index)" class="skill-remove">
-                      <i class="bi bi-x"></i>
-                    </button>
-                  </div>
-                </TransitionGroup>
-              </div>
-            </div>
+            <TechStackSelector
+              v-model="formData.skills"
+              @change="handleSkillsChange"
+            />
           </div>
         </div>
 
@@ -315,12 +290,12 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import TechStackSelector from '@/components/common/TechStackSelector.vue'
 
 const router = useRouter()
 
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
-const newSkill = ref('')
 
 // 폼 데이터
 const formData = reactive({
@@ -347,7 +322,7 @@ const formData = reactive({
       isCurrent: true
     }
   ],
-  skills: ['React', 'Vue.js', 'TypeScript', 'JavaScript', 'Tailwind CSS']
+  skills: []
 })
 
 // Computed
@@ -407,16 +382,10 @@ const handleCurrentToggle = (index) => {
   }
 }
 
-const addSkill = () => {
-  const skill = newSkill.value.trim()
-  if (skill && !formData.skills.includes(skill)) {
-    formData.skills.push(skill)
-    newSkill.value = ''
-  }
-}
-
-const removeSkill = (index) => {
-  formData.skills.splice(index, 1)
+// 기술 스택 변경 처리
+const handleSkillsChange = (skills) => {
+  formData.skills = skills
+  console.log('기술 스택 업데이트:', skills)
 }
 
 const previewPortfolio = () => {
