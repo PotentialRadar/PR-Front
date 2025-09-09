@@ -391,68 +391,33 @@
           
           <div v-if="editMode === 'skills'" class="edit-mode">
             <div class="skills-edit">
-              <div class="skill-input-group">
-                <div class="skill-search-container">
-                  <input
-                    v-model="newSkill"
-                    @input="searchSkills"
-                    @keyup.enter="addSkill"
-                    @focus="showSuggestions = true"
-                    @blur="hideSuggestions"
-                    class="edit-input"
-                    placeholder="기술 스택을 검색하거나 입력하세요"
-                    autocomplete="off"
-                  />
-                  <div v-if="showSuggestions && skillSuggestions.length > 0" class="suggestions-dropdown">
-                    <div 
-                      v-for="suggestion in skillSuggestions" 
-                      :key="suggestion.name"
-                      @mousedown="selectSkill(suggestion)"
-                      class="suggestion-item"
-                    >
-                      <span class="suggestion-name">{{ suggestion.name }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="proficiency-input">
-                  <label class="proficiency-label">숙련도:</label>
-                  <div class="star-rating">
-                    <button 
-                      v-for="star in 5" 
-                      :key="star"
-                      @click="newSkillProficiency = star"
-                      class="star-btn"
-                      :class="{ active: star <= newSkillProficiency }"
-                    >
-                      ★
-                    </button>
-                  </div>
-                  <span class="rating-text">{{ newSkillProficiency }}점</span>
-                </div>
-                <button @click="addSkill" class="add-skill-btn">
-                  <i class="bi bi-plus"></i>
-                </button>
+              <!-- 기술 스택 선택 -->
+              <div class="tech-stack-selector-section">
+                <h6 class="section-title">기술 스택 선택</h6>
+                <TechStackSelector
+                  v-model="selectedTechStacks"
+                  @change="handleTechStacksChange"
+                  :hide-selected="true"
+                />
               </div>
               
-              <div class="skills-edit-list">
-                <div 
-                  v-for="(skill, index) in editData.skills" 
-                  :key="`skill-${index}`"
-                  class="skill-edit-item"
-                >
-                  <div class="skill-edit-content">
-                    <input 
-                      v-model="skill.name" 
-                      class="skill-name-input"
-                      placeholder="기술명"
-                    />
-                    <div class="skill-proficiency-edit">
+              <!-- 기술 스택 목록 -->
+              <div v-if="editData.skills && editData.skills.length > 0" class="skills-section">
+                <h6 class="section-title">기술 스택 목록 ({{ editData.skills.length }}개)</h6>
+                <div class="skills-grid">
+                  <div 
+                    v-for="(skill, index) in editData.skills" 
+                    :key="`skill-${index}`"
+                    class="skill-card"
+                  >
+                    <span class="skill-name">{{ skill.name }}</span>
+                    <div class="skill-proficiency">
                       <label class="proficiency-label">숙련도:</label>
                       <div class="star-rating">
                         <button 
                           v-for="star in 5" 
                           :key="star"
-                          @click="skill.proficiency = star"
+                          @click="updateSkillProficiency(index, star)"
                           class="star-btn"
                           :class="{ active: star <= skill.proficiency }"
                         >
@@ -461,11 +426,17 @@
                       </div>
                       <span class="rating-text">{{ skill.proficiency }}점</span>
                     </div>
+                    <button @click="removeSkill(index)" class="skill-remove-btn">
+                      <i class="bi bi-x"></i>
+                    </button>
                   </div>
-                  <button @click="removeSkill(index)" class="skill-remove">
-                    <i class="bi bi-x"></i>
-                  </button>
                 </div>
+              </div>
+              
+              <!-- 빈 상태 -->
+              <div v-else class="empty-skills-state">
+                <i class="bi bi-stack"></i>
+                <p>위에서 기술 스택을 검색해서 추가해보세요</p>
               </div>
             </div>
             
@@ -671,6 +642,7 @@ import api from '@/api/axios.js'
 import ProjectSelectionModal from '@/components/portfolio/ProjectSelectionModal.vue'
 import ProfileImage from '@/components/common/ProfileImage.vue'
 import PaginationComponent from '@/components/common/PaginationComponent.vue'
+import TechStackSelector from '@/components/common/TechStackSelector.vue'
 
 const router = useRouter()
 
@@ -696,6 +668,8 @@ const editMode = ref(null) // null, 'introduction', 'education', 'career', 'skil
 const showSaveToast = ref(false)
 const showProjectSelectionModal = ref(false)
 const saveLoading = ref(false)
+const selectedTechStacks = ref([]) // TechStackSelector용 변수
+const skillProficiencies = ref({}) // 기술 스택별 숙련도 매핑
 const errorMessage = ref('')
 const newSkill = ref('')
 const newSkillProficiency = ref(3)
@@ -798,30 +772,46 @@ const careerData = computed(() => {
 
 // 메서드
 const loadPortfolioData = async () => {
+  console.log('🚀 loadPortfolioData 시작')
   loading.value = true
   try {
     
     // httpOnly 쿠키 방식에서는 토큰 확인을 하지 않음
     // 서버에서 쿠키를 통해 자동으로 인증 처리됨
     
-    // 포트폴리오 데이터와 전체 기술 스택 목록을 병렬로 로드
-    const [portfolioResponse, allTechStacksResponse] = await Promise.all([
-      portfolioApi.getPortfolio(),
-      techStackApi.getAllTechStacks()
-    ])
-    
-    
-    
+    console.log('📡 포트폴리오 API 호출 시작')
+    // 포트폴리오 데이터 로드 (필수)
+    const portfolioResponse = await portfolioApi.getPortfolio()
+    console.log('✅ 포트폴리오 응답 받음:', portfolioResponse)
     const portfolio = portfolioResponse.data
+    console.log('📄 포트폴리오 데이터:', portfolio)
+    
+    // 기술 스택 데이터는 별도로 로드 (실패해도 포트폴리오는 표시)
+    try {
+      const allTechStacksResponse = await techStackApi.getAllTechStacks()
+      // 전체 기술 스택 목록 설정 (검색용) - ID와 이름 모두 포함
+      allTechStacks.value = allTechStacksResponse.data?.map(ts => ({
+        stackId: ts.techStackId, // 실제 기술 스택 ID 사용
+        name: ts.name,
+        category: '기타' // 카테고리 정보가 없으므로 기본값 설정
+      })) || []
+      console.log('✅ 기술 스택 데이터 로드 완료:', allTechStacks.value.length, '개')
+    } catch (techStackError) {
+      console.warn('기술 스택 데이터 로드 실패, 기본 데이터 사용:', techStackError)
+      allTechStacks.value = fallbackSkillDatabase
+    }
     
     // 사용자 기본 정보 설정
+    console.log('👤 사용자 정보 설정 시작')
     portfolioData.userId = portfolio.userId
     portfolioData.userInfo = {
       name: portfolio.nickname || '사용자',
       jobTitle: portfolio.jobTitle || '',
-      avatar: portfolio.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId}`,
+      avatar: portfolio.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId || 'user'}`,
       category: (portfolio.techPartName || portfolio.techPart || '')
     }
+    console.log('✅ 사용자 정보 설정 완료:', portfolioData.userInfo)
+    console.log('🆔 userId:', portfolio.userId, '📸 profileImage:', portfolio.profileImage)
     
     // 기본 값 설정
     portfolioData.introduction = portfolio.bio || ''
@@ -849,6 +839,8 @@ const loadPortfolioData = async () => {
       name: ts.stackName,
       proficiency: ts.skillLevel
     })) || []
+    
+    // TechStackSelector 변수들은 편집 모드에서만 초기화
     
     // 교육 정보 설정 (LocalDate -> YYYY-MM 형식)
     portfolioData.educations = portfolio.educations?.map(edu => ({
@@ -878,13 +870,6 @@ const loadPortfolioData = async () => {
       console.error('리뷰 로드 중 오류:', reviewError)
       portfolioData.reviews = []
     }
-    
-    // 전체 기술 스택 목록 설정 (검색용) - ID와 이름 모두 포함
-    allTechStacks.value = allTechStacksResponse.data?.map(ts => ({
-      stackId: ts.techStackId, // 실제 기술 스택 ID 사용
-      name: ts.name,
-      category: '기타' // 카테고리 정보가 없으므로 기본값 설정
-    })) || []
     
   } catch (error) {
     console.error('포트폴리오 데이터 로드 실패:', error)
@@ -918,7 +903,9 @@ const loadPortfolioData = async () => {
     allTechStacks.value = fallbackSkillDatabase
     
   } finally {
+    console.log('🏁 loadPortfolioData 완료')
     loading.value = false
+    console.log('📊 최종 portfolioData:', portfolioData)
   }
 }
 
@@ -937,7 +924,9 @@ const startEdit = async (field) => {
       editData.careers = JSON.parse(JSON.stringify(portfolioData.careers))
       break
     case 'skills':
-      editData.skills = JSON.parse(JSON.stringify(portfolioData.skills))
+      editData.skills = JSON.parse(JSON.stringify(portfolioData.skills || []))
+      // TechStackSelector는 빈 상태로 시작 (새 기술 스택 추가용)
+      selectedTechStacks.value = []
       break
   }
   
@@ -1410,10 +1399,6 @@ const addSkill = () => {
   }
 }
 
-const removeSkill = (index) => {
-  editData.skills.splice(index, 1)
-}
-
 // 날짜 입력 검증
 const validateEducationDates = () => {
   let hasErrors = false
@@ -1620,56 +1605,41 @@ const saveExperiences = async () => {
 }
 
 // 기술 스택 검색 관련 메서드
-const searchSkills = () => {
-  const query = newSkill.value.trim()
-  
-  if (searchTimeout.value) {
-    clearTimeout(searchTimeout.value)
+// TechStackSelector 이벤트 처리 - 중복 체크 후 추가
+const handleTechStacksChange = (techStacks) => {
+  if (!editData.skills) {
+    editData.skills = []
   }
   
-  searchTimeout.value = setTimeout(() => {
-    if (query.length >= 1) {
-      // 전체 기술 스택에서 검색
-      const searchResults = allTechStacks.value.length > 0 
-        ? allTechStacks.value
-        : fallbackSkillDatabase // 백엔드 연동 실패 시 백업 데이터 사용
-      
-      skillSuggestions.value = searchResults
-        .filter(skill => 
-          skill.name.toLowerCase().includes(query.toLowerCase()) &&
-          !editData.skills.some(existingSkill => existingSkill.name === skill.name)
-        )
-        .slice(0, 8) // 최대 8개만 표시
-      showSuggestions.value = skillSuggestions.value.length > 0
-    } else {
-      skillSuggestions.value = []
-      showSuggestions.value = false
+  const existingSkillNames = new Set(editData.skills.map(skill => skill.name.toLowerCase()))
+  
+  techStacks.forEach(tech => {
+    // 중복 체크
+    if (!existingSkillNames.has(tech.name.toLowerCase())) {
+      editData.skills.push({
+        userTechStackId: null,
+        stackId: tech.id,
+        name: tech.name,
+        proficiency: 0 // 기본 숙련도 0점
+      })
+      existingSkillNames.add(tech.name.toLowerCase())
     }
-  }, 200) // 200ms 디바운싱
-}
-
-const selectSkill = (skill) => {
-  // 선택된 기술 스택을 직접 추가
-  if (!editData.skills.some(s => s.name === skill.name)) {
-    editData.skills.push({
-      userTechStackId: null, // 새로 추가하는 기술 스택
-      stackId: skill.stackId || null,
-      name: skill.name,
-      proficiency: newSkillProficiency.value
-    })
-  }
+  })
   
-  newSkill.value = ''
-  newSkillProficiency.value = 3
-  showSuggestions.value = false
-  skillSuggestions.value = []
+  // 선택 후 초기화
+  selectedTechStacks.value = []
 }
 
-const hideSuggestions = () => {
-  // 약간의 지연을 주어 클릭 이벤트가 실행될 시간을 줌
-  setTimeout(() => {
-    showSuggestions.value = false
-  }, 150)
+// 숙련도 업데이트 (인덱스 기반)
+const updateSkillProficiency = (skillIndex, proficiency) => {
+  if (editData.skills[skillIndex]) {
+    editData.skills[skillIndex].proficiency = proficiency
+  }
+}
+
+// 기술 스택 삭제
+const removeSkill = (index) => {
+  editData.skills.splice(index, 1)
 }
 
 // 실시간 에러 처리 함수
@@ -1857,18 +1827,7 @@ onMounted(() => {
 }
 
 .profile-image {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid #E0E0E0;
-}
-
-.profile-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .profile-name {
@@ -2942,6 +2901,219 @@ onMounted(() => {
 
   .review-card {
     padding: 16px;
+  }
+}
+
+/* 기술 스택 편집 스타일 */
+.tech-stack-selector-section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  border: 1px solid #dee2e6;
+}
+
+.skills-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tech-stack-selector-section .section-title::before {
+  content: '🔍';
+  font-size: 20px;
+}
+
+.skills-section .section-title::before {
+  content: '📚';
+  font-size: 20px;
+}
+
+.skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skill-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.skill-card:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
+  transform: translateY(-4px);
+}
+
+.skill-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  border-radius: 25px;
+  display: inline-block;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
+  min-width: 120px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.skill-remove-btn {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  flex-shrink: 0;
+}
+
+.skill-remove-btn:hover {
+  transform: scale(1.15) rotate(90deg);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+}
+
+.skill-proficiency {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.proficiency-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.star-rating {
+  display: flex;
+  gap: 4px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #e9ecef;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 4px;
+  border-radius: 4px;
+  transform-origin: center;
+}
+
+.star-btn:hover {
+  color: #ffc107;
+  transform: scale(1.3);
+  filter: drop-shadow(0 0 8px rgba(255, 193, 7, 0.6));
+}
+
+.star-btn.active {
+  color: #ffc107;
+  transform: scale(1.1);
+  text-shadow: 0 0 10px rgba(255, 193, 7, 0.8);
+  animation: starPulse 0.3s ease-out;
+}
+
+@keyframes starPulse {
+  0% { transform: scale(1.1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1.1); }
+}
+
+.rating-text {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 600;
+  padding: 4px 12px;
+  background: #f8f9fa;
+  border-radius: 20px;
+  display: inline-block;
+  border: 1px solid #dee2e6;
+}
+
+.empty-skills-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 16px;
+  border: 2px dashed #dee2e6;
+}
+
+.empty-skills-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #adb5bd;
+}
+
+.empty-skills-state p {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .skills-grid {
+    gap: 12px;
+  }
+  
+  .skill-card {
+    padding: 16px;
+  }
+  
+  .skill-name {
+    max-width: 150px;
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+  
+  .star-btn {
+    font-size: 20px;
+  }
+  
+  .tech-stack-selector-section {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 16px;
   }
 }
 </style>

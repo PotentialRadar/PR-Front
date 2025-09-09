@@ -93,7 +93,7 @@
                 <div class="row-left">
                   <select v-model="row.part" class="part-select" :class="{ error: getError('parts').value && !row.part }">
                     <option value="" disabled>파트 선택</option>
-                    <option v-for="opt in PART_OPTIONS" :key="opt.value" :value="opt.value">
+                    <option v-for="opt in partOptions" :key="opt.value" :value="opt.value">
                       {{ opt.label }}
                     </option>
                   </select>
@@ -214,7 +214,7 @@ import { useToast } from 'vue-toastification';
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useFormValidation } from '@/composables/useFormValidation.js';
 import { getProject, createProject, updateProject, uploadProjectFile } from '@/api/projects';
-import { PART_OPTIONS } from '@/constants/parts';
+import { loadPartOptions } from '@/constants/parts';
 import TechStackSelector from '@/components/common/TechStackSelector.vue';
 import FileUploadArea from '@/components/projectComponents/FileUploadArea.vue';
 
@@ -252,6 +252,8 @@ export default {
     });
 
     const partRows = ref([{ part: '', count: 1 }]);
+    const partOptions = ref([]);
+    
     const addPartRow = () => partRows.value.push({ part: '', count: 1 });
     const removePartRow = (idx) => partRows.value.splice(idx, 1);
     const totalRecruitCount = computed(() =>
@@ -274,8 +276,19 @@ export default {
 
     const stripDate = (d) => (d ? String(d).split('T')[0] : '');
 
-    onMounted(() => {
+    const loadTechPartOptions = async () => {
+      try {
+        const options = await loadPartOptions();
+        partOptions.value = options;
+      } catch (error) {
+        console.error('파트 옵션 로드 실패:', error);
+      }
+    };
+
+    onMounted(async () => {
       resetForm();
+      await loadTechPartOptions();
+      
       if (isEditMode.value) {
         getProject(props.projectId)
             .then(res => {
@@ -441,7 +454,7 @@ export default {
 
     return {
       formData, isEditMode,
-      PART_OPTIONS,
+      partOptions,
       partRows, addPartRow, removePartRow, totalRecruitCount,
       validationSchema,
       errors, isSubmitting, submitAttempted,

@@ -308,33 +308,38 @@ const performSearch = async (searchParams) => {
   loading.value = true;
   error.value = null;
   try {
+    // 검색/필터 조건이 있을 때는 전체 데이터를 가져와서 프론트엔드에서 정렬 및 페이지네이션
+    const hasSearchConditions = 
+      searchParams.keyword || 
+      (searchParams.techParts && searchParams.techParts.length > 0) || 
+      (searchParams.techStacks && searchParams.techStacks.length > 0) || 
+      (searchParams.experienceRanges && searchParams.experienceRanges.length > 0);
+
     const finalParams = { 
       ...searchParams, 
       page: page.value - 1, 
-      size: 8, // 페이지 사이즈 조정 - 8개씩
-      sort: sortByToParam(sortBy.value)
+      size: 8,
+      sort: convertSortToBackend(sortBy.value)
     };
-    
-    const hasSearchConditions = 
-      finalParams.keyword || 
-      (finalParams.techParts && finalParams.techParts.length > 0) || 
-      (finalParams.techStacks && finalParams.techStacks.length > 0) || 
-      (finalParams.experienceRanges && finalParams.experienceRanges.length > 0);
     
     let result;
     if (hasSearchConditions) {
+      // 검색/필터 조건이 있을 때만 Elasticsearch 사용 (정렬 포함)
+      console.log('🔍 Using Elasticsearch for portfolio search with conditions:', finalParams);
       result = await searchUsers(finalParams);
     } else {
+      // 검색/필터 조건이 없으면 RDB에서 가져오기 (기존 방식)
+      console.log('🗄️ Using RDB API for basic portfolio listing with sort:', sortBy.value);
       const rdbParams = {
         page: page.value - 1,
         size: 8,
-        sortBy: sortBy.value === 'popularity' ? 'likeCount' : 'recent'
+        sortBy: getSortByParam(sortBy.value)
       };
       result = await getPortfolios(rdbParams);
     }
     
     const data = result.data || result;
-    portfolios.value = (data.content || data.portfolios)?.map(user => ({
+    let portfolioList = (data.content || data.portfolios)?.map(user => ({
       userId: user.userId,
       id: user.userId,
       name: user.nickname || `User ${user.userId}`,
@@ -348,6 +353,8 @@ const performSearch = async (searchParams) => {
       bio: user.bio || '',
     })) || [];
     
+    // Elasticsearch에서 이미 정렬되어 온 데이터 사용
+    portfolios.value = portfolioList;
     totalPages.value = data.totalPages || 1;
     totalPortfolios.value = data.totalElements || 0;
 
@@ -408,7 +415,43 @@ const goToPage = (newPage) => {
 
 const setSortBy = (sortType) => {
   sortBy.value = sortType;
-  handleSearch();
+  // 페이지를 1로 리셋
+  page.value = 1;
+  
+  // 현재 UI 상태에서 검색 파라미터를 직접 구성
+  const searchParams = {
+    keyword: searchQuery.value.trim() || null,
+    techParts: selectedTechParts.value.length > 0 ? selectedTechParts.value : null,
+    techStacks: selectedTechStacks.value.length > 0 ? selectedTechStacks.value : null,
+    experienceRanges: selectedExperiences.value.length > 0 ? selectedExperiences.value : null
+  };
+  
+  // currentSearchParams도 업데이트
+  currentSearchParams.value = searchParams;
+  isSearchMode.value = Object.values(searchParams).some(v => v !== null && v !== undefined && v.length !== 0);
+  
+  performSearch(searchParams);
+};
+
+const getSortByParam = (sortType) => {
+  switch (sortType) {
+    case 'popularity': return 'likeCount';
+    case 'created': return 'createdAt'; 
+    case 'recent':
+    default: return 'recent';
+  }
+};
+
+// 프론트엔드 정렬 값을 백엔드 형식으로 변환
+const convertSortToBackend = (sortValue) => {
+  switch (sortValue) {
+    case 'recent':
+      return 'latest';
+    case 'popularity':
+      return 'popular';
+    default:
+      return 'latest';
+  }
 };
 
 const sortByToParam = (v) => {

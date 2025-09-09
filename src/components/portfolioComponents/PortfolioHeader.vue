@@ -62,10 +62,9 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { useUserStore } from '@/stores/userStore';
-import { toggleLike as apiToggleLike, isLiked as apiIsLiked, getLikeCount as apiGetLikeCount } from '@/api/likes.js';
-import ToastNotification from '../common/ToastNotification.vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue'
+import { togglePortfolioLike, getPortfolioLikeStatus, getPortfolioLikeCount } from '@/api/user'
+import ToastNotification from '../common/ToastNotification.vue'
 
 // Props
 const props = defineProps({
@@ -138,8 +137,8 @@ const handleImageLoad = () => {
 // Reactive data
 const isLiked = ref(false)
 const likeCount = ref(0)
+const isLoggedIn = computed(() => !!localStorage.getItem('accessToken'))
 const userStore = useUserStore();
-const isLoggedIn = computed(() => userStore.isLoggedIn);
 const showContactModal = ref(false)
 
 // Toast notification state
@@ -182,18 +181,6 @@ const toggleLike = async () => {
   }
 };
 
-const openChatModal = () => {
-  showContactModal.value = true;
-  showToast('채팅 기능은 준비 중입니다.', 'info');
-};
-
-const closeContactModal = () => {
-  showContactModal.value = false;
-};
-
-const handleContactSend = (formData) => {
-  console.log('Chat message sent:', formData);
-};
 
 // Sharing functionality
 const getPortfolioUrl = () => {
@@ -425,32 +412,6 @@ const copyLink = async () => {
   gap: 8px;
 }
 
-.chat-button {
-  background: #FFF;
-  color: #4CAF50;
-  border: 2px solid #FFF;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.chat-button:hover {
-  background: #4CAF50;
-  color: #FFF;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-}
-
-.chat-button i {
-  font-size: 16px;
-}
 
 .like-button {
   background: rgba(255, 255, 255, 0.2);
@@ -649,14 +610,8 @@ const copyLink = async () => {
     font-size: 11px;
   }
 
-  .chat-button {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-
   .like-button i,
-  .share-button i,
-  .chat-button i {
+  .share-button i {
     font-size: 10px;
   }
 }
