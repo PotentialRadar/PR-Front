@@ -44,11 +44,6 @@
           <span>공유</span>
         </button>
       </div>
-
-      <button v-if="!isOwnProfile" class="chat-button" @click="openChatModal">
-        <i class="bi bi-chat-dots"></i>
-        <span>채팅</span>
-      </button>
     </div>
 
     <!-- Toast Notifications -->
@@ -62,9 +57,10 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, watch } from 'vue'
-import { togglePortfolioLike, getPortfolioLikeStatus, getPortfolioLikeCount } from '@/api/user'
-import ToastNotification from '../common/ToastNotification.vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { useUserStore } from '@/stores/userStore';
+import { toggleLike as apiToggleLike, isLiked as apiIsLiked, getLikeCount as apiGetLikeCount } from '@/api/likes.js';
+import ToastNotification from '../common/ToastNotification.vue';
 
 // Props
 const props = defineProps({
@@ -137,8 +133,8 @@ const handleImageLoad = () => {
 // Reactive data
 const isLiked = ref(false)
 const likeCount = ref(0)
-const isLoggedIn = computed(() => !!localStorage.getItem('accessToken'))
 const userStore = useUserStore();
+const isLoggedIn = computed(() => userStore.isLoggedIn);
 const showContactModal = ref(false)
 
 // Toast notification state
@@ -181,6 +177,18 @@ const toggleLike = async () => {
   }
 };
 
+const openChatModal = () => {
+  showContactModal.value = true;
+  showToast('채팅 기능은 준비 중입니다.', 'info');
+};
+
+const closeContactModal = () => {
+  showContactModal.value = false;
+};
+
+const handleContactSend = (formData) => {
+  console.log('Chat message sent:', formData);
+};
 
 // Sharing functionality
 const getPortfolioUrl = () => {

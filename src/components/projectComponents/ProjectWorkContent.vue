@@ -4,7 +4,7 @@
     <div v-if="author" class="project-author-section">
       <div class="author-info">
         <div class="author-avatar">
-          <img :src="author.avatar || defaultAvatar" :alt="author.name" />
+          <img :src="author.profileImageUrl || defaultAvatar" :alt="author.name" />
           <div v-if="author.isVerified" class="verified-badge">
             <i class="bi bi-check-circle-fill"></i>
           </div>
@@ -14,10 +14,6 @@
           <div class="author-title">{{ author.title || '프로젝트 리더' }}</div>
         </div>
         <div class="author-actions">
-          <button class="contact-button" @click="contactAuthor">
-            <i class="bi bi-chat-dots"></i>
-            문의하기
-          </button>
           <button class="portfolio-button" @click="viewPortfolio">
             <i class="bi bi-briefcase"></i>
             포트폴리오 보기
