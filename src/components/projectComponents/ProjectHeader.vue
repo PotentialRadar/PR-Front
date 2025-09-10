@@ -13,7 +13,7 @@
       </div>
 
       <div class="registration-date">
-        <span>{{ formatDate(project.startDate) }}</span>
+        <span>{{ formatDate(project.createdAt ?? project.startDate) }}</span>
       </div>
     </div>
 

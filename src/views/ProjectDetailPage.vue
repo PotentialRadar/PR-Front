@@ -29,7 +29,10 @@
           <!-- 프로젝트 정보 -->
           <template v-else>
             <div class="header-section">
-              <ProjectHeader :project="project" />
+              <ProjectHeader
+                :project="project"
+                :leader-avatar-url="leaderAvatar"
+                :key="leaderAvatar || project?.id"/>
               
               <!-- 초대받은 상태 배너 -->
               <div v-if="hasProjectInvitation" class="invitation-banner">
@@ -232,7 +235,6 @@ const load = async () => {
     return;
   }
   
-  
   loading.value = true;
   error.value = null;
   
@@ -258,6 +260,7 @@ const load = async () => {
       status: statusMap[data.status] || data.status,
       startDate: data.startDate,
       endDate: data.endDate,
+      createdAt: data.createdAt,
       recruitCount: data.recruitCount,
       appliedCount: data.appliedCount,
       acceptedCount: data.acceptedCount,
@@ -269,12 +272,13 @@ const load = async () => {
       author: {
         userId: data.teamLeaderId,
         name: data.teamLeaderNickname,
-        email: `leader${data.teamLeaderId}@example.com`
+        email: `leader${data.teamLeaderId}@example.com`,
+        avatarUrl: data.teamLeaderProfileImageUrl || null,
       },
       attachments: data.attachments || [],
-      recruitmentParts: data.recruitmentParts || []
     };
-    
+    console.log('avatar from API:', data.teamLeaderProfileImageUrl);
+    console.log('avatar mapped   :', project.value?.author?.avatarUrl);
   } catch (e) {
     console.log('❌ API 호출 실패:', e.message, '응답 상태:', e.response?.status);
     
@@ -349,6 +353,16 @@ watch(
       await checkProjectInvitation(); // 프로젝트 변경 시에도 초대 확인
     }
 );
+
+const leaderAvatar = computed(() => {
+   // 1순위: 백엔드에서 받은 절대 URL
+  const fromProject = project.value?.author?.avatarUrl || project.value?.teamLeaderProfileImageUrl;
+  // 2순위: (없으면) DiceBear를 마지막 폴백으로
+  const dicebear = project.value?.author?.userId != null
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${project.value.author.userId}`
+    : null;
+  return fromProject || dicebear || '/images/default-avatar.png';
+  });
 
 // 탭 관리
 const activeTab = ref('content');
