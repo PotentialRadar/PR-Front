@@ -101,10 +101,10 @@
                 <div class="tech-stack-list">
                   <span 
                     v-for="ts in project.techStacks" 
-                    :key="ts.techStackName" 
+                    :key="typeof ts === 'string' ? ts : ts.techStackName" 
                     class="tech-tag"
                   >
-                    {{ ts.techStackName }}
+                    {{ typeof ts === 'string' ? ts : ts.techStackName }}
                   </span>
                 </div>
               </div>
@@ -276,6 +276,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification';
 import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
 import { portfolioApi } from '@/api/portfolio.js'
 import { useUserStore } from '@/stores/userStore';
@@ -285,6 +286,7 @@ import TeamReviewModal from '@/components/projectComponents/TeamReviewModal.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToast();
 
 // 반응형 상태
 const isLoading = ref(true)
@@ -434,7 +436,7 @@ const showApplicants = async (projectId) => {
     showApplicantsModal.value = true
   } catch (e) {
     console.error('지원자 목록 로드 실패:', e)
-    alert('지원자 목록을 불러오는데 실패했습니다.')
+    toast.error('지원자 목록을 불러오는데 실패했습니다.')
   }
 }
 const closeApplicantsModal = () => {
@@ -453,7 +455,7 @@ const openReviewModal = async (project) => {
     showTeamReviewModal.value = true;
   } catch (error) {
     console.error('팀 멤버 정보를 가져오는데 실패했습니다:', error);
-    alert('팀 멤버 정보를 가져오는데 실패했습니다.');
+    toast.error('팀 멤버 정보를 가져오는데 실패했습니다.');
   }
 };
 
@@ -468,27 +470,27 @@ const viewApplicantPortfolio = (userId) => router.push(`/portfolio/${userId}`)
 const acceptApplicant = async (applicantId) => {
   try {
     const projectId = selectedProject.value?.projectId
-    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    if (!projectId) return toast.error('프로젝트 ID를 찾을 수 없습니다.')
     await updateMemberStatus(projectId, applicantId, userStore.userId, 'ACCEPTED')
-    alert('지원자가 성공적으로 수락되었습니다.')
+    toast.success('지원자가 성공적으로 수락되었습니다.')
     const a = applicantsList.value.find(x => x.id === applicantId)
     if (a) a.status = 'ACCEPTED'
   } catch (e) {
     console.error('지원자 수락 실패:', e)
-    alert('지원자 수락에 실패했습니다.')
+    toast.error('지원자 수락에 실패했습니다.')
   }
 }
 const rejectApplicant = async (applicantId) => {
   try {
     const projectId = selectedProject.value?.projectId
-    if (!projectId) return alert('프로젝트 ID를 찾을 수 없습니다.')
+    if (!projectId) return toast.error('프로젝트 ID를 찾을 수 없습니다.')
     await updateMemberStatus(projectId, applicantId, userStore.userId, 'REJECTED')
-    alert('지원자가 성공적으로 거절되었습니다.')
+    toast.success('지원자가 성공적으로 거절되었습니다.')
     const a = applicantsList.value.find(x => x.id === applicantId)
     if (a) a.status = 'REJECTED'
   } catch (e) {
     console.error('지원자 거절 실패:', e)
-    alert('지원자 거절에 실패했습니다.')
+    toast.error('지원자 거절에 실패했습니다.')
   }
 }
 

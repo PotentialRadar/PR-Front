@@ -435,6 +435,7 @@ const handleSortChange = (newSort) => {
 const goToPage = (p) => {
   if (p >= 1 && p <= totalPages.value) {
     page.value = p;
+    window.scrollTo(0, 0);
   }
 };
 
