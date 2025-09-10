@@ -25,7 +25,7 @@
             <h1 class="username">{{ userInfo?.name || 'Unknown User' }}</h1>
           </div>
           <p class="job-title">{{ userInfo?.jobTitle || 'Developer' }}</p>
-          <p class="handle">@{{ userId || 'user' }}</p>
+          <p class="handle">{{ userInfo?.email || 'user@example.com' }}</p>
         </div>
       </div>
     </div>

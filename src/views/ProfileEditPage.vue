@@ -13,6 +13,7 @@
                 :user-id="userStore.userId"
                 :name="formData.name"
                 :circular="true"
+                fallback-type="default"
               />
               <div class="avatar-overlay" @click="triggerFileUpload">
                 <i class="bi bi-camera"></i>
@@ -316,13 +317,43 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { updateUserProfile, checkNickname, getTechParts } from "@/api/user";
 import ProfileImage from '@/components/common/ProfileImage.vue'
 
 const router = useRouter();
+
+// 이미지 URL 유효성 검사 및 변환 함수
+const getValidImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+    return null
+  }
+  
+  const trimmedUrl = imageUrl.trim()
+  
+  // 더미 데이터 URL 필터링 (example.com 도메인 제외)
+  if (trimmedUrl.includes('example.com')) {
+    return null
+  }
+  
+  // 이미 절대 URL인 경우
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl
+  }
+  
+  // 상대 경로인 경우 백엔드 도메인을 추가
+  if (trimmedUrl.startsWith('/')) {
+    const backendUrl = import.meta.env.PROD 
+      ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}`
+      : 'http://localhost:8080'
+    return `${backendUrl}${trimmedUrl}`
+  }
+  
+  // 기타 경우는 그대로 반환
+  return trimmedUrl
+}
 
 const saving = ref(false);
 const showSaveToast = ref(false);
@@ -340,20 +371,9 @@ const originalNickname = ref("");
 // TechPart 목록 관련
 const techParts = ref([]); // [{techPartId, name}, ...]
 
-// 아바타 옵션들 (프로필 이미지 관련이므로 유지)
+// 아바타 옵션들 - 기본 아바타 사용
 const avatarOptions = [
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=2",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=3",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=4",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=5",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=6",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=7",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=8",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=9",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=10",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=11",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=12",
+  "/default-avatar.svg",
 ];
 
 // 기본 데이터(초기값). 실제 값은 로그인 유저 프로필로 대체됨
@@ -628,10 +648,7 @@ const saveProfile = async () => {
       website: updatedProfile.websiteUrl || "",
       location: updatedProfile.location || "",
       bio: updatedProfile.bio || "",
-      avatar: updatedProfile.profileImage ||
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${
-          userStore.userId || "user"
-        }`,
+      avatar: updatedProfile.profileImage || '/default-avatar.svg',
       isPublic: updatedProfile.isPortfolioOpen ?? true,
       showContact: updatedProfile.isContactOpen ?? true,
       allowSearch: updatedProfile.isSearchOpen ?? true,
@@ -694,23 +711,54 @@ const handleBeforeUnload = (event) => {
 onMounted(async () => {
   window.addEventListener("beforeunload", handleBeforeUnload);
 
+  // TechPart 목록 로드 (별도 처리)
   try {
-    // TechPart 목록 로드
     const techPartsResponse = await getTechParts();
     console.log('TechParts API 응답:', techPartsResponse.data);
     techParts.value = techPartsResponse.data || [];
     console.log('로드된 techParts:', techParts.value);
+  } catch (techPartsError) {
+    console.error('⚠️ TechParts 로드 실패:', techPartsError);
+    // fallback 데이터 설정 (한글명으로)
+    techParts.value = [
+      { techPartId: 1, name: '프론트엔드' },
+      { techPartId: 2, name: '백엔드' },
+      { techPartId: 3, name: '풀스택' },
+      { techPartId: 4, name: '데브옵스' },
+      { techPartId: 5, name: '모바일' },
+      { techPartId: 6, name: '데이터사이언스' },
+      { techPartId: 7, name: 'AI/ML' },
+      { techPartId: 8, name: '디자인' }
+    ];
+    console.log('⚠️ fallback techParts 사용:', techParts.value);
+  }
 
+  // 프로필 데이터 로드 (별도 처리)
+  try {
     // 로그인 및 프로필 확보
+    console.log('🔍 로그인 상태 확인:', userStore.isLoggedIn);
     if (!userStore.isLoggedIn) {
+      console.log('🔐 로그인 상태 확인 중...');
       await userStore.checkLogin();
+      console.log('🔐 로그인 상태 확인 완료:', userStore.isLoggedIn);
     }
-    if (!userStore.profile) {
-      await userStore.fetchProfile();
-    }
+    
+    console.log('📋 현재 프로필 상태:', !!userStore.profile);
+    console.log('📋 현재 userStore 전체:', { 
+      isLoggedIn: userStore.isLoggedIn, 
+      userId: userStore.userId, 
+      email: userStore.email, 
+      nickname: userStore.nickname,
+      profile: userStore.profile 
+    });
+    
+    // 프로필 강제 재로드
+    console.log('📋 프로필 데이터 강제 재로드 중...');
+    await userStore.fetchProfile();
+    console.log('📋 프로필 데이터 재로드 완료');
 
     const profile = userStore.profile || {};
-    console.log('사용자 프로필 데이터:', profile);
+    console.log('👤 사용자 프로필 RAW 데이터:', JSON.stringify(profile, null, 2));
     
     // ExperienceRange enum을 한국어로 역매핑
     const experienceReverseMapping = {
@@ -723,11 +771,40 @@ onMounted(async () => {
       "ETC": "기타"
     };
     
+    // 분야 데이터 매핑 확인
+    console.log('🔍 분야 매핑 정보:', {
+      'profile.techPartName': profile.techPartName,
+      'profile.techPart': profile.techPart,
+      'techParts 배열': techParts.value
+    });
+    
+    // 백엔드에서 오는 분야 이름을 techParts 배열과 매칭
+    let userCategory = "";
+    if (profile.techPartName) {
+      // techPartName이 techParts 배열에 있는지 확인
+      const matchingTechPart = techParts.value.find(tp => tp.name === profile.techPartName);
+      if (matchingTechPart) {
+        userCategory = profile.techPartName;
+        console.log('✅ 분야 매칭 성공:', userCategory);
+      } else {
+        console.log('⚠️ 분야 매칭 실패, 사용 가능한 옵션:', techParts.value.map(tp => tp.name));
+        // 부분 매칭 시도 (대소문자 무시)
+        const partialMatch = techParts.value.find(tp => 
+          tp.name.toLowerCase().includes(profile.techPartName.toLowerCase()) ||
+          profile.techPartName.toLowerCase().includes(tp.name.toLowerCase())
+        );
+        if (partialMatch) {
+          userCategory = partialMatch.name;
+          console.log('✅ 분야 부분 매칭 성공:', userCategory);
+        }
+      }
+    }
+
     // 백엔드 필드명을 안전하게 매핑
     const hydrated = {
       name: profile.nickname || "",
       jobTitle: profile.jobTitle || "",
-      category: profile.techPartName || "",
+      category: userCategory,
       experience: experienceReverseMapping[profile.experienceRange] || "",
       email: profile.email || "",
       phone: profile.phone || "",
@@ -736,24 +813,56 @@ onMounted(async () => {
       website: profile.websiteUrl || "",
       location: profile.location || "",
       bio: profile.bio || "",
-      avatar:
-        profile.profileImage ||
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${
-          userStore.userId || "user"
-        }`,
+      avatar: getValidImageUrl(profile.profileImage) || '/default-avatar.svg',
       isPublic: profile.isPortfolioOpen ?? true,
       showContact: profile.isContactOpen ?? true,
       allowSearch: profile.isSearchOpen ?? true,
     };
 
+    console.log('🔄 hydrated 데이터:', hydrated);
+    console.log('🔄 기존 formData:', JSON.stringify(formData, null, 2));
+    
+    // originalData 업데이트
     originalData = JSON.parse(JSON.stringify(hydrated));
-    Object.assign(formData, hydrated);
+    
+    // formData를 완전히 새로 설정
+    formData.name = hydrated.name;
+    formData.jobTitle = hydrated.jobTitle;
+    formData.category = hydrated.category;
+    formData.experience = hydrated.experience;
+    formData.email = hydrated.email;
+    formData.phone = hydrated.phone;
+    formData.github = hydrated.github;
+    formData.linkedin = hydrated.linkedin;
+    formData.website = hydrated.website;
+    formData.location = hydrated.location;
+    formData.bio = hydrated.bio;
+    formData.avatar = hydrated.avatar;
+    formData.isPublic = hydrated.isPublic;
+    formData.showContact = hydrated.showContact;
+    formData.allowSearch = hydrated.allowSearch;
+    
     originalNickname.value = hydrated.name;
-  } catch (e) {
-    console.error("프로필 로드 실패:", e);
-  } finally {
-    loading.value = false;
+    
+    console.log('📝 formData 업데이트 완료:', JSON.stringify(formData, null, 2));
+    console.log('📋 originalData 설정 완료:', originalData);
+    
+    // Vue의 반응성 업데이트 보장
+    await nextTick();
+    console.log('⏭️ NextTick 완료 후 formData:', JSON.stringify(formData, null, 2));
+  } catch (profileError) {
+    console.error("프로필 로드 실패:", profileError);
+    console.error("에러 상세:", profileError.response?.data || profileError.message);
+    
+    // 에러 발생시에도 기본값으로라도 설정
+    console.log('⚠️ 프로필 로드 에러로 인해 기본값으로 설정');
+    formData.name = userStore.nickname || "";
+    formData.email = userStore.email || "";
   }
+  
+  // 로딩 완료 처리
+  loading.value = false;
+  console.log('🏁 onMounted 완료. 최종 formData:', JSON.stringify(formData, null, 2));
 });
 
 // 컴포넌트 언마운트 시 이벤트 리스너 제거
