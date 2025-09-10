@@ -8,26 +8,26 @@
             <div class="filter-group">
               <label class="filter-label">프로젝트 상태</label>
               <div class="status-filters">
-                <button 
-                  v-for="status in statusOptions" 
-                  :key="status.value"
-                  :class="['status-btn', status.value, { 'active': selectedStatus === status.value }]"
-                  @click="setStatus(status.value)"
+                <button
+                    v-for="status in statusOptions"
+                    :key="status.value"
+                    :class="['status-btn', status.value, { 'active': selectedStatus === status.value }]"
+                    @click="setStatus(status.value)"
                 >
                   <span class="status-icon">{{ status.icon }}</span>
                   {{ status.label }}
                 </button>
               </div>
             </div>
-            
+
             <div class="filter-group">
               <label class="filter-label">내 역할</label>
               <div class="role-filters">
-                <button 
-                  v-for="role in roleOptions" 
-                  :key="role.value"
-                  :class="['role-btn', { 'active': selectedRole === role.value }]"
-                  @click="setRole(role.value)"
+                <button
+                    v-for="role in roleOptions"
+                    :key="role.value"
+                    :class="['role-btn', { 'active': selectedRole === role.value }]"
+                    @click="setRole(role.value)"
                 >
                   {{ role.label }}
                 </button>
@@ -59,12 +59,12 @@
               </div>
             </div>
           </div>
-          
+
           <div v-if="filteredProjects.length > 0" class="projects-grid">
-            <div 
-              v-for="project in filteredProjects" 
-              :key="project.projectId" 
-              class="project-card"
+            <div
+                v-for="project in filteredProjects"
+                :key="project.projectId"
+                class="project-card"
             >
               <!-- 카드 헤더 -->
               <div class="card-header">
@@ -76,9 +76,24 @@
                         <i :class="getStatusIcon(project.status)"></i>
                         <span>{{ getStatusText(project.status) }}</span>
                       </span>
+
                       <span v-if="project.isPM" class="pm-badge">
                         <span class="pm-icon">⭐</span>
                         PM
+                      </span>
+
+                      <!-- 내 지원 상태 뱃지 -->
+                      <span
+                          v-if="project.myApplicationStatus"
+                          class="status-badge"
+                          :class="`app-${project.myApplicationStatus.toLowerCase()}`"
+                      >
+                        {{
+                          project.myApplicationStatus === 'PENDING' ? '지원중'
+                              : project.myApplicationStatus === 'ACCEPTED' ? '합류 확정'
+                                  : project.myApplicationStatus === 'REJECTED' ? '거절됨'
+                                      : project.myApplicationStatus
+                        }}
                       </span>
                     </div>
                   </div>
@@ -99,10 +114,10 @@
               <!-- 기술 스택 -->
               <div class="tech-stack-section">
                 <div class="tech-stack-list">
-                  <span 
-                    v-for="ts in project.techStacks" 
-                    :key="typeof ts === 'string' ? ts : ts.techStackName" 
-                    class="tech-tag"
+                  <span
+                      v-for="ts in project.techStacks"
+                      :key="typeof ts === 'string' ? ts : ts.techStackName"
+                      class="tech-tag"
                   >
                     {{ typeof ts === 'string' ? ts : ts.techStackName }}
                   </span>
@@ -113,13 +128,13 @@
               <div class="card-footer">
                 <!-- PM 권한이 있고 모집 중인 프로젝트 -->
                 <div v-if="project.isPM && project.status === 'RECRUITING'" class="pm-actions">
-                  <button 
-                    class="action-btn applicants-btn"
-                    @click="showApplicants(project.projectId)"
-                    :disabled="project.appliedCount === 0"
+                  <button
+                      class="action-btn applicants-btn"
+                      @click="showApplicants(project.projectId)"
+                      :disabled="project._countHydrated ? project.appliedCount === 0 : false"
                   >
                     <span class="btn-icon">👤</span>
-                    지원자 확인 ({{ project.appliedCount }})
+                    지원자 확인 ({{ project.appliedCount ?? '?' }})
                   </button>
                   <button class="action-btn secondary-action-btn view-btn" @click="viewProject(project.projectId)">
                     <span class="btn-icon">👁️</span>
@@ -179,7 +194,7 @@
               </div>
             </div>
           </div>
-          
+
           <div v-else class="empty-state">
             <div class="empty-icon">
               <span class="empty-emoji">📁</span>
@@ -200,53 +215,53 @@
             <span class="close-icon">✕</span>
           </button>
         </div>
-        
+
         <div class="modal-body">
           <div v-if="sortedApplicantsList && sortedApplicantsList.length > 0" class="applicants-list">
             <div
-              v-for="applicant in sortedApplicantsList"
-              :key="applicant.id"
-              :class="['applicant-card', { 'processed': applicant.status !== 'PENDING' }]"
+                v-for="applicant in sortedApplicantsList"
+                :key="applicant.id"
+                :class="['applicant-card', { 'processed': applicant.status !== 'PENDING' }]"
             >
               <div class="applicant-header">
                 <div class="applicant-profile">
                   <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.userId}`" :alt="applicant.userName" class="applicant-avatar" />
                   <div class="applicant-info">
                     <h4 class="applicant-name">{{ applicant.userName }}</h4>
-                    <p class="applicant-title">{{ getPartLabel(applicant.techPart) }}</p> <!-- 기술 파트 표시 -->
+                    <p class="applicant-title">{{ getPartLabel(applicant.techPart) }}</p>
                   </div>
                 </div>
                 <div class="applicant-actions">
                   <span v-if="applicant.status === 'ACCEPTED'" class="status-badge accepted">수락됨</span>
                   <span v-else-if="applicant.status === 'REJECTED'" class="status-badge rejected">거절됨</span>
-                  <button 
-                    class="portfolio-btn"
-                    @click="viewApplicantPortfolio(applicant.userId)"
+                  <button
+                      class="portfolio-btn"
+                      @click="viewApplicantPortfolio(applicant.userId)"
                   >
                     <span class="btn-icon">👤</span>
                     포트폴리오
                   </button>
                 </div>
               </div>
-              
+
               <div class="application-message">
                 <h5 class="message-title">지원 메시지</h5>
                 <p class="message-content">{{ applicant.applicationMessage }}</p>
               </div>
-              
+
               <div class="application-actions">
-                <button 
-                  v-if="applicant.status === 'PENDING'"
-                  class="accept-btn"
-                  @click="acceptApplicant(applicant.id)"
+                <button
+                    v-if="applicant.status === 'PENDING'"
+                    class="accept-btn"
+                    @click="acceptApplicant(applicant.id)"
                 >
                   <span class="btn-icon">✅</span>
                   수락
                 </button>
-                <button 
-                  v-if="applicant.status === 'PENDING'"
-                  class="reject-btn"
-                  @click="rejectApplicant(applicant.id)"
+                <button
+                    v-if="applicant.status === 'PENDING'"
+                    class="reject-btn"
+                    @click="rejectApplicant(applicant.id)"
                 >
                   <span class="btn-icon">❌</span>
                   거절
@@ -254,7 +269,7 @@
               </div>
             </div>
           </div>
-          
+
           <div v-else class="no-applicants">
             <span class="empty-emoji">👤</span>
             <p>아직 지원자가 없습니다</p>
@@ -263,12 +278,12 @@
       </div>
     </div>
 
-    <!-- 새 팀원 리뷰 모달 -->
+    <!-- 팀원 리뷰 모달 -->
     <team-review-modal
-      :show="showTeamReviewModal"
-      :project="selectedProject"
-      :members="membersForReview" 
-      @close="closeTeamReviewModal"
+        :show="showTeamReviewModal"
+        :project="selectedProject"
+        :members="membersForReview"
+        @close="closeTeamReviewModal"
     />
   </div>
 </template>
@@ -276,27 +291,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from 'vue-toastification';
-import { getProjectsCreatedByUser, getAppliedProjectsByUser } from '@/api/projects'
+import { useToast } from 'vue-toastification'
+import { getAppliedProjectsByUser } from '@/api/projects' // ✅ 사용함
 import { portfolioApi } from '@/api/portfolio.js'
-import { useUserStore } from '@/stores/userStore';
-import { PART_OPTIONS } from '@/constants/parts';
-import { updateMemberStatus, getProjectMembers, getConfirmedProjectMembers } from '@/api/projectMember.js';
-import TeamReviewModal from '@/components/projectComponents/TeamReviewModal.vue';
+import { useUserStore } from '@/stores/userStore'
+import { PART_OPTIONS } from '@/constants/parts'
+import { updateMemberStatus, getProjectMembers, getConfirmedProjectMembers } from '@/api/projectMember.js'
+import TeamReviewModal from '@/components/projectComponents/TeamReviewModal.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
-const toast = useToast();
+const toast = useToast()
 
-// 반응형 상태
+// 상태
 const isLoading = ref(true)
 const projects = ref([])
 const selectedStatus = ref('all')
 const selectedRole = ref('all')
 const showApplicantsModal = ref(false)
-const showTeamReviewModal = ref(false) // 새 리뷰 모달 표시 상태
+const showTeamReviewModal = ref(false)
 const selectedProject = ref(null)
-const membersForReview = ref([]) // 리뷰할 멤버 목록을 저장할 ref
+const membersForReview = ref([])
 const applicantsList = ref([])
 
 // 필터 옵션
@@ -328,9 +343,7 @@ const ENUM_TO_CLASS = {
 }
 const statusClass = (statusEnum) => ENUM_TO_CLASS[statusEnum] ?? 'unknown'
 
-// ===== 정규화 유틸 =====
-
-// ===== 데이터 로드 =====
+// ===== 데이터 로드 & 병합 =====
 onMounted(async () => {
   try {
     const currentUserId = userStore.userId
@@ -339,30 +352,81 @@ onMounted(async () => {
       return
     }
 
-    // 백엔드의 통합 API 사용
-    const response = await portfolioApi.getAvailableProjects()
-    
-    // 응답 데이터를 기존 형식에 맞게 변환
-    projects.value = (response.data || []).map(project => ({
-      projectId: project.projectId,
-      title: project.title || '',
-      description: project.description || '',
-      status: project.status || 'RECRUITING',
-      startDate: project.startDate,
-      endDate: project.endDate,
-      recruitCount: project.recruitCount || 0,
-      techStacks: project.techStacks || [],
-      isPM: project.role === 'LEADER' || project.role === 'PM',
-      role: project.role || 'MEMBER',
-      members: project.members || []
+    // 1) 내가 만든/참여 중 프로젝트
+    const availableRes = await portfolioApi.getAvailableProjects()
+    const available = (availableRes.data || []).map(p => normalizeProject(p, {
+      isPM: p.role === 'LEADER' || p.role === 'PM',
+      role: p.role || 'MEMBER'
     }))
 
+    // 2) 내가 '지원한' 프로젝트
+    const appliedRes = await getAppliedProjectsByUser(currentUserId)
+    const applied = (appliedRes.data || []).map(p => normalizeProject(p, {
+      isPM: false,
+      role: 'APPLICANT',
+      myApplicationStatus: p.applicationStatus // PENDING/ACCEPTED/REJECTED
+    }))
+
+    // 3) 병합 (projectId 기준 중복 제거)
+    const byId = new Map()
+    ;[...available, ...applied].forEach(p => {
+      const ex = byId.get(p.projectId)
+      if (!ex) byId.set(p.projectId, p)
+      else {
+        byId.set(p.projectId, {
+          ...ex,
+          ...p,
+          isPM: ex.isPM || p.isPM,
+          // PM이면 PM 역할 유지, 아니면 APPLICANT 등 덮어쓰기
+          role: ex.isPM ? ex.role : (p.role || ex.role),
+          // 내 지원 상태가 하나라도 있으면 보존
+          myApplicationStatus: ex.myApplicationStatus ?? p.myApplicationStatus
+        })
+      }
+    })
+
+    projects.value = Array.from(byId.values())
+    await hydrateApplicantCounts()
   } catch (e) {
     console.error('내 프로젝트 로드 실패:', e)
     projects.value = []
   } finally {
     isLoading.value = false
   }
+})
+
+const hydrateApplicantCounts = async () => {
+  const targets = projects.value.filter(p => p.isPM && p.status === 'RECRUITING')
+  await Promise.all(targets.map(async (p) => {
+    try {
+      const { data } = await getProjectMembers(p.projectId, userStore.userId)
+      // 필요한 카운트 형태 선택 (전체 or PENDING만)
+      const pending = data.filter(m => m.status === 'PENDING').length
+      // 전체를 보여주고 싶으면: const total = data.length
+      p.appliedCount = pending
+      p._countHydrated = true
+    } catch (err) {
+      console.error('지원자 카운트 로드 실패:', p.projectId, err)
+      p.appliedCount = p.appliedCount ?? 0
+      p._countHydrated = true
+    }
+  }))
+}
+
+// 공통 정규화
+const normalizeProject = (raw, extra = {}) => ({
+  projectId: raw.projectId ?? raw.id,
+  title: raw.title ?? '',
+  description: raw.description ?? '',
+  status: raw.status ?? 'RECRUITING',
+  startDate: raw.startDate ?? null,
+  endDate: raw.endDate ?? null,
+  recruitCount: raw.recruitCount ?? 0,
+  techStacks: raw.techStacks ?? [],
+  // 처음엔 모를 수 있으니 null, 백엔드가 주면 사용
+  appliedCount: raw.appliedCount ?? raw.applicantCount ?? null,
+  _countHydrated: false,
+  ...extra,
 })
 
 // ===== 계산된 값 =====
@@ -447,22 +511,21 @@ const closeApplicantsModal = () => {
 
 const openReviewModal = async (project) => {
   try {
-    const response = await getConfirmedProjectMembers(project.projectId);
-    // 확정된 멤버만 반환하므로 별도의 필터링 필요 없음
-    membersForReview.value = response.data.filter(member => member.userId !== userStore.userId);
-    
-    selectedProject.value = project;
-    showTeamReviewModal.value = true;
+    const response = await getConfirmedProjectMembers(project.projectId)
+    membersForReview.value = response.data.filter(member => member.userId !== userStore.userId)
+
+    selectedProject.value = project
+    showTeamReviewModal.value = true
   } catch (error) {
-    console.error('팀 멤버 정보를 가져오는데 실패했습니다:', error);
-    toast.error('팀 멤버 정보를 가져오는데 실패했습니다.');
+    console.error('팀 멤버 정보를 가져오는데 실패했습니다:', error)
+    toast.error('팀 멤버 정보를 가져오는데 실패했습니다.')
   }
-};
+}
 
 const closeTeamReviewModal = () => {
-  showTeamReviewModal.value = false;
-  selectedProject.value = null;
-};
+  showTeamReviewModal.value = false
+  selectedProject.value = null
+}
 
 const viewApplicantPortfolio = (userId) => router.push(`/portfolio/${userId}`)
 
@@ -698,9 +761,9 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   margin: 0;
   line-height: 1.3;
   flex: 1;
-  white-space: nowrap; /* 한 줄로 표시 */
-  overflow: hidden; /* 넘치는 부분 숨기기 */
-  text-overflow: ellipsis; /* 말줄임표(...) 적용 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .project-badges {
@@ -749,6 +812,11 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   color: #dc3545;
 }
 
+/* 내 지원 상태 배지 */
+.status-badge.app-pending  { background:#fffbe6; border:1px solid #ffd666; color:#ad8b00; }
+.status-badge.app-accepted { background:#e6fffb; border:1px solid #87e8de; color:#006d75; }
+.status-badge.app-rejected { background:#fff1f0; border:1px solid #ffa39e; color:#a8071a; }
+
 .pm-badge {
   background: linear-gradient(135deg, #FFD700, #FFA000);
   color: #fff;
@@ -769,7 +837,7 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   font-size: 14px;
   color: #666;
   line-height: 1.5;
-  height: 42px; /* 2줄 높이 고정 (14px * 1.5 * 2) */
+  height: 42px;
   margin: 0 0 16px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -830,7 +898,7 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 .default-actions {
   display: flex;
   gap: 12px;
-  justify-content: flex-end; /* 버튼들을 오른쪽 끝으로 정렬 */
+  justify-content: flex-end;
 }
 
 .action-btn {
@@ -844,12 +912,12 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   align-items: center;
   gap: 6px;
   border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
 .action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .btn-icon {
@@ -893,7 +961,7 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 }
 
 .manage-btn {
-  background: #607D8B; /* Greyish blue */
+  background: #607D8B;
   color: #fff;
 }
 
@@ -901,94 +969,12 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   background: #455A64;
 }
 
-.review-btn:hover {
-  background: #F57C00;
-}
-
-/* 새로운 보조 액션 버튼 스타일 */
-.secondary-action-btn {
-  background: #f0f2f5; /* 밝은 회색 배경 */
-  color: #555; /* 어두운 글자색 */
-  border: 1px solid #e0e0e0; /* 옅은 테두리 */
-}
-
-.secondary-action-btn:hover {
-  background: #e0e2e5; /* 호버 시 더 어둡게 */
-  color: #333;
-  border-color: #d0d0d0;
-}
-
-.manage-btn {
-  /* 기존 manage-btn 스타일을 secondary-action-btn으로 대체 */
-}
-
-.view-btn {
-  /* 기존 view-btn 스타일을 secondary-action-btn으로 대체 */
-}
-
-.action-btn {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* 기본 그림자 */
-}
-
-.action-btn:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
-}
-
-.btn-icon {
-  font-size: 14px;
-}
-
-.applicants-btn {
-  background: #2196F3;
-  color: #fff;
-}
-
-.applicants-btn:hover:not(:disabled) {
-  background: #1976D2;
-}
-
-.applicants-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.view-btn {
-  /* secondary-action-btn으로 대체 */
-}
-
-.review-btn {
-  background: #FF9800;
-  color: #fff;
-}
-
-.review-btn:hover {
-  background: #F57C00;
-}
-
-.manage-btn {
-  /* secondary-action-btn으로 대체 */
-}
-
 .completed-member-actions {
   display: flex;
   gap: 12px;
-  justify-content: flex-end; /* 오른쪽 정렬 */
-  width: 100%; /* 부모 너비에 맞춤 */
+  justify-content: flex-end;
+  width: 100%;
 }
-
-/* 빈 상태 */
 
 /* 빈 상태 */
 .empty-state {
@@ -1032,7 +1018,7 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   line-height: 1.5;
 }
 
-/* 모달 스타일 */
+/* 모달 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1061,14 +1047,8 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
 }
 
 @keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-50px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-header {
@@ -1167,20 +1147,6 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   margin: 0 0 8px 0;
 }
 
-.applicant-skills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.applicant-skills .skill-tag {
-  padding: 3px 8px;
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-  font-size: 11px;
-  border-radius: 10px;
-}
-
 .applicant-actions {
   display: flex;
   gap: 8px;
@@ -1206,348 +1172,54 @@ const goToManagePage = (projectId) => router.push({ name: 'ProjectManage', param
   border-color: #4CAF50;
 }
 
-.application-message {
-  margin-bottom: 16px;
-}
-
-.message-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #4CAF50;
-  margin: 0 0 8px 0;
-}
-
+.application-message { margin-bottom: 16px; }
+.message-title { font-size: 14px; font-weight: 600; color: #4CAF50; margin: 0 0 8px 0; }
 .message-content {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-  margin: 0;
-  padding: 12px;
-  background: rgba(76, 175, 80, 0.05);
-  border-radius: 8px;
-  border-left: 4px solid #4CAF50;
+  font-size: 14px; color: #666; line-height: 1.5; margin: 0; padding: 12px;
+  background: rgba(76, 175, 80, 0.05); border-radius: 8px; border-left: 4px solid #4CAF50;
 }
 
-.application-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+.application-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.accept-btn, .reject-btn {
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; border: none;
 }
+.accept-btn { background: #4CAF50; color: #fff; }
+.accept-btn:hover { background: #66BB6A; transform: translateY(-1px); }
+.reject-btn { background: rgba(244, 67, 54, 0.1); color: #F44336; border: 1px solid rgba(244, 67, 54, 0.2); }
+.reject-btn:hover { background: rgba(244, 67, 54, 0.2); border-color: #F44336; }
 
-.accept-btn,
-.reject-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-}
+.no-applicants { text-align: center; padding: 60px 20px; color: #666; }
+.no-applicants .empty-emoji { font-size: 48px; margin-bottom: 16px; display: block; }
 
-.accept-btn {
-  background: #4CAF50;
-  color: #fff;
-}
-
-.accept-btn:hover {
-  background: #66BB6A;
-  transform: translateY(-1px);
-}
-
-.reject-btn {
-  background: rgba(244, 67, 54, 0.1);
-  color: #F44336;
-  border: 1px solid rgba(244, 67, 54, 0.2);
-}
-
-.reject-btn:hover {
-  background: rgba(244, 67, 54, 0.2);
-  border-color: #F44336;
-}
-
-.no-applicants {
-  text-align: center;
-  padding: 60px 20px;
-  color: #666;
-}
-
-.no-applicants .empty-emoji {
-  font-size: 48px;
-  margin-bottom: 16px;
-  display: block;
-}
-
-/* 팀원 리뷰 */
-.team-members-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.member-card {
-  border: 2px solid rgba(76, 175, 80, 0.1);
-  border-radius: 12px;
-  padding: 20px;
-  background: rgba(76, 175, 80, 0.02);
-}
-
-.member-header {
-  margin-bottom: 20px;
-}
-
-.member-profile {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.member-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(76, 175, 80, 0.2);
-}
-
-.member-info {
-  flex: 1;
-}
-
-.member-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #262626;
-  margin: 0 0 4px 0;
-}
-
-.member-role {
-  font-size: 14px;
-  color: #4CAF50;
-  font-weight: 600;
-  margin: 0;
-}
-
-.review-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.rating-section,
-.comment-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.rating-section label,
-.comment-section label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #4CAF50;
-}
-
-.star-rating {
-  display: flex;
-  gap: 4px;
-}
-
-.star-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0.3;
-}
-
-.star-btn.active {
-  opacity: 1;
-}
-
-.star-btn:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.star-emoji {
-  filter: grayscale(100%);
-  transition: filter 0.2s ease;
-}
-
-.star-btn.active .star-emoji,
-.star-btn:hover .star-emoji {
-  filter: grayscale(0%);
-}
-
-.review-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid rgba(76, 175, 80, 0.2);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.3s ease;
-  box-sizing: border-box;
-}
-
-.review-textarea:focus {
-  border-color: #4CAF50;
-}
-
-.review-actions {
-  display: flex;
-  justify-content: center;
-  padding-top: 24px;
-  border-top: 1px solid rgba(76, 175, 80, 0.1);
-}
-
-.submit-review-btn {
-  padding: 12px 32px;
-  background: #4CAF50;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.submit-review-btn:hover {
-  background: #66BB6A;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-}
-
-/* 반응형 디자인 */
+/* 반응형 */
 @media (max-width: 1200px) {
-  .projects-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  }
+  .projects-grid { grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
 }
-
 @media (max-width: 768px) {
-  .my-projects-page {
-    padding: 15px;
-  }
-
-  .section-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .stats-mini {
-    align-self: stretch;
-    justify-content: center;
-  }
-
-  .filters-card {
-    padding: 20px;
-    gap: 16px;
-  }
-
-  .projects-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .project-title-section {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .project-badges {
-    margin-left: 0;
-    justify-content: flex-start;
-  }
-
-  .modal-container {
-    width: 95%;
-    max-height: 95vh;
-  }
-
-  .modal-header,
-  .modal-body {
-    padding: 20px;
-  }
-
-  .applicant-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .application-actions,
-  .pm-actions,
-  .progress-actions,
-  .completed-actions {
-    flex-direction: column;
-    gap: 8px;
-  }
+  .my-projects-page { padding: 15px; }
+  .section-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .stats-mini { align-self: stretch; justify-content: center; }
+  .filters-card { padding: 20px; gap: 16px; }
+  .projects-grid { grid-template-columns: 1fr; gap: 16px; }
+  .project-title-section { flex-direction: column; gap: 12px; }
+  .project-badges { margin-left: 0; justify-content: flex-start; }
+  .modal-container { width: 95%; max-height: 95vh; }
+  .modal-header, .modal-body { padding: 20px; }
+  .applicant-header { flex-direction: column; gap: 16px; }
+  .application-actions, .pm-actions, .progress-actions, .completed-actions { flex-direction: column; gap: 8px; }
 }
-
 @media (max-width: 480px) {
-  .my-projects-page {
-    padding: 10px;
-  }
-
-  .filters-card {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .status-filters,
-  .role-filters {
-    gap: 6px;
-  }
-
-  .status-btn,
-  .role-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-
-  .card-header,
-  .tech-stack-section,
-  .card-footer {
-    padding: 16px;
-  }
-
-  .project-title {
-    font-size: 16px;
-  }
-
-  .modal-header,
-  .modal-body {
-    padding: 16px;
-  }
-
-  .modal-title {
-    font-size: 18px;
-  }
-
-  .stats-mini {
-    gap: 12px;
-    padding: 10px 16px;
-  }
-
-  .stat-number {
-    font-size: 16px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-  }
+  .my-projects-page { padding: 10px; }
+  .filters-card { padding: 16px; gap: 16px; }
+  .status-filters, .role-filters { gap: 6px; }
+  .status-btn, .role-btn { padding: 6px 12px; font-size: 13px; }
+  .card-header, .tech-stack-section, .card-footer { padding: 16px; }
+  .project-title { font-size: 16px; }
+  .modal-header, .modal-body { padding: 16px; }
+  .modal-title { font-size: 18px; }
+  .stats-mini { gap: 12px; padding: 10px 16px; }
+  .stat-number { font-size: 16px; }
+  .stat-label { font-size: 11px; }
 }
 </style>
