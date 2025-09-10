@@ -354,15 +354,43 @@ watch(
     }
 );
 
+// 이미지 URL 유효성 검사 및 변환 함수 (PortfolioPage와 동일)
+const getValidImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+    return null
+  }
+  
+  const trimmedUrl = imageUrl.trim()
+  
+  // 더미 데이터 URL 필터링 (example.com 도메인 제외)
+  if (trimmedUrl.includes('example.com')) {
+    return null
+  }
+  
+  // 이미 절대 URL인 경우
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl
+  }
+  
+  // 상대 경로인 경우 백엔드 도메인을 추가
+  if (trimmedUrl.startsWith('/')) {
+    const backendUrl = import.meta.env.PROD 
+      ? `http://localhost:${import.meta.env.VITE_BACK_PORT || 8080}`
+      : 'http://localhost:8080'
+    return `${backendUrl}${trimmedUrl}`
+  }
+  
+  // 기타 경우는 그대로 반환
+  return trimmedUrl
+}
+
 const leaderAvatar = computed(() => {
-   // 1순위: 백엔드에서 받은 절대 URL
-  const fromProject = project.value?.author?.avatarUrl || project.value?.teamLeaderProfileImageUrl;
-  // 2순위: (없으면) DiceBear를 마지막 폴백으로
-  const dicebear = project.value?.author?.userId != null
-      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${project.value.author.userId}`
-    : null;
-  return fromProject || dicebear || '/images/default-avatar.png';
-  });
+  // 1순위: 백엔드에서 받은 URL (상대 경로면 절대 URL로 변환)
+  const rawImageUrl = project.value?.author?.avatarUrl || project.value?.teamLeaderProfileImageUrl;
+  const processedImageUrl = getValidImageUrl(rawImageUrl);
+  
+  return processedImageUrl || '/default-avatar.svg';
+});
 
 // 탭 관리
 const activeTab = ref('content');

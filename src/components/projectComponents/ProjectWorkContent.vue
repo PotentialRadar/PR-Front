@@ -4,7 +4,7 @@
     <div v-if="author" class="project-author-section">
       <div class="author-info">
         <div class="author-avatar">
-          <img :src="author.profileImageUrl || defaultAvatar" :alt="author.name" />
+          <img :src="authorAvatarUrl" :alt="author.name" />
           <div v-if="author.isVerified" class="verified-badge">
             <i class="bi bi-check-circle-fill"></i>
           </div>
@@ -121,14 +121,50 @@ export default {
     return {
       showImagePreview: false,
       previewImageUrl: '',
-      previewImageName: '',
-      defaultAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
+      previewImageName: ''
+    }
+  },
+  computed: {
+    authorAvatarUrl() {
+      if (!this.author?.profileImageUrl) {
+        return '/default-avatar.svg'
+      }
+      return this.getValidImageUrl(this.author.profileImageUrl) || '/default-avatar.svg'
     }
   },
   mounted() {
     console.log('ProjectWorkContent received attachments:', this.attachments);
   },
   methods: {
+    // 이미지 URL 유효성 검사 및 변환 함수 (다른 페이지와 동일)
+    getValidImageUrl(imageUrl) {
+      if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+        return null
+      }
+      
+      const trimmedUrl = imageUrl.trim()
+      
+      // 더미 데이터 URL 필터링 (example.com 도메인 제외)
+      if (trimmedUrl.includes('example.com')) {
+        return null
+      }
+      
+      // 이미 절대 URL인 경우
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        return trimmedUrl
+      }
+      
+      // 상대 경로인 경우 백엔드 도메인을 추가
+      if (trimmedUrl.startsWith('/')) {
+        const backendUrl = process.env.NODE_ENV === 'production' 
+          ? `http://localhost:${process.env.VITE_BACK_PORT || 8080}`
+          : 'http://localhost:8080'
+        return `${backendUrl}${trimmedUrl}`
+      }
+      
+      // 기타 경우는 그대로 반환
+      return trimmedUrl
+    },
     isImage(url) {
       console.log('Checking if image:', url, /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url));
       return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url)
