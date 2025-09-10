@@ -807,7 +807,7 @@ const loadPortfolioData = async () => {
     portfolioData.userInfo = {
       name: portfolio.nickname || '사용자',
       jobTitle: portfolio.jobTitle || '',
-      avatar: portfolio.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${portfolio.userId || 'user'}`,
+      avatar: portfolio.profileImage || '/default-avatar.svg',
       category: (portfolio.techPartName || portfolio.techPart || '')
     }
     console.log('✅ 사용자 정보 설정 완료:', portfolioData.userInfo)
@@ -895,7 +895,7 @@ const loadPortfolioData = async () => {
     portfolioData.userInfo = {
       name: '사용자',
       jobTitle: '',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+      avatar: '/default-avatar.svg',
       category: ''
     }
     

@@ -80,7 +80,7 @@ export default {
       id: 1,
       name: '김개발자',
       email: 'developer@example.com',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=김개발자',
+      avatar: '/default-avatar.svg',
     });
 
     // Sample notifications

@@ -9,8 +9,8 @@
       <div class="not-found-icon">
         <i class="bi bi-person-x"></i>
       </div>
-      <h3>포트폴리오를 찾을 수 없습니다</h3>
-      <p>존재하지 않는 사용자이거나 포트폴리오가 비공개 상태입니다.</p>
+      <h3>공개되지 않은 포트폴리오입니다</h3>
+      <p>이 사용자의 포트폴리오는 비공개로 설정되어 있습니다.</p>
       <button @click="goBack" class="back-button">
         <i class="bi bi-arrow-left"></i>
         목록으로 돌아가기
@@ -361,6 +361,11 @@ const getValidImageUrl = (imageUrl) => {
   
   const trimmedUrl = imageUrl.trim()
   
+  // 더미 데이터 URL 필터링 (example.com 도메인 제외)
+  if (trimmedUrl.includes('example.com')) {
+    return null
+  }
+  
   // 이미 절대 URL인 경우
   if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
     return trimmedUrl
@@ -452,7 +457,7 @@ const loadPortfolioData = async (userId) => {
       userInfo: {
         name: userData.nickname || '사용자',
         jobTitle: userData.jobTitle || '',
-        avatar: getValidImageUrl(userData.profileImage) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`,
+        avatar: getValidImageUrl(userData.profileImage) || '/default-avatar.svg',
         category: userData.techPartName || userData.techPart || '',
         email: userData.email || '',
         phone: userData.phone || '',
