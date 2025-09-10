@@ -101,10 +101,10 @@
                 <div class="tech-stack-list">
                   <span 
                     v-for="ts in project.techStacks" 
-                    :key="ts.techStackName" 
+                    :key="typeof ts === 'string' ? ts : ts.techStackName" 
                     class="tech-tag"
                   >
-                    {{ ts.techStackName }}
+                    {{ typeof ts === 'string' ? ts : ts.techStackName }}
                   </span>
                 </div>
               </div>
